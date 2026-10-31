@@ -206,20 +206,27 @@ function createBot() {
   });
 
   bot.command("start", async (ctx) => {
-    await ctx.reply(
-      [
-        "MILANO FOODS MANAGEMENT",
-        "",
-        "/products - View products",
-        "/stock - View stock",
-        "/stock product-slug 50 - Update stock",
-        "/publish product-slug - Publish product",
-        "/unpublish product-slug - Hide product",
-        "/orders - View pending orders",
-        "/order ORDER-NUMBER - View an order",
-      ].join("\n")
-    );
-  });
+  await ctx.reply(
+    "MILANO FOODS\n\nManagement Panel\n\nSelect an action:",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "Products", callback_data: "menu:products" },
+            { text: "Inventory", callback_data: "menu:inventory" },
+          ],
+          [
+            { text: "Orders", callback_data: "menu:orders" },
+            { text: "Pending Orders", callback_data: "menu:pending" },
+          ],
+          [
+            { text: "Low Stock", callback_data: "menu:lowstock" },
+          ],
+        ],
+      },
+    }
+  );
+});
 
   bot.command("products", async (ctx) => {
     await cleanupExpiredReservations();
@@ -408,6 +415,119 @@ function createBot() {
     await ctx.reply(message);
   });
 
+  bot.callbackQuery(/^menu:(home|products|inventory|orders|pending|lowstock)$/, async (ctx) => {
+    await ctx.answerCallbackQuery();
+
+    const action = ctx.match[1];
+
+    const menu = {
+      inline_keyboard: [
+        [
+          { text: "Products", callback_data: "menu:products" },
+          { text: "Inventory", callback_data: "menu:inventory" },
+        ],
+        [
+          { text: "Orders", callback_data: "menu:orders" },
+          { text: "Pending Orders", callback_data: "menu:pending" },
+        ],
+        [
+          { text: "Low Stock", callback_data: "menu:lowstock" },
+        ],
+        [
+          { text: "Main Menu", callback_data: "menu:home" },
+        ],
+      ],
+    };
+
+    try {
+      await cleanupExpiredReservations();
+
+      let message = "";
+
+      if (action === "home") {
+        message = "MILANO FOODS\n\nManagement Panel\n\nSelect an action:";
+      }
+
+      if (action === "products") {
+        const products = await prisma.product.findMany({
+          orderBy: { name: "asc" },
+          take: 30,
+        });
+
+        message = products.length
+          ? "PRODUCTS\n\n" + products.map((p) =>
+              `${p.name}\nStock: ${p.stock} | Available: ${p.stock - p.reservedStock}\n${p.isPublished ? "Published" : "Hidden"}`
+            ).join("\n\n")
+          : "No products found.";
+      }
+
+      if (action === "inventory") {
+        const products = await prisma.product.findMany({
+          where: { isActive: true },
+        });
+
+        const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+        const reserved = products.reduce((sum, p) => sum + p.reservedStock, 0);
+        const available = totalStock - reserved;
+
+        message = [
+          "INVENTORY SUMMARY",
+          "",
+          `Products: ${products.length}`,
+          `Total stock: ${totalStock}`,
+          `Reserved stock: ${reserved}`,
+          `Available stock: ${available}`,
+        ].join("\n");
+      }
+
+      if (action === "orders" || action === "pending") {
+        const orders = await prisma.order.findMany({
+          where: action === "pending"
+            ? { status: "PENDING" }
+            : { status: { not: "CANCELLED" } },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: { items: true },
+        });
+
+        message = orders.length
+          ? (action === "pending" ? "PENDING ORDERS" : "RECENT ORDERS") +
+            "\n\n" +
+            orders.map((order) => [
+              order.orderNumber,
+              `Customer: ${order.customerName}`,
+              `Total: ETB ${Number(order.total).toLocaleString("en-ET")}`,
+              `Status: ${order.status}`,
+              `Items: ${order.items.length}`,
+            ].join("\n")).join("\n\n")
+          : "No orders found.";
+      }
+
+      if (action === "lowstock") {
+        const products = await prisma.product.findMany({
+          where: { isActive: true },
+          orderBy: { name: "asc" },
+        });
+
+        const lowStock = products.filter(
+          (p) => p.stock - p.reservedStock <= 10
+        );
+
+        message = lowStock.length
+          ? "LOW STOCK ALERT\n\n" + lowStock.map((p) =>
+              `${p.name}\nAvailable: ${p.stock - p.reservedStock}\nSlug: ${p.slug}`
+            ).join("\n\n")
+          : "No low-stock products. All active products have more than 10 available units.";
+      }
+
+      await ctx.editMessageText(message.slice(0, 4000), {
+        reply_markup: menu,
+      });
+    } catch (error) {
+      console.error("Telegram menu error:", error);
+      await ctx.reply("Unable to load this section. Please try again.");
+    }
+  });
   bot.on("callback_query:data", async (ctx) => {
     const data = ctx.callbackQuery.data;
     const match = /^(confirm|reject):(MIL-[A-Z0-9-]+)$/.exec(data);
@@ -502,4 +622,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
 
