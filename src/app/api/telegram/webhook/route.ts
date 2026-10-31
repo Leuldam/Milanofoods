@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { Bot } from "grammy";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -235,7 +235,7 @@ function createBot() {
 
     const message = products.map((p) =>
       [
-        `📦 ${p.name}`,
+        `ðŸ“¦ ${p.name}`,
         `Slug: ${p.slug}`,
         `Stock: ${p.stock}`,
         `Reserved: ${p.reservedStock}`,
@@ -304,7 +304,7 @@ function createBot() {
       return;
     }
 
-    await ctx.reply(`✅ Stock updated.\n${slug}: ${quantity}`);
+    await ctx.reply(`âœ… Stock updated.\n${slug}: ${quantity}`);
   });
 
   bot.command("publish", async (ctx) => {
@@ -322,7 +322,7 @@ function createBot() {
 
     await ctx.reply(
       result.count
-        ? `✅ ${slug} is now published.`
+        ? `âœ… ${slug} is now published.`
         : "Product not found or inactive."
     );
   });
@@ -342,7 +342,7 @@ function createBot() {
 
     await ctx.reply(
       result.count
-        ? `✅ ${slug} is now hidden from the store.`
+        ? `âœ… ${slug} is now hidden from the store.`
         : "Product not found."
     );
   });
@@ -363,7 +363,7 @@ function createBot() {
 
     const message = orders.map((order) =>
       [
-        `🛍️ ${order.orderNumber}`,
+        `ðŸ›ï¸ ${order.orderNumber}`,
         `Customer: ${order.customerName}`,
         `Phone: ${order.customerPhone}`,
         `Total: ETB ${Number(order.total).toLocaleString("en-ET")}`,
@@ -401,7 +401,7 @@ function createBot() {
       `Total: ETB ${Number(order.total).toLocaleString("en-ET")}`,
       "",
       ...order.items.map(
-        (item) => `• ${item.productName} × ${item.quantity}`
+        (item) => `â€¢ ${item.productName} Ã— ${item.quantity}`
       ),
     ].join("\n");
 
@@ -488,7 +488,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const update = await req.json();
-    await getBot().handleUpdate(update);
+    const bot = getBot();
+    await bot.init();
+    await bot.handleUpdate(update);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -500,3 +502,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
