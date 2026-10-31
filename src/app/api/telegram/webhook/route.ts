@@ -206,27 +206,26 @@ function createBot() {
   });
 
   bot.command("start", async (ctx) => {
-  await ctx.reply(
-    "MILANO FOODS\n\nManagement Panel\n\nSelect an action:",
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "Products", callback_data: "menu:products" },
-            { text: "Inventory", callback_data: "menu:inventory" },
+    await ctx.reply(
+      "MILANO FOODS\\n\\nManagement Panel\\n\\nOpen the Mini App to manage products, inventory, restocking and orders. You can also use the quick menu below.",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "Open Management App", web_app: { url: "https://milanofoods.vercel.app/miniapp" } }],
+            [
+              { text: "Products", callback_data: "menu:products" },
+              { text: "Inventory", callback_data: "menu:inventory" },
+            ],
+            [
+              { text: "Orders", callback_data: "menu:orders" },
+              { text: "Pending Orders", callback_data: "menu:pending" },
+            ],
+            [{ text: "Low Stock", callback_data: "menu:lowstock" }],
           ],
-          [
-            { text: "Orders", callback_data: "menu:orders" },
-            { text: "Pending Orders", callback_data: "menu:pending" },
-          ],
-          [
-            { text: "Low Stock", callback_data: "menu:lowstock" },
-          ],
-        ],
-      },
-    }
-  );
-});
+        },
+      }
+    );
+  });
 
   bot.command("products", async (ctx) => {
     await cleanupExpiredReservations();
