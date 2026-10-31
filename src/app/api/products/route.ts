@@ -1,27 +1,57 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { releaseExpiredReservations } from "@/lib/stock-reservations";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const products = await prisma.product.findMany({
+    await prisma.$transaction(async (tx) => {
+      await releaseExpiredReservations(tx, new Date());
+    });
+
+    const databaseProducts = await prisma.product.findMany({
       where: {
         isActive: true,
         isPublished: true,
-        category: {
-          isActive: true,
-        },
+        category: { isActive: true },
       },
-      include: {
-        category: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      include: { category: true },
+      orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(products);
+    const products = databaseProducts.map((product) => {
+      const availableStock = Math.max(
+        0,
+        product.stock - product.reservedStock
+      );
+
+      return {
+        id: product.slug,
+        databaseId: product.id,
+        slug: product.slug,
+        name: product.name,
+        category: product.category.name,
+        categorySlug: product.category.slug,
+        price: Number(product.price),
+        image: product.imageUrl || "/images/bottle.png",
+        imageUrl: product.imageUrl || "/images/bottle.png",
+        description: product.description || "",
+        badge: product.badge || undefined,
+        size: product.size || "",
+        stock: product.stock,
+        reservedStock: product.reservedStock,
+        availableStock,
+        inStock: availableStock > 0,
+      };
+    });
+
+    return NextResponse.json(products, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
-    console.error("Failed to fetch products:", error);
+    console.error("Products API error:", error);
 
     return NextResponse.json(
       { error: "Unable to load products." },

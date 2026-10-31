@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Check, MessageCircle, ShoppingBag } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  MessageCircle,
+  ShoppingBag,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CartLine } from "@/components/store-provider";
 import { money } from "@/lib/products";
@@ -13,6 +18,7 @@ type SavedOrder = {
   subtotal: number;
   method: "delivery" | "pickup";
   payment: string;
+  reservationExpiresAt?: string;
 };
 
 function isSavedOrder(value: unknown): value is SavedOrder {
@@ -31,6 +37,7 @@ function isSavedOrder(value: unknown): value is SavedOrder {
 export function OrderConfirmationContent() {
   const params = useSearchParams();
   const [order, setOrder] = useState<SavedOrder | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -48,27 +55,98 @@ export function OrderConfirmationContent() {
     }
   }, []);
 
-  const orderNumber = params.get("order") || order?.orderNumber || "MILANO";
+  useEffect(() => {
+    if (!order?.reservationExpiresAt) return;
+
+    const expiry = new Date(order.reservationExpiresAt).getTime();
+    if (!Number.isFinite(expiry)) return;
+
+    const updateCountdown = () => {
+      setRemaining(Math.max(0, Math.floor((expiry - Date.now()) / 1000)));
+    };
+
+    updateCountdown();
+    const interval = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(interval);
+  }, [order?.reservationExpiresAt]);
+
+  const orderNumber =
+    params.get("order") || order?.orderNumber || "MILANO";
+  const minutes = remaining !== null ? Math.floor(remaining / 60) : null;
+  const seconds = remaining !== null ? remaining % 60 : null;
 
   return (
     <main className="wrap">
       <section className="confirmation">
         <div className="success-mark">
-          <Check size={32} />
+          <CheckCircle2 size={32} />
         </div>
         <span className="eyebrow">Order received</span>
         <h1>Thank you for your order.</h1>
         <p>
-          Your order details have been submitted to Milano Foods. Our team will
-          contact you to confirm availability, the final delivery fee, and
+          Your order request has been submitted to Milano Foods. Our team will
+          review it and contact you to confirm availability, delivery fees, and
           payment arrangements.
         </p>
         <div className="order-number">ORDER {orderNumber}</div>
+        <div
+          className="summary-card"
+          style={{ textAlign: "left", marginTop: 24, marginBottom: 24 }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 12,
+            }}
+          >
+            <Clock size={20} color="#a36c27" />
+            <strong>Pending confirmation</strong>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+            Your order is awaiting approval from Milano Foods. Stock is
+            temporarily reserved while the order is pending.
+          </p>
+          {remaining !== null && (
+            <div style={{ marginTop: 18 }}>
+              {remaining > 0 ? (
+                <>
+                  <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                    Reservation time remaining
+                  </span>
+                  <div
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      marginTop: 5,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {String(minutes).padStart(2, "0")}:
+                    {String(seconds).padStart(2, "0")}
+                  </div>
+                </>
+              ) : (
+                <p
+                  style={{
+                    color: "#b42318",
+                    fontSize: 12,
+                    marginBottom: 0,
+                  }}
+                >
+                  The reservation period has ended. Please contact Milano Foods
+                  to check your order status.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
         {order && (
           <div className="summary-card confirmation-summary">
             <h3>Order summary</h3>
-            {order.cart.map((item) => (
-              <div className="summary-line" key={item.id}>
+            {order.cart.map((item, index) => (
+              <div className="summary-line" key={`${item.id}-${index}`}>
                 <span>
                   {item.name} × {item.qty}
                 </span>
