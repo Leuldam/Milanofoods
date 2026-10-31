@@ -34,6 +34,7 @@ export default function CheckoutPage() {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setError("");
 
     if (!productsLoaded) {
@@ -85,7 +86,7 @@ export default function CheckoutPage() {
         }
       }
 
-      const fd = new FormData(e.currentTarget);
+      const fd = new FormData(form);
 
       const customer = {
         name: String(fd.get("name") || ""),
