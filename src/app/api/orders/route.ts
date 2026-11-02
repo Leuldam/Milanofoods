@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
         normalized,
         subtotal: subtotalCents / 100,
       };
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
 
     // Notify Telegram only after the order is safely saved.
     const token = process.env.TELEGRAM_BOT_TOKEN;

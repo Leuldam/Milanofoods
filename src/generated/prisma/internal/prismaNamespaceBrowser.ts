@@ -53,6 +53,9 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Category: 'Category',
   Product: 'Product',
+  ProductStockMovement: 'ProductStockMovement',
+  ProductPriceChange: 'ProductPriceChange',
+  ProductReview: 'ProductReview',
   Order: 'Order',
   OrderItem: 'OrderItem'
 } as const
@@ -106,6 +109,47 @@ export const ProductScalarFieldEnum = {
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
+
+
+export const ProductStockMovementScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  change: 'change',
+  previousStock: 'previousStock',
+  newStock: 'newStock',
+  reason: 'reason',
+  orderNumber: 'orderNumber',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt'
+} as const
+
+export type ProductStockMovementScalarFieldEnum = (typeof ProductStockMovementScalarFieldEnum)[keyof typeof ProductStockMovementScalarFieldEnum]
+
+
+export const ProductPriceChangeScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  previousPrice: 'previousPrice',
+  newPrice: 'newPrice',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt'
+} as const
+
+export type ProductPriceChangeScalarFieldEnum = (typeof ProductPriceChangeScalarFieldEnum)[keyof typeof ProductPriceChangeScalarFieldEnum]
+
+
+export const ProductReviewScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  displayName: 'displayName',
+  rating: 'rating',
+  comment: 'comment',
+  createdAt: 'createdAt',
+  isApproved: 'isApproved',
+  orderId: 'orderId'
+} as const
+
+export type ProductReviewScalarFieldEnum = (typeof ProductReviewScalarFieldEnum)[keyof typeof ProductReviewScalarFieldEnum]
 
 
 export const OrderScalarFieldEnum = {

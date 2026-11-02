@@ -35,6 +35,7 @@ export function ProductCard({
           src={product.image}
           alt={product.name}
           fill
+          unoptimized={product.image.startsWith("http")}
           sizes="(max-width:720px) 48vw, (max-width:1000px) 30vw, 23vw"
         />
 

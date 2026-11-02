@@ -1,11 +1,75 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+const MINIAPP_SESSION_COOKIE = "milano-miniapp-session";
+const MINIAPP_SESSION_TTL_SECONDS = 60 * 60 * 12;
+
 export type TelegramMiniAppUser = {
   id: number;
+  authMethod?: "telegram" | "password";
   first_name?: string;
   last_name?: string;
   username?: string;
 };
+
+function getMiniAppSessionSecret() {
+  const secret = process.env.MINIAPP_SESSION_SECRET;
+  return secret && secret.length >= 32 ? secret : null;
+}
+
+function getCookie(request: Request, name: string) {
+  const cookies = request.headers.get("cookie") || "";
+  const entry = cookies
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(`${name}=`));
+
+  return entry ? entry.slice(name.length + 1) : "";
+}
+
+export function createMiniAppSession() {
+  const secret = getMiniAppSessionSecret();
+  if (!secret) throw new Error("MINIAPP_SESSION_SECRET must be at least 32 characters.");
+
+  const expiresAt = Math.floor(Date.now() / 1000) + MINIAPP_SESSION_TTL_SECONDS;
+  const payload = Buffer.from(
+    JSON.stringify({ role: "admin", expiresAt }),
+  ).toString("base64url");
+  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+
+  return {
+    token: `${payload}.${signature}`,
+    maxAge: MINIAPP_SESSION_TTL_SECONDS,
+  };
+}
+
+function verifyMiniAppSession(request: Request): boolean {
+  const secret = getMiniAppSessionSecret();
+  const token = getCookie(request, MINIAPP_SESSION_COOKIE);
+  if (!secret || !token) return false;
+
+  const [payload, signature, extra] = token.split(".");
+  if (!payload || !signature || extra) return false;
+
+  const expected = createHmac("sha256", secret).update(payload).digest();
+  const supplied = Buffer.from(signature, "base64url");
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+    return false;
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      role?: unknown;
+      expiresAt?: unknown;
+    };
+    return (
+      session.role === "admin" &&
+      typeof session.expiresAt === "number" &&
+      session.expiresAt > Math.floor(Date.now() / 1000)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function verifyTelegramMiniApp(initData: string): TelegramMiniAppUser | null {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -60,5 +124,12 @@ export function verifyTelegramMiniApp(initData: string): TelegramMiniAppUser | n
 
 export function getTelegramMiniAppUser(request: Request): TelegramMiniAppUser | null {
   const initData = request.headers.get("x-telegram-init-data") || "";
-  return verifyTelegramMiniApp(initData);
+  const telegramUser = verifyTelegramMiniApp(initData);
+  if (telegramUser) return { ...telegramUser, authMethod: "telegram" };
+
+  return verifyMiniAppSession(request)
+    ? { id: 0, first_name: "Administrator", authMethod: "password" }
+    : null;
 }
+
+export const miniAppSessionCookie = MINIAPP_SESSION_COOKIE;

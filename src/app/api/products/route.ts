@@ -7,9 +7,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await prisma.$transaction(async (tx) => {
-      await releaseExpiredReservations(tx, new Date());
-    });
+    await prisma.$transaction(
+      (tx) => releaseExpiredReservations(tx, new Date()),
+      { maxWait: 10_000, timeout: 30_000 },
+    );
 
     const databaseProducts = await prisma.product.findMany({
       where: {

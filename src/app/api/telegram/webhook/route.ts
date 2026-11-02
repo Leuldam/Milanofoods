@@ -1,7 +1,8 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { Bot } from "grammy";
+import { Bot, type Context } from "grammy";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { processOrderAction, processReviewAction } from "@/lib/order-actions";
 import { releaseExpiredReservations } from "@/lib/stock-reservations";
 
 export const runtime = "nodejs";
@@ -21,164 +22,42 @@ function authorized(id?: number): boolean {
   return Boolean(id && getOperators().includes(String(id)));
 }
 
-async function releaseOrderReservation(
-  tx: Prisma.TransactionClient,
-  order: {
-    id: string;
-    orderNumber: string;
-    items: Array<{ productId: string | null; quantity: number }>;
-  }
-) {
-  const sortedItems = [...order.items].sort((a, b) =>
-    (a.productId ?? "").localeCompare(b.productId ?? "")
-  );
-
-  for (const item of sortedItems) {
-    if (!item.productId) continue;
-
-    await tx.$queryRaw(
-      Prisma.sql`SELECT "id" FROM "Product" WHERE "id" = ${item.productId} FOR UPDATE`
-    );
-
-    const result = await tx.product.updateMany({
-      where: {
-        id: item.productId,
-        reservedStock: { gte: item.quantity },
-      },
-      data: {
-        reservedStock: { decrement: item.quantity },
-      },
-    });
-
-    if (result.count !== 1) {
-      throw new Error(
-        `Could not release reserved stock for ${order.orderNumber}`
-      );
-    }
-  }
-}
-
-async function processOrderAction(
-  orderNumber: string,
-  action: "confirm" | "reject"
-) {
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw(
-      Prisma.sql`SELECT "id" FROM "Order" WHERE "orderNumber" = ${orderNumber} FOR UPDATE`
-    );
-
-    const order = await tx.order.findUnique({
-      where: { orderNumber },
-      include: { items: true },
-    });
-
-    if (!order) {
-      return { ok: false, message: "Order not found." };
-    }
-
-    if (order.status !== "PENDING" || order.stockDeductedAt) {
-      return {
-        ok: false,
-        message: `This order has already been processed. Status: ${order.status}.`,
-      };
-    }
-
-    const now = new Date();
-
-    if (
-      !order.reservationExpiresAt ||
-      order.reservationExpiresAt <= now
-    ) {
-      await releaseOrderReservation(tx, order);
-
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          status: "CANCELLED",
-          reservationExpiresAt: null,
-        },
-      });
-
-      return {
-        ok: false,
-        status: "CANCELLED",
-        message: "Reservation expired. The reserved stock has been released.",
-      };
-    }
-
-    if (action === "reject") {
-      await releaseOrderReservation(tx, order);
-
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          status: "CANCELLED",
-          reservationExpiresAt: null,
-        },
-      });
-
-      return {
-        ok: true,
-        status: "CANCELLED",
-        message: "Order rejected. Reserved stock released.",
-      };
-    }
-
-    // Confirm: deduct physical stock and release reserved stock.
-    const sortedItems = [...order.items].sort((a, b) =>
-    (a.productId ?? "").localeCompare(b.productId ?? "")
-  );
-
-  for (const item of sortedItems) {
-      if (!item.productId) {
-        throw new Error("An order item has no linked product.");
-      }
-
-      await tx.$queryRaw(
-        Prisma.sql`SELECT "id" FROM "Product" WHERE "id" = ${item.productId} FOR UPDATE`
-      );
-
-      const updated = await tx.product.updateMany({
-        where: {
-          id: item.productId,
-          stock: { gte: item.quantity },
-          reservedStock: { gte: item.quantity },
-        },
-        data: {
-          stock: { decrement: item.quantity },
-          reservedStock: { decrement: item.quantity },
-        },
-      });
-
-      if (updated.count !== 1) {
-        throw new Error(
-          `Stock validation failed for ${item.productName}.`
-        );
-      }
-    }
-
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        status: "CONFIRMED",
-        stockDeductedAt: now,
-        reservationExpiresAt: null,
-      },
-    });
-
-    return {
-      ok: true,
-      status: "CONFIRMED",
-      message: "Order confirmed. Stock deducted successfully.",
-    };
-  });
-}
-
 async function cleanupExpiredReservations() {
   return prisma.$transaction(async (tx) => {
     return releaseExpiredReservations(tx, new Date());
   });
 }
+
+async function sendPendingReview(ctx: Context, review: {
+  id: string;
+  displayName: string;
+  rating: number;
+  comment: string;
+  order: { orderNumber: string } | null;
+  product: { name: string };
+}) {
+  await ctx.reply(
+    [
+      "PRODUCT REVIEW — APPROVAL REQUIRED",
+      `Review: ${review.id}`,
+      `Order: ${review.order?.orderNumber || "Legacy review"}`,
+      `Customer: ${review.displayName}`,
+      `Product: ${review.product.name}`,
+      `Rating: ${review.rating}/5`,
+      "",
+      review.comment,
+    ].join("\n"),
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "Approve and publish", callback_data: `review:approve:${review.id}` },
+          { text: "Reject", callback_data: `review:reject:${review.id}` },
+        ]],
+      },
+    },
+  );
+}
+
 function createBot() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -289,23 +168,38 @@ function createBot() {
       return;
     }
 
-    const updated = await prisma.product.updateMany({
-      where: {
-        slug,
-        reservedStock: { lte: quantity },
-      },
-      data: { stock: quantity },
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Product" WHERE "slug" = ${slug} FOR UPDATE`);
+      const product = await tx.product.findUnique({ where: { slug } });
+      if (!product) return { error: "NOT_FOUND" as const };
+      if (product.reservedStock > quantity) {
+        return { error: "RESERVED" as const, reservedStock: product.reservedStock };
+      }
+
+      const updated = await tx.product.update({
+        where: { id: product.id },
+        data: { stock: quantity },
+      });
+      if (updated.stock !== product.stock) {
+        await tx.productStockMovement.create({
+          data: {
+            productId: product.id,
+            change: updated.stock - product.stock,
+            previousStock: product.stock,
+            newStock: updated.stock,
+            reason: "MANUAL_STOCK_UPDATE",
+            createdBy: String(ctx.from?.id || "telegram-admin"),
+          },
+        });
+      }
+      return { product: updated };
     });
 
-    if (updated.count !== 1) {
-      const product = await prisma.product.findUnique({
-        where: { slug },
-      });
-
+    if ("error" in result) {
       await ctx.reply(
-        product
-          ? `Cannot set stock below its reserved quantity (${product.reservedStock}).`
-          : "Product not found. Check the product slug."
+        result.error === "RESERVED"
+          ? `Cannot set stock below its reserved quantity (${result.reservedStock}).`
+          : "Product not found. Check the product slug.",
       );
       return;
     }
@@ -313,6 +207,64 @@ function createBot() {
     await ctx.reply(`âœ… Stock updated.\n${slug}: ${quantity}`);
   });
 
+  bot.command("addstock", async (ctx) => {
+    const args = ctx.match.trim().split(/\s+/).filter(Boolean);
+
+    if (args.length !== 2) {
+      await ctx.reply(
+        "RESTOCK\n\nUsage:\n/addstock product-slug quantity\n\nExample:\n/addstock strawberry-mojito 50"
+      );
+      return;
+    }
+
+    const [slug, rawQuantity] = args;
+    const quantity = Number(rawQuantity);
+
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+      await ctx.reply("Enter a valid quantity greater than zero.");
+      return;
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Product" WHERE "slug" = ${slug} FOR UPDATE`);
+      const product = await tx.product.findUnique({ where: { slug } });
+      if (!product) return null;
+
+      const updated = await tx.product.update({
+        where: { id: product.id },
+        data: { stock: { increment: quantity } },
+      });
+      await tx.productStockMovement.create({
+        data: {
+          productId: product.id,
+          change: quantity,
+          previousStock: product.stock,
+          newStock: updated.stock,
+          reason: "RESTOCK",
+          createdBy: String(ctx.from?.id || "telegram-admin"),
+        },
+      });
+      return { previousStock: product.stock, updated };
+    });
+
+    if (!result) {
+      await ctx.reply("Product not found. Check the product slug.");
+      return;
+    }
+
+    await ctx.reply(
+      [
+        "STOCK UPDATED",
+        "",
+        result.updated.name,
+        `Added: ${quantity}`,
+        `Previous stock: ${result.previousStock}`,
+        `New total stock: ${result.updated.stock}`,
+        `Reserved: ${result.updated.reservedStock}`,
+        `Available: ${result.updated.stock - result.updated.reservedStock}`,
+      ].join("\n")
+    );
+  });
   bot.command("publish", async (ctx) => {
     const slug = ctx.match.trim();
 
@@ -380,6 +332,62 @@ function createBot() {
 
     await ctx.reply(message.slice(0, 4000));
   });
+
+  bot.command("reviews", async (ctx) => {
+    const reviews = await prisma.productReview.findMany({
+      where: { isApproved: false, orderId: { not: null } },
+      include: {
+        order: { select: { orderNumber: true } },
+        product: { select: { name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 10,
+    });
+
+    if (!reviews.length) {
+      await ctx.reply("No reviews are waiting for approval.");
+      return;
+    }
+
+    await ctx.reply(`There ${reviews.length === 1 ? "is" : "are"} ${reviews.length} review${reviews.length === 1 ? "" : "s"} awaiting approval:`);
+    for (const review of reviews) {
+      await sendPendingReview(ctx, review);
+    }
+  });
+
+  bot.callbackQuery(
+    /^review:(approve|reject):([a-zA-Z0-9_-]+)$/,
+    async (ctx) => {
+      const action = ctx.match[1] as "approve" | "reject";
+      const reviewId = ctx.match[2];
+
+      let result: Awaited<ReturnType<typeof processReviewAction>>;
+      try {
+        result = await processReviewAction(reviewId, action);
+      } catch (error) {
+        console.error("Review action failed:", error);
+        await ctx.answerCallbackQuery({
+          text: "Could not process this review. Please try again.",
+          show_alert: true,
+        });
+        return;
+      }
+
+      await ctx.answerCallbackQuery({
+        text: result.message,
+        show_alert: !result.ok,
+      });
+
+      if (result.ok && ctx.callbackQuery.message) {
+        await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch((error) => {
+          console.error("Could not remove review approval buttons:", error);
+        });
+        await ctx.reply(result.message).catch((error) => {
+          console.error("Could not send review moderation result:", error);
+        });
+      }
+    },
+  );
 
   bot.command("order", async (ctx) => {
     const orderNumber = ctx.match.trim();
@@ -532,7 +540,11 @@ function createBot() {
     const match = /^(confirm|reject):(MIL-[A-Z0-9-]+)$/.exec(data);
 
     if (!match) {
-      await ctx.answerCallbackQuery({ text: "Invalid action." });
+      await ctx.answerCallbackQuery({
+        text: data.startsWith("review:")
+          ? "Invalid review action. Use the latest review message."
+          : "Invalid action.",
+      });
       return;
     }
 
@@ -621,6 +633,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-
-

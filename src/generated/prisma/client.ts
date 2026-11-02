@@ -52,6 +52,21 @@ export type Category = Prisma.CategoryModel
  */
 export type Product = Prisma.ProductModel
 /**
+ * Model ProductStockMovement
+ * 
+ */
+export type ProductStockMovement = Prisma.ProductStockMovementModel
+/**
+ * Model ProductPriceChange
+ * 
+ */
+export type ProductPriceChange = Prisma.ProductPriceChangeModel
+/**
+ * Model ProductReview
+ * 
+ */
+export type ProductReview = Prisma.ProductReviewModel
+/**
  * Model Order
  * 
  */
