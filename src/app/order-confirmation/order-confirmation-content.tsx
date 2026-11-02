@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CartLine } from "@/components/store-provider";
+import { ProductReviewForm } from "@/components/product-review-form";
 import { money } from "@/lib/products";
 
 type SavedOrder = {
@@ -18,6 +19,7 @@ type SavedOrder = {
   subtotal: number;
   method: "delivery" | "pickup";
   payment: string;
+  customer?: { phone?: string };
   reservationExpiresAt?: string;
 };
 
@@ -30,7 +32,12 @@ function isSavedOrder(value: unknown): value is SavedOrder {
     Array.isArray(order.cart) &&
     typeof order.subtotal === "number" &&
     (order.method === "delivery" || order.method === "pickup") &&
-    typeof order.payment === "string"
+    typeof order.payment === "string" &&
+    (order.customer === undefined ||
+      (typeof order.customer === "object" &&
+        order.customer !== null &&
+        (order.customer as Record<string, unknown>).phone !== undefined &&
+        typeof (order.customer as Record<string, unknown>).phone === "string"))
   );
 }
 
@@ -180,6 +187,12 @@ export function OrderConfirmationContent() {
           </Link>
         </div>
       </section>
+      {order?.customer?.phone && order.orderNumber === orderNumber && (
+        <ProductReviewForm
+          orderNumber={order.orderNumber}
+          phone={order.customer.phone}
+        />
+      )}
     </main>
   );
 }

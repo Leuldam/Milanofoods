@@ -10,5 +10,5 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://milanofoods.example"),
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><LocalizationProvider><StoreProvider><div className="announcement">Premium food solutions for every moment · Discover the Milano range</div><SiteHeader />{children}<SiteFooter /></StoreProvider></LocalizationProvider></body></html>;
+  return <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning><body><LocalizationProvider><StoreProvider><div className="announcement">Premium food solutions for every moment · Discover the Milano range</div><SiteHeader />{children}<SiteFooter /></StoreProvider></LocalizationProvider></body></html>;
 }

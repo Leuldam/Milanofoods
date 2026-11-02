@@ -7,9 +7,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await prisma.$transaction(async (tx) => {
-      await releaseExpiredReservations(tx, new Date());
-    });
+    await prisma.$transaction(
+      (tx) => releaseExpiredReservations(tx, new Date()),
+      { maxWait: 10_000, timeout: 30_000 },
+    );
 
     const databaseProducts = await prisma.product.findMany({
       where: {
@@ -35,8 +36,8 @@ export async function GET() {
         category: product.category.name,
         categorySlug: product.category.slug,
         price: Number(product.price),
-        image: product.imageUrl || "/images/bottle.png",
-        imageUrl: product.imageUrl || "/images/bottle.png",
+        image: product.imageUrl || "/images/milano-mint-bottle-cutout.png",
+        imageUrl: product.imageUrl || "/images/milano-mint-bottle-cutout.png",
         description: product.description || "",
         badge: product.badge || undefined,
         size: product.size || "",

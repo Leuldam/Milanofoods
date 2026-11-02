@@ -1,5 +1,5 @@
 export type Product = { id:string; slug:string; name:string; category:string; price:number; image:string; description:string; badge?:string; size:string; };
-const mojitoSyrupImage = "/images/bottle.png";
+const mojitoSyrupImage = "/images/milano-mint-bottle-cutout.png";
 export const products: Product[] = [
  {id:"mint",slug:"mint-mojito-syrup",name:"Mint Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A refreshing mint-forward syrup for bright, cooling beverage creations.",badge:"Bestseller",size:"750 ml"},
  {id:"strawberry",slug:"strawberry-mojito-syrup",name:"Strawberry Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A vibrant strawberry flavor for colorful mocktails and fruit drinks.",size:"750 ml"},
