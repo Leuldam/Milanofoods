@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, ArrowDownToLine, BarChart3, Boxes, CheckCheck, CheckCircle2, ChevronRight, Clock3, KeyRound, LayoutDashboard, LogOut, MessageSquare, Package, Phone, RefreshCw, Search, ShoppingBag, SlidersHorizontal, TriangleAlert } from "lucide-react";
+import { Activity, ArrowDownToLine, BarChart3, Boxes, CheckCheck, CheckCircle2, ChevronDown, ChevronRight, Clock3, KeyRound, LayoutDashboard, LogOut, MessageSquare, Package, PanelLeft, Phone, Plus, RefreshCw, Search, ShoppingBag, SlidersHorizontal, SquarePen, Trash2, TriangleAlert, X } from "lucide-react";
 import "./miniapp.css";
 import "./miniapp-auth.css";
 import "./miniapp-management.css";
@@ -17,10 +17,10 @@ type StockMovement = {
   orderNumber: string | null; createdAt: string;
 };
 type Order = {
-  orderNumber: string; customerName: string; customerPhone: string; customerEmail: string | null;
+  orderNumber: string; customerName: string; customerPhone: string; customerEmail: string | null; company: string | null;
   fulfillment: string; city: string | null; deliveryAddress: string | null; pickupLocation: string | null;
-  paymentPreference: string; notes: string | null; total: number; status: string; itemCount: number;
-  items: { id: string; name: string; size: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
+  paymentPreference: string; notes: string | null; deliveryFee: number; total: number; status: string; itemCount: number;
+  items: { id: string; productId: string | null; name: string; size: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
   createdAt: string;
 };
 type PendingReview = {
@@ -29,8 +29,8 @@ type PendingReview = {
 };
 type Dashboard = {
   operator: { name: string; authMethod?: "telegram" | "password" };
-  summary: { productCount: number; totalUnits: number; reservedUnits: number; availableUnits: number; lowStockCount: number; pendingOrders: number; pendingReviews: number };
-  products: Product[]; orders: Order[]; pendingReviews: PendingReview[];
+  summary: { productCount: number; totalUnits: number; reservedUnits: number; availableUnits: number; lowStockCount: number; pendingOrders: number; orderStatusCounts: Record<string, number>; pendingReviews: number; approvedReviews: number };
+  products: Product[]; orders: Order[]; pendingReviews: PendingReview[]; approvedReviews: PendingReview[];
 };
 type SalesPeriod = "daily" | "weekly" | "monthly" | "yearly";
 type SalesReport = {
@@ -39,9 +39,39 @@ type SalesReport = {
   end: string;
   totalUnits: number;
   totalRevenue: number;
-  products: { productId: string | null; name: string; size: string | null; units: number; revenue: number }[];
+  totalOrders: number;
+  averageOrderValue: number;
+  previousRevenue: number;
+  revenueChangePercent: number | null;
+  bestSeller: SalesProduct | null;
+  bestRevenueProduct: SalesProduct | null;
+  timeline: { label: string; revenue: number; units: number; orders: number }[];
+  products: SalesProduct[];
+};
+type SalesProduct = {
+  productId: string | null;
+  name: string;
+  size: string | null;
+  category: string | null;
+  units: number;
+  revenue: number;
+  availableStock: number | null;
 };
 type Section = "overview" | "inventory" | "orders" | "reviews" | "sales";
+type OrderDraft = {
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  company: string;
+  fulfillment: "DELIVERY" | "PICKUP";
+  city: string;
+  deliveryAddress: string;
+  pickupLocation: string;
+  paymentPreference: string;
+  notes: string;
+  deliveryFee: string;
+  items: { productId: string; quantity: string; unitPrice: string }[];
+};
 
 async function readApiResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type") || "";
@@ -80,6 +110,7 @@ export default function MilanoMiniAppPage() {
   const [loginBusy, setLoginBusy] = useState(false);
   const [passwordAuthenticated, setPasswordAuthenticated] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [salesPeriod, setSalesPeriod] = useState<SalesPeriod>("daily");
   const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
   const [salesLoading, setSalesLoading] = useState(false);
@@ -87,16 +118,19 @@ export default function MilanoMiniAppPage() {
   const [salesReload, setSalesReload] = useState(0);
   const [query, setQuery] = useState("");
   const [orderQuery, setOrderQuery] = useState("");
-  const [orderStatus, setOrderStatus] = useState("ALL");
+  const [orderStatus, setOrderStatus] = useState("PENDING");
+  const [reviewStatus, setReviewStatus] = useState<"PENDING" | "APPROVED">("PENDING");
   const [inventoryFilter, setInventoryFilter] = useState("ALL");
   const [selected, setSelected] = useState<Product | null>(null);
   const [productDetails, setProductDetails] = useState<Product | null>(null);
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderDraft, setOrderDraft] = useState<OrderDraft | null>(null);
   const [quantity, setQuantity] = useState("24");
   const [priceDraft, setPriceDraft] = useState("");
   const [editingPrice, setEditingPrice] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyAction, setBusyAction] = useState("");
+  const [orderActionError, setOrderActionError] = useState("");
   const [notice, setNotice] = useState("");
 
   const initData = useCallback(() => window.Telegram?.WebApp?.initData || "", []);
@@ -216,10 +250,44 @@ export default function MilanoMiniAppPage() {
   const filteredOrders = useMemo(() => {
     const term = orderQuery.trim().toLowerCase();
     return (dashboard?.orders || []).filter((order) =>
-      (orderStatus === "ALL" || order.status === orderStatus) &&
+      order.status === orderStatus &&
       (!term || order.orderNumber.toLowerCase().includes(term) || order.customerName.toLowerCase().includes(term) || order.customerPhone.includes(term))
     );
   }, [dashboard, orderQuery, orderStatus]);
+
+  const visibleReviews = reviewStatus === "PENDING"
+    ? dashboard?.pendingReviews || []
+    : dashboard?.approvedReviews || [];
+  const maxTimelineRevenue = Math.max(1, ...(salesReport?.timeline.map((point) => point.revenue) || []));
+  const maxProductUnits = Math.max(1, ...(salesReport?.products.slice(0, 5).map((product) => product.units) || []));
+  const draftOrderTotal = orderDraft
+    ? orderDraft.items.reduce((total, item) => {
+        const lineTotal = Number(item.quantity) * Number(item.unitPrice);
+        return total + (Number.isFinite(lineTotal) ? lineTotal : 0);
+      }, Number.isFinite(Number(orderDraft.deliveryFee)) ? Number(orderDraft.deliveryFee) : 0)
+    : 0;
+
+  function beginOrderEdit(order: Order) {
+    setSelectedOrder(order);
+    setOrderDraft({
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerEmail: order.customerEmail || "",
+      company: order.company || "",
+      fulfillment: order.fulfillment === "PICKUP" ? "PICKUP" : "DELIVERY",
+      city: order.city || "",
+      deliveryAddress: order.deliveryAddress || "",
+      pickupLocation: order.pickupLocation || "",
+      paymentPreference: order.paymentPreference,
+      notes: order.notes || "",
+      deliveryFee: String(order.deliveryFee),
+      items: order.items.map((item) => ({
+        productId: item.productId || "",
+        quantity: String(item.quantity),
+        unitPrice: String(item.unitPrice),
+      })),
+    });
+  }
 
   async function restock() {
     if (!selected) return;
@@ -237,9 +305,11 @@ export default function MilanoMiniAppPage() {
         headers: { "Content-Type": "application/json", "x-telegram-init-data": initData() },
         body: JSON.stringify({ action: "restock", productId: selected.id, quantity: amount }),
       });
-      const payload = await readApiResponse<{ product: string; added: number; availableStock: number; error?: string }>(response);
+      const payload = await readApiResponse<{ product: string; added: number; availableStock: number; telegramNotified?: boolean; error?: string }>(response);
       if (!response.ok) throw new Error(payload.error || "Restock failed.");
-      setNotice(`${payload.product}: added ${payload.added}. New available stock: ${payload.availableStock}.`);
+      setNotice(payload.telegramNotified === false
+        ? `${payload.product}: stock updated, but the Telegram notification could not be sent.`
+        : `${payload.product}: added ${payload.added}. New available stock: ${payload.availableStock}.`);
       setSelected(null);
       await loadDashboard();
     } catch (err) {
@@ -250,28 +320,38 @@ export default function MilanoMiniAppPage() {
   }
 
   async function manageAction(
-    payload: Record<string, string>,
+    payload: Record<string, unknown>,
     successMessage: string,
     closeDetails = false,
   ) {
-    setBusyAction(payload.orderNumber || payload.reviewId || payload.productId || payload.action || "action");
+    const actionId = String(payload.orderNumber || payload.reviewId || payload.productId || payload.action || "action");
+    setBusyAction(actionId);
     setError("");
+    setOrderActionError("");
     try {
       const response = await fetch("/api/telegram/miniapp", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-telegram-init-data": initData() },
         body: JSON.stringify(payload),
       });
-      const result = await readApiResponse<{ message?: string; error?: string }>(response);
+      const result = await readApiResponse<{ message?: string; error?: string; telegramNotified?: boolean }>(response);
       if (!response.ok) throw new Error(result.error || "Action failed. Please try again.");
       if (closeDetails) setProductDetails(null);
       const refreshed = await loadDashboard();
+      if (refreshed && payload.orderNumber && selectedOrder) {
+        setSelectedOrder(refreshed.orders.find((order) => order.orderNumber === selectedOrder.orderNumber) || null);
+      }
       if (refreshed && productDetails) {
         setProductDetails(refreshed.products.find((product) => product.id === productDetails.id) || null);
       }
-      setNotice(result.message || successMessage);
+      if (payload.action === "order-update") setOrderDraft(null);
+      setNotice(result.telegramNotified === false
+        ? `${result.message || successMessage} Telegram notification could not be sent.`
+        : result.message || successMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed. Please try again.");
+      const message = err instanceof Error ? err.message : "Action failed. Please try again.";
+      setError(message);
+      if (payload.orderNumber) setOrderActionError(message);
     } finally {
       setBusyAction("");
     }
@@ -308,31 +388,49 @@ export default function MilanoMiniAppPage() {
   return (
     <main className="mf-admin">
       <header className="mf-topbar">
-        <div><div className="mf-brand">MILANO <span>FOODS</span></div><p>Inventory management</p></div>
+        <div className="mf-topbar-brand">
+          <button className="mf-sidebar-toggle" aria-label={sidebarOpen ? "Close navigation" : "Open navigation"} onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X size={19}/> : <PanelLeft size={19}/>}</button>
+          <div><div className="mf-brand">MILANO <span>FOODS</span></div><p>ERP MANAGEMENT</p></div>
+        </div>
         <div className="mf-topbar-actions">
           {passwordAuthenticated && <button className="mf-signout" onClick={() => void signOut()} aria-label="Sign out"><LogOut size={16}/> Sign out</button>}
           <button className="mf-refresh" onClick={() => void loadDashboard()} aria-label="Refresh dashboard"><RefreshCw size={18}/></button>
         </div>
       </header>
 
-      <section className="mf-welcome">
-        <div><span className="mf-kicker">MANAGEMENT PANEL</span><h1>Good to see you{dashboard?.operator.name ? `, ${dashboard.operator.name.split(" ")[0]}` : ""}.</h1><p>Keep your products and stock under control.</p></div>
-        <div className="mf-live"><span/> LIVE INVENTORY</div>
-      </section>
+      <div className="mf-app-layout">
+        {sidebarOpen && <button className="mf-sidebar-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}/>}
+        <aside className={`mf-sidebar${sidebarOpen ? " is-open" : ""}`}>
+          <span className="mf-sidebar-label">WORKSPACE</span>
+          <button className={`mf-sidebar-link${activeSection === "overview" ? " is-active" : ""}`} onClick={() => { setActiveSection("overview"); setSidebarOpen(false); }}><LayoutDashboard size={17}/>Overview</button>
+          <button className={`mf-sidebar-link${activeSection === "inventory" ? " is-active" : ""}`} onClick={() => { setActiveSection("inventory"); setSidebarOpen(false); }}><Package size={17}/>Inventory<span className="mf-sidebar-count">{dashboard?.summary.lowStockCount ?? "—"}</span></button>
+          <div className="mf-sidebar-label mf-sidebar-group-label"><span>ORDERS</span><ChevronDown size={13}/></div>
+          {([
+            ["PENDING", "Pending"],
+            ["CONFIRMED", "Confirmed"],
+            ["PREPARING", "Preparing"],
+            ["READY_FOR_PICKUP", "Ready for pickup"],
+            ["OUT_FOR_DELIVERY", "Out for delivery"],
+            ["COMPLETED", "Completed"],
+            ["CANCELLED", "Cancelled"],
+          ] as const).map(([status, label]) => (
+            <button key={status} className={`mf-sidebar-link mf-sidebar-child${activeSection === "orders" && orderStatus === status ? " is-active" : ""}`} onClick={() => { setActiveSection("orders"); setOrderStatus(status); setSidebarOpen(false); }}>
+              <span className={`mf-status-dot is-${status.toLowerCase()}`}/>{label}<span className="mf-sidebar-count">{dashboard?.summary.orderStatusCounts[status] ?? 0}</span>
+            </button>
+          ))}
+          <div className="mf-sidebar-label mf-sidebar-group-label"><span>REVIEWS</span><ChevronDown size={13}/></div>
+          <button className={`mf-sidebar-link mf-sidebar-child${activeSection === "reviews" && reviewStatus === "PENDING" ? " is-active" : ""}`} onClick={() => { setActiveSection("reviews"); setReviewStatus("PENDING"); setSidebarOpen(false); }}><span className="mf-status-dot is-pending"/><span>Awaiting approval</span><span className="mf-sidebar-count">{dashboard?.summary.pendingReviews ?? 0}</span></button>
+          <button className={`mf-sidebar-link mf-sidebar-child${activeSection === "reviews" && reviewStatus === "APPROVED" ? " is-active" : ""}`} onClick={() => { setActiveSection("reviews"); setReviewStatus("APPROVED"); setSidebarOpen(false); }}><span className="mf-status-dot is-approved"/><span>Published</span><span className="mf-sidebar-count">{dashboard?.summary.approvedReviews ?? 0}</span></button>
+          <span className="mf-sidebar-label mf-sidebar-reports-label">ANALYTICS</span>
+          <button className={`mf-sidebar-link${activeSection === "sales" ? " is-active" : ""}`} onClick={() => { setActiveSection("sales"); setSidebarOpen(false); }}><BarChart3 size={17}/>Sales reports</button>
+          <div className="mf-sidebar-footer"><span className="mf-live"><span/> Connected</span><small>{dashboard?.operator.name || "Milano Foods Admin"}</small></div>
+        </aside>
 
-      <nav className="mf-workspace-nav" aria-label="Management pages">
-        {([
-          { id: "overview", label: "Overview", icon: <LayoutDashboard size={16}/>, count: undefined },
-          { id: "inventory", label: "Inventory", icon: <Package size={16}/>, count: dashboard?.summary.lowStockCount },
-          { id: "orders", label: "Orders", icon: <ShoppingBag size={16}/>, count: dashboard?.summary.pendingOrders },
-          { id: "reviews", label: "Reviews", icon: <MessageSquare size={16}/>, count: dashboard?.summary.pendingReviews },
-          { id: "sales", label: "Sales", icon: <BarChart3 size={16}/>, count: undefined },
-        ] as const).map((item) => (
-          <button key={item.id} className={activeSection === item.id ? "mf-workspace-tab is-active" : "mf-workspace-tab"} onClick={() => setActiveSection(item.id)} aria-current={activeSection === item.id ? "page" : undefined}>
-            {item.icon}<span>{item.label}</span>{item.count ? <span className="mf-tab-count">{item.count}</span> : null}
-          </button>
-        ))}
-      </nav>
+        <section className="mf-main-content">
+      <section className="mf-welcome">
+        <div><span className="mf-kicker">MANAGEMENT PANEL</span><h1>{activeSection === "overview" ? `Good to see you${dashboard?.operator.name ? `, ${dashboard.operator.name.split(" ")[0]}` : ""}.` : activeSection === "orders" ? `${orderStatus.replaceAll("_", " ")} orders` : activeSection === "reviews" ? (reviewStatus === "PENDING" ? "Reviews awaiting approval" : "Published reviews") : activeSection === "inventory" ? "Inventory management" : "Sales performance"}</h1><p>{activeSection === "overview" ? "Your business at a glance." : activeSection === "orders" ? "Review customer details, update pending orders, and manage fulfillment." : activeSection === "reviews" ? "Keep customer feedback organized by moderation status." : activeSection === "sales" ? "Real order revenue, units, and product performance." : "Manage products, stock, and retail prices."}</p></div>
+        <div className="mf-live"><span/> LIVE DATA</div>
+      </section>
 
       {notice && <div className="mf-notice" role="status"><CheckCircle2 size={17}/><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div>}
       {error && <div className="mf-error">{error}<button onClick={() => void loadDashboard()}>Retry</button></div>}
@@ -348,16 +446,16 @@ export default function MilanoMiniAppPage() {
       <section className="mf-section mf-overview-section">
         <div className="mf-section-heading"><div><span className="mf-kicker">WORK QUEUE</span><h2>Needs your attention</h2></div><span className="mf-count">Live snapshot</span></div>
         <div className="mf-quick-grid">
-          <button className="mf-quick-card" onClick={() => setActiveSection("orders")}><span className="mf-quick-icon is-orders"><ShoppingBag size={18}/></span><span><strong>{dashboard?.summary.pendingOrders ?? "—"} pending orders</strong><small>Review, confirm or reject orders</small></span><ChevronRight className="mf-quick-arrow" size={16}/></button>
-          <button className="mf-quick-card" onClick={() => setActiveSection("reviews")}><span className="mf-quick-icon is-reviews"><MessageSquare size={18}/></span><span><strong>{dashboard?.summary.pendingReviews ?? "—"} reviews to moderate</strong><small>Approve to publish on the storefront</small></span><ChevronRight className="mf-quick-arrow" size={16}/></button>
+          <button className="mf-quick-card" onClick={() => { setOrderStatus("PENDING"); setActiveSection("orders"); }}><span className="mf-quick-icon is-orders"><ShoppingBag size={18}/></span><span><strong>{dashboard?.summary.pendingOrders ?? "—"} pending orders</strong><small>Review, confirm, edit, or reject orders</small></span><ChevronRight className="mf-quick-arrow" size={16}/></button>
+          <button className="mf-quick-card" onClick={() => { setReviewStatus("PENDING"); setActiveSection("reviews"); }}><span className="mf-quick-icon is-reviews"><MessageSquare size={18}/></span><span><strong>{dashboard?.summary.pendingReviews ?? "—"} reviews to moderate</strong><small>Approve to publish on the storefront</small></span><ChevronRight className="mf-quick-arrow" size={16}/></button>
           <button className="mf-quick-card" onClick={() => { setInventoryFilter("LOW"); setActiveSection("inventory"); }}><span className="mf-quick-icon is-stock"><TriangleAlert size={18}/></span><span><strong>{dashboard?.summary.lowStockCount ?? "—"} products low on stock</strong><small>Check available units and restock</small></span><ChevronRight className="mf-quick-arrow" size={16}/></button>
         </div>
       </section>
 
       <section className="mf-section mf-overview-section">
-        <div className="mf-section-heading"><div><span className="mf-kicker">RECENT ACTIVITY</span><h2>Latest orders</h2></div><button className="mf-text-action" onClick={() => setActiveSection("orders")}>View all orders <CheckCheck size={14}/></button></div>
+        <div className="mf-section-heading"><div><span className="mf-kicker">RECENT ACTIVITY</span><h2>Latest orders</h2></div><button className="mf-text-action" onClick={() => { setOrderStatus("PENDING"); setActiveSection("orders"); }}>View all orders <CheckCheck size={14}/></button></div>
         <div className="mf-orders">
-          {(dashboard?.orders || []).slice(0, 5).map((order) => <button className="mf-overview-order" key={order.orderNumber} onClick={() => { setActiveSection("orders"); setExpandedOrder(order.orderNumber); }}><span><strong>{order.orderNumber}</strong><small>{order.customerName} · {order.itemCount} unit(s)</small></span><span className={order.status === "PENDING" ? "mf-status pending" : "mf-status"}>{order.status.replaceAll("_", " ")}</span></button>)}
+          {(dashboard?.orders || []).slice(0, 5).map((order) => <button className="mf-overview-order" key={order.orderNumber} onClick={() => { setActiveSection("orders"); setOrderStatus(order.status); setSelectedOrder(order); }}><span><strong>{order.orderNumber}</strong><small>{order.customerName} · {order.itemCount} unit(s)</small></span><span className={`mf-status ${order.status === "PENDING" ? "pending" : ""}`}>{order.status.replaceAll("_", " ")}</span></button>)}
           {!loading && !dashboard?.orders.length && <div className="mf-empty">No recent orders yet.</div>}
         </div>
       </section>
@@ -405,13 +503,55 @@ export default function MilanoMiniAppPage() {
         </div>
         {salesError && <div className="mf-error" role="alert">{salesError}<button onClick={() => setSalesReload((attempt) => attempt + 1)}>Retry</button></div>}
         <div className="mf-sales-summary">
-          <article className="mf-sales-total"><span>Total sales</span><strong>{salesLoading && !salesReport ? "—" : `ETB ${(salesReport?.totalRevenue ?? 0).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</strong></article>
+          <article className="mf-sales-total"><span>Order revenue</span><strong>{salesLoading && !salesReport ? "—" : `ETB ${(salesReport?.totalRevenue ?? 0).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</strong>{salesReport && <small className={salesReport.revenueChangePercent !== null && salesReport.revenueChangePercent >= 0 ? "mf-trend-positive" : "mf-trend-negative"}>{salesReport.revenueChangePercent === null ? "No previous-period sales" : `${salesReport.revenueChangePercent >= 0 ? "+" : ""}${salesReport.revenueChangePercent.toFixed(1)}% vs previous period`}</small>}</article>
+          <article><span>Orders</span><strong>{salesLoading && !salesReport ? "—" : (salesReport?.totalOrders ?? 0).toLocaleString("en-ET")}</strong></article>
+          <article><span>Avg. order value</span><strong>{salesLoading && !salesReport ? "—" : `ETB ${(salesReport?.averageOrderValue ?? 0).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</strong></article>
           <article><span>Units sold</span><strong>{salesLoading && !salesReport ? "—" : (salesReport?.totalUnits ?? 0).toLocaleString("en-ET")}</strong></article>
-          <article><span>Products sold</span><strong>{salesLoading && !salesReport ? "—" : (salesReport?.products.length ?? 0).toLocaleString("en-ET")}</strong></article>
         </div>
-        {salesReport && <p className="mf-sales-period">From {new Date(salesReport.start).toLocaleDateString()} through {new Date(salesReport.end).toLocaleDateString()}</p>}
+        {salesReport && <p className="mf-sales-period">From {new Date(salesReport.start).toLocaleDateString("en-ET", { timeZone: "Africa/Addis_Ababa" })} through {new Date(salesReport.end).toLocaleDateString("en-ET", { timeZone: "Africa/Addis_Ababa" })} · Addis Ababa time</p>}
+        {salesReport && <section className="mf-best-sellers" aria-label="Top sales insights">
+          <article className="mf-best-seller-card">
+            <span className="mf-insight-eyebrow">BEST SELLER · BY UNITS</span>
+            {salesReport.bestSeller ? <>
+              <strong>{salesReport.bestSeller.name}</strong>
+              <span>{[salesReport.bestSeller.size, salesReport.bestSeller.category].filter(Boolean).join(" · ")}</span>
+              <div><b>{salesReport.bestSeller.units.toLocaleString("en-ET")}</b><small>units sold · {salesReport.totalUnits ? `${((salesReport.bestSeller.units / salesReport.totalUnits) * 100).toFixed(1)}% of units` : "0% of units"}</small></div>
+            </> : <p>No product sales in this period.</p>}
+          </article>
+          <article className="mf-best-revenue-card">
+            <span className="mf-insight-eyebrow">TOP PRODUCT · BY REVENUE</span>
+            {salesReport.bestRevenueProduct ? <>
+              <strong>{salesReport.bestRevenueProduct.name}</strong>
+              <span>{[salesReport.bestRevenueProduct.size, salesReport.bestRevenueProduct.category].filter(Boolean).join(" · ")}</span>
+              <div><b>ETB {salesReport.bestRevenueProduct.revenue.toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>product revenue</small></div>
+            </> : <p>No product sales in this period.</p>}
+          </article>
+        </section>}
+        <section className="mf-sales-timeline" aria-label="Sales revenue timeline">
+          <div className="mf-sales-timeline-heading"><strong>Revenue over time</strong><span>Order revenue · ETB</span></div>
+          {salesLoading && !salesReport ? <div className="mf-empty">Loading sales timeline…</div> : salesReport?.timeline.length ? <div className="mf-timeline-bars">
+            {salesReport.timeline.map((point) => (
+              <div className="mf-timeline-point" key={point.label} title={`${point.label}: ETB ${point.revenue.toLocaleString("en-ET")} · ${point.orders} order(s)`}>
+                <strong>ETB {point.revenue.toLocaleString("en-ET")}</strong>
+                <div className="mf-timeline-bar-track"><span style={{ height: `${Math.max(3, (point.revenue / maxTimelineRevenue) * 100)}%` }}/></div>
+                <small>{point.label}</small>
+                <small>{point.orders} {point.orders === 1 ? "order" : "orders"}</small>
+              </div>
+            ))}
+          </div> : !salesError ? <div className="mf-empty">No sales recorded in this period.</div> : null}
+        </section>
+        {salesReport?.products.length ? <section className="mf-top-products">
+          <div className="mf-sales-timeline-heading"><strong>Top products by units sold</strong><span>Best 5</span></div>
+          {salesReport.products.slice(0, 5).map((product, index) => (
+            <div className="mf-top-product-row" key={`top-${product.productId ?? product.name}-${index}`}>
+              <span className="mf-product-rank">{index + 1}</span>
+              <div className="mf-top-product-info"><strong>{product.name}</strong><small>{[product.size, product.category].filter(Boolean).join(" · ") || "Historical product"}</small><div className="mf-product-units-track"><span style={{ width: `${(product.units / maxProductUnits) * 100}%` }}/></div></div>
+              <strong className="mf-top-product-units">{product.units.toLocaleString("en-ET")}<small>units</small></strong>
+            </div>
+          ))}
+        </section> : null}
         <div className="mf-sales-list">
-          <div className="mf-sales-list-heading"><span>Product</span><span>Units sold</span><span>Avg. price</span><span>Revenue</span></div>
+          <div className="mf-sales-list-heading"><span>Product</span><span>Units sold</span><span>Avg. price</span><span>Product revenue</span><span>Available stock</span></div>
           {salesLoading && !salesReport && <div className="mf-empty">Loading sales report…</div>}
           {salesReport?.products.map((product) => (
             <article className="mf-sale-row" key={`${product.productId ?? "unlinked"}-${product.name}-${product.size ?? ""}`}>
@@ -419,64 +559,118 @@ export default function MilanoMiniAppPage() {
               <span className="mf-sale-units"><small>Units</small>{product.units.toLocaleString("en-ET")}</span>
               <span className="mf-sale-average"><small>Avg. price</small>ETB {(product.units ? product.revenue / product.units : 0).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <strong className="mf-sale-revenue"><small>Revenue</small>ETB {product.revenue.toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              <span className={`mf-sale-stock${product.availableStock !== null && product.availableStock <= 10 ? " is-low" : ""}`}><small>Available stock</small>{product.availableStock === null ? "—" : product.availableStock.toLocaleString("en-ET")}</span>
             </article>
           ))}
           {!salesLoading && !salesError && salesReport?.products.length === 0 && <div className="mf-empty">No confirmed sales in this period.</div>}
         </div>
-        <p className="mf-sales-note">Revenue and average prices use the prices recorded on each confirmed order, not current product prices.</p>
+        <p className="mf-sales-note">Order revenue and average order value include delivery fees. Product revenue and average product prices use the historical prices recorded on confirmed orders. Stock is current available inventory.</p>
       </section>}
 
       {activeSection === "orders" && <section className="mf-section mf-orders-section">
-        <div className="mf-section-heading"><div><span className="mf-kicker">SALES ACTIVITY</span><h2>Orders</h2></div><span className="mf-count">{filteredOrders.length} shown · {dashboard?.summary.pendingOrders || 0} pending</span></div>
+        <div className="mf-section-heading"><div><span className="mf-kicker">SALES ACTIVITY</span><h2>{orderStatus.replaceAll("_", " ")} orders</h2></div><span className="mf-count">{filteredOrders.length} order(s)</span></div>
         <div className="mf-list-toolbar">
           <label className="mf-search"><Search size={17}/><input value={orderQuery} onChange={(event) => setOrderQuery(event.target.value)} placeholder="Search order, name or phone"/></label>
-          <label className="mf-filter-select"><SlidersHorizontal size={15}/><select value={orderStatus} onChange={(event) => setOrderStatus(event.target.value)} aria-label="Filter orders"><option value="ALL">All statuses</option><option value="PENDING">Pending</option><option value="CONFIRMED">Confirmed</option><option value="PREPARING">Preparing</option><option value="READY_FOR_PICKUP">Ready for pickup</option><option value="OUT_FOR_DELIVERY">Out for delivery</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></label>
         </div>
         <div className="mf-orders">
           {filteredOrders.map((order) => (
-            <article className="mf-order mf-order-expandable" key={order.orderNumber}>
-              <button className="mf-order-summary" onClick={() => setExpandedOrder(expandedOrder === order.orderNumber ? null : order.orderNumber)} aria-expanded={expandedOrder === order.orderNumber}>
+            <button className="mf-order mf-order-summary mf-order-open" key={order.orderNumber} onClick={() => setSelectedOrder(order)}>
                 <div className="mf-order-icon"><ShoppingBag size={18}/></div>
                 <div className="mf-order-main"><strong>{order.orderNumber}</strong><span>{order.customerName} · {order.itemCount} item(s)</span><small><Clock3 size={12}/> {new Date(order.createdAt).toLocaleString()}</small></div>
                 <div className="mf-order-total"><strong>ETB {order.total.toLocaleString("en-ET")}</strong><span className={order.status === "PENDING" ? "mf-status pending" : "mf-status"}>{order.status.replaceAll("_", " ")}</span></div>
-              </button>
-              {expandedOrder === order.orderNumber && (
-                <div className="mf-order-details">
-                  <div className="mf-order-contact"><strong>{order.customerName}</strong><a href={`tel:${order.customerPhone}`}>{order.customerPhone}</a>{order.customerEmail && <span>{order.customerEmail}</span>}</div>
-                  <div><strong>{order.fulfillment === "DELIVERY" ? "Delivery" : "Pickup"}</strong><span>{order.fulfillment === "DELIVERY" ? [order.city, order.deliveryAddress].filter(Boolean).join(" · ") : order.pickupLocation || "Pickup"}</span></div>
-                  <div><strong>Payment</strong><span>{order.paymentPreference}</span></div>
-                  {order.notes && <div><strong>Order notes</strong><span>{order.notes}</span></div>}
-                  <div className="mf-order-items">{order.items.map((item) => <div key={item.id}><span>{item.name}{item.size ? ` · ${item.size}` : ""} × {item.quantity}</span><strong>ETB {item.lineTotal.toLocaleString("en-ET")}</strong></div>)}</div>
-                  <div className="mf-order-total-line"><span>Order total</span><strong>ETB {order.total.toLocaleString("en-ET")}</strong></div>
-                  {order.status === "PENDING" && <div className="mf-order-actions">
-                    <button className="mf-action-confirm" onClick={() => { if (window.confirm(`Confirm ${order.orderNumber}? This deducts the reserved stock.`)) void manageAction({ action: "order-confirm", orderNumber: order.orderNumber }, "Order confirmed."); }} disabled={busyAction === order.orderNumber}>Confirm order</button>
-                    <button className="mf-action-reject" onClick={() => { if (window.confirm(`Reject ${order.orderNumber}? The reserved stock will be released.`)) void manageAction({ action: "order-reject", orderNumber: order.orderNumber }, "Order rejected."); }} disabled={busyAction === order.orderNumber}>Reject</button>
-                  </div>}
-                </div>
-              )}
-            </article>
+            </button>
           ))}
           {!loading && !filteredOrders.length && <div className="mf-empty">No orders match this search and status.</div>}
         </div>
       </section>}
 
       {activeSection === "reviews" && <section className="mf-section mf-reviews-section">
-        <div className="mf-section-heading"><div><span className="mf-kicker">CUSTOMER FEEDBACK</span><h2>Reviews awaiting approval</h2></div><span className="mf-count">{dashboard?.summary.pendingReviews || 0} pending</span></div>
+        <div className="mf-section-heading"><div><span className="mf-kicker">CUSTOMER FEEDBACK</span><h2>{reviewStatus === "PENDING" ? "Reviews awaiting approval" : "Published reviews"}</h2></div><span className="mf-count">{visibleReviews.length} review(s)</span></div>
         <div className="mf-review-list">
-          {(dashboard?.pendingReviews || []).map((review) => (
+          {visibleReviews.map((review) => (
             <article className="mf-review-card" key={review.id}>
               <div className="mf-review-heading"><div><strong>{review.displayName}</strong><span>{review.productName} · Order {review.orderNumber}</span></div><span className="mf-review-rating" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span></div>
               <p>{review.comment}</p>
               <small>{new Date(review.createdAt).toLocaleString()}</small>
-              <div className="mf-review-actions">
-                <button className="mf-action-confirm" onClick={() => void manageAction({ action: "review-approve", reviewId: review.id }, "Review approved and published.")} disabled={busyAction === review.id}>Approve & publish</button>
-                <button className="mf-action-reject" onClick={() => { if (window.confirm("Reject and remove this review?")) void manageAction({ action: "review-reject", reviewId: review.id }, "Review rejected."); }} disabled={busyAction === review.id}>Reject</button>
-              </div>
+              {reviewStatus === "PENDING"
+                ? <div className="mf-review-actions">
+                    <button className="mf-action-confirm" onClick={() => void manageAction({ action: "review-approve", reviewId: review.id }, "Review approved and published.")} disabled={busyAction === review.id}>Approve & publish</button>
+                    <button className="mf-action-reject" onClick={() => { if (window.confirm("Reject and remove this review?")) void manageAction({ action: "review-reject", reviewId: review.id }, "Review rejected."); }} disabled={busyAction === review.id}>Reject</button>
+                  </div>
+                : <span className="mf-review-published">Published</span>}
             </article>
           ))}
-          {!loading && !dashboard?.pendingReviews.length && <div className="mf-empty">No reviews waiting for approval.</div>}
+          {!loading && !visibleReviews.length && <div className="mf-empty">{reviewStatus === "PENDING" ? "No reviews waiting for approval." : "No published reviews yet."}</div>}
         </div>
       </section>}
+        </section>
+      </div>
+
+      {selectedOrder && <div className="mf-modal-backdrop mf-order-modal-backdrop" onClick={() => { if (!orderDraft && !busyAction) setSelectedOrder(null); }}>
+        <section className="mf-modal mf-order-detail-modal" role="dialog" aria-modal="true" aria-labelledby="order-details-title" onClick={(event) => event.stopPropagation()}>
+          <button className="mf-modal-close" onClick={() => { if (!busyAction) { setOrderDraft(null); setSelectedOrder(null); } }} disabled={Boolean(busyAction)}>×</button>
+          {orderDraft ? <form className="mf-order-editor" onSubmit={(event) => {
+            event.preventDefault();
+            if (!selectedOrder) return;
+            void manageAction({
+              action: "order-update",
+              orderNumber: selectedOrder.orderNumber,
+              ...orderDraft,
+              items: orderDraft.items.map((item) => ({ ...item, quantity: Number(item.quantity), unitPrice: Number(item.unitPrice) })),
+            }, "Pending order updated.");
+          }}>
+            <span className="mf-kicker">EDIT PENDING ORDER</span><h2 id="order-details-title">{selectedOrder.orderNumber}</h2>
+            {orderActionError && <p className="mf-order-action-error" role="alert">{orderActionError}</p>}
+            <div className="mf-order-edit-grid">
+              <label>Customer name<input value={orderDraft.customerName} onChange={(event) => setOrderDraft({ ...orderDraft, customerName: event.target.value })} required maxLength={120}/></label>
+              <label>Phone<input value={orderDraft.customerPhone} onChange={(event) => setOrderDraft({ ...orderDraft, customerPhone: event.target.value })} required maxLength={60}/></label>
+              <label>Email<input type="email" value={orderDraft.customerEmail} onChange={(event) => setOrderDraft({ ...orderDraft, customerEmail: event.target.value })} maxLength={180}/></label>
+              <label>Company<input value={orderDraft.company} onChange={(event) => setOrderDraft({ ...orderDraft, company: event.target.value })} maxLength={160}/></label>
+              <label>Fulfillment<select value={orderDraft.fulfillment} onChange={(event) => setOrderDraft({ ...orderDraft, fulfillment: event.target.value as OrderDraft["fulfillment"] })}><option value="DELIVERY">Delivery</option><option value="PICKUP">Pickup</option></select></label>
+              {orderDraft.fulfillment === "DELIVERY" ? <>
+                <label>City<input value={orderDraft.city} onChange={(event) => setOrderDraft({ ...orderDraft, city: event.target.value })} required maxLength={120}/></label>
+                <label className="mf-order-edit-wide">Delivery address<input value={orderDraft.deliveryAddress} onChange={(event) => setOrderDraft({ ...orderDraft, deliveryAddress: event.target.value })} required maxLength={300}/></label>
+              </> : <label className="mf-order-edit-wide">Pickup location<input value={orderDraft.pickupLocation} onChange={(event) => setOrderDraft({ ...orderDraft, pickupLocation: event.target.value })} required maxLength={250}/></label>}
+              <label>Payment preference<input value={orderDraft.paymentPreference} onChange={(event) => setOrderDraft({ ...orderDraft, paymentPreference: event.target.value })} required maxLength={80}/></label>
+              <label>Delivery fee (ETB)<input type="number" min="0" step="0.01" value={orderDraft.deliveryFee} onChange={(event) => setOrderDraft({ ...orderDraft, deliveryFee: event.target.value })} required/></label>
+              <label className="mf-order-edit-wide">Order notes<textarea value={orderDraft.notes} onChange={(event) => setOrderDraft({ ...orderDraft, notes: event.target.value })} maxLength={500}/></label>
+            </div>
+            <div className="mf-edit-items-heading"><strong>Order items</strong><button type="button" className="mf-add-item" onClick={() => setOrderDraft({ ...orderDraft, items: [...orderDraft.items, { productId: "", quantity: "1", unitPrice: "0" }] })}><Plus size={14}/> Add item</button></div>
+            <div className="mf-edit-items">{orderDraft.items.map((item, index) => {
+              const product = dashboard?.products.find((candidate) => candidate.id === item.productId);
+              return <div className="mf-edit-item" key={`${item.productId}-${index}`}>
+                <label>Product<select value={item.productId} onChange={(event) => {
+                  const selectedProduct = dashboard?.products.find((candidate) => candidate.id === event.target.value);
+                  const items = [...orderDraft.items];
+                  items[index] = { ...items[index], productId: event.target.value, unitPrice: selectedProduct ? String(selectedProduct.price) : items[index].unitPrice };
+                  setOrderDraft({ ...orderDraft, items });
+                }} required><option value="">Select a product</option>{dashboard?.products.map((candidate) => <option key={candidate.id} value={candidate.id} disabled={orderDraft.items.some((other, otherIndex) => otherIndex !== index && other.productId === candidate.id)}>{candidate.name}{candidate.size ? ` · ${candidate.size}` : ""} ({candidate.availableStock} available)</option>)}</select></label>
+                <label>Qty<input type="number" min="1" max="99" step="1" value={item.quantity} onChange={(event) => { const items = [...orderDraft.items]; items[index] = { ...items[index], quantity: event.target.value }; setOrderDraft({ ...orderDraft, items }); }} required/></label>
+                <label>Unit price<input type="number" min="0.01" step="0.01" value={item.unitPrice} onChange={(event) => { const items = [...orderDraft.items]; items[index] = { ...items[index], unitPrice: event.target.value }; setOrderDraft({ ...orderDraft, items }); }} required/></label>
+                <button type="button" className="mf-remove-item" aria-label={`Remove ${product?.name || "item"}`} onClick={() => setOrderDraft({ ...orderDraft, items: orderDraft.items.filter((_, itemIndex) => itemIndex !== index) })} disabled={orderDraft.items.length === 1}><Trash2 size={15}/></button>
+              </div>;
+            })}</div>
+            <div className="mf-order-draft-total"><span>Estimated order total</span><strong>ETB {draftOrderTotal.toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+            <div className="mf-order-editor-actions"><button type="button" className="mf-cancel" onClick={() => setOrderDraft(null)} disabled={Boolean(busyAction)}>Cancel edit</button><button type="submit" className="mf-confirm" disabled={Boolean(busyAction)}>{busyAction ? "Saving…" : "Save order changes"}</button></div>
+          </form> : <>
+            <span className="mf-kicker">ORDER DETAILS · {new Date(selectedOrder.createdAt).toLocaleString()}</span><h2 id="order-details-title">{selectedOrder.orderNumber}</h2>
+            {orderActionError && <p className="mf-order-action-error" role="alert">{orderActionError}</p>}
+            <span className={`mf-status-badge ${selectedOrder.status.toLowerCase()}`}>{selectedOrder.status.replaceAll("_", " ")}</span>
+            <div className="mf-order-detail-sections">
+              <section><h3>Customer</h3><strong>{selectedOrder.customerName}</strong>{selectedOrder.company && <span>{selectedOrder.company}</span>}<a href={`tel:${selectedOrder.customerPhone}`}>{selectedOrder.customerPhone}</a>{selectedOrder.customerEmail && <span>{selectedOrder.customerEmail}</span>}</section>
+              <section><h3>{selectedOrder.fulfillment === "DELIVERY" ? "Delivery" : "Pickup"}</h3><span>{selectedOrder.fulfillment === "DELIVERY" ? [selectedOrder.city, selectedOrder.deliveryAddress].filter(Boolean).join(" · ") : selectedOrder.pickupLocation || "Pickup"}</span><span>Payment: {selectedOrder.paymentPreference}</span></section>
+              {selectedOrder.notes && <section><h3>Notes</h3><span>{selectedOrder.notes}</span></section>}
+            </div>
+            <div className="mf-order-detail-items"><h3>Items</h3>{selectedOrder.items.map((item) => <div key={item.id}><span>{item.name}{item.size ? ` · ${item.size}` : ""}<small>{item.quantity} × ETB {item.unitPrice.toLocaleString("en-ET")}</small></span><strong>ETB {item.lineTotal.toLocaleString("en-ET")}</strong></div>)}</div>
+            <div className="mf-order-detail-totals"><span>Delivery fee <strong>ETB {selectedOrder.deliveryFee.toLocaleString("en-ET")}</strong></span><span>Order total <strong>ETB {selectedOrder.total.toLocaleString("en-ET")}</strong></span></div>
+            {selectedOrder.status === "PENDING" && <div className="mf-order-actions mf-order-modal-actions">
+              <button className="mf-edit-order" onClick={() => beginOrderEdit(selectedOrder)}><SquarePen size={15}/> Edit order</button>
+              <button className="mf-action-confirm" onClick={() => { if (window.confirm(`Confirm ${selectedOrder.orderNumber}? This deducts the reserved stock.`)) void manageAction({ action: "order-confirm", orderNumber: selectedOrder.orderNumber }, "Order confirmed."); }} disabled={busyAction === selectedOrder.orderNumber}>Confirm order</button>
+              <button className="mf-action-reject" onClick={() => { if (window.confirm(`Reject ${selectedOrder.orderNumber}? The reserved stock will be released.`)) void manageAction({ action: "order-reject", orderNumber: selectedOrder.orderNumber }, "Order rejected."); }} disabled={busyAction === selectedOrder.orderNumber}>Reject</button>
+            </div>}
+          </>}
+        </section>
+      </div>}
 
       {productDetails && <div className="mf-modal-backdrop" onClick={() => setProductDetails(null)}><section className="mf-modal mf-product-detail-modal" role="dialog" aria-modal="true" aria-labelledby="product-details-title" onClick={(event) => event.stopPropagation()}>
         <button className="mf-modal-close" onClick={() => setProductDetails(null)}>×</button>

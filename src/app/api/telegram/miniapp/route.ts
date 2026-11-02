@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { processOrderAction, processReviewAction } from "@/lib/order-actions";
+import { processOrderAction, processReviewAction, updatePendingOrder } from "@/lib/order-actions";
 import { releaseExpiredReservations } from "@/lib/stock-reservations";
 import { getTelegramMiniAppUser } from "@/lib/telegram-miniapp-auth";
+import { sendTelegramNotification } from "@/lib/telegram-notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
       { maxWait: 10_000, timeout: 30_000 },
     );
 
-    const [products, orders, pendingReviews] = await Promise.all([
+    const [products, orders, pendingReviews, approvedReviews] = await Promise.all([
         prisma.product.findMany({
           where: { isActive: true },
           include: {
@@ -32,7 +33,6 @@ export async function GET(request: NextRequest) {
         }),
         prisma.order.findMany({
           orderBy: { createdAt: "desc" },
-          take: 50,
           include: { items: true },
         }),
         prisma.productReview.findMany({
@@ -42,12 +42,23 @@ export async function GET(request: NextRequest) {
             order: { select: { orderNumber: true } },
           },
           orderBy: { createdAt: "asc" },
-          take: 50,
+        }),
+        prisma.productReview.findMany({
+          where: { isApproved: true, orderId: { not: null } },
+          include: {
+            product: { select: { name: true } },
+            order: { select: { orderNumber: true } },
+          },
+          orderBy: { createdAt: "desc" },
         }),
       ]);
 
     const totalUnits = products.reduce((sum, product) => sum + product.stock, 0);
     const reservedUnits = products.reduce((sum, product) => sum + product.reservedStock, 0);
+    const orderStatusCounts = orders.reduce<Record<string, number>>((counts, order) => {
+      counts[order.status] = (counts[order.status] ?? 0) + 1;
+      return counts;
+    }, {});
 
     return NextResponse.json({
       operator: {
@@ -61,7 +72,9 @@ export async function GET(request: NextRequest) {
         availableUnits: totalUnits - reservedUnits,
         lowStockCount: products.filter((p) => p.stock - p.reservedStock <= 10).length,
         pendingOrders: orders.filter((order) => order.status === "PENDING").length,
+        orderStatusCounts,
         pendingReviews: pendingReviews.length,
+        approvedReviews: approvedReviews.length,
       },
       products: products.map((product) => ({
         id: product.id,
@@ -97,16 +110,19 @@ export async function GET(request: NextRequest) {
         customerName: order.customerName,
         customerPhone: order.customerPhone,
         customerEmail: order.customerEmail,
+        company: order.company,
         fulfillment: order.fulfillment,
         city: order.city,
         deliveryAddress: order.deliveryAddress,
         pickupLocation: order.pickupLocation,
         paymentPreference: order.paymentPreference,
         notes: order.notes,
+        deliveryFee: Number(order.deliveryFee),
         total: Number(order.total),
         status: order.status,
         items: order.items.map((item) => ({
           id: item.id,
+          productId: item.productId,
           name: item.productName,
           size: item.productSize,
           quantity: item.quantity,
@@ -117,6 +133,15 @@ export async function GET(request: NextRequest) {
         createdAt: order.createdAt.toISOString(),
       })),
       pendingReviews: pendingReviews.map((review) => ({
+        id: review.id,
+        productName: review.product.name,
+        displayName: review.displayName,
+        rating: review.rating,
+        comment: review.comment,
+        orderNumber: review.order?.orderNumber || "",
+        createdAt: review.createdAt.toISOString(),
+      })),
+      approvedReviews: approvedReviews.map((review) => ({
         id: review.id,
         productName: review.product.name,
         displayName: review.displayName,
@@ -153,7 +178,37 @@ export async function POST(request: NextRequest) {
         action === "order-confirm" ? "confirm" : "reject",
         operator.authMethod === "telegram" ? String(operator.id) : "admin",
       );
-      return NextResponse.json(result, { status: result.ok ? 200 : 409 });
+      if (!result.ok) return NextResponse.json(result, { status: 409 });
+
+      const actionLabel = action === "order-confirm" ? "CONFIRMED" : "REJECTED";
+      const telegramNotified = await sendTelegramNotification([
+        `MINI APP — ORDER ${actionLabel}`,
+        `Order: ${orderNumber}`,
+        `By: ${operator.first_name || operator.username || "Admin"}`,
+        result.message,
+      ].join("\n"));
+      return NextResponse.json({ ...result, telegramNotified });
+    }
+
+    if (action === "order-update") {
+      const orderNumber = typeof body?.orderNumber === "string" ? body.orderNumber.trim() : "";
+      if (!orderNumber) {
+        return NextResponse.json({ error: "Select a valid order." }, { status: 400 });
+      }
+
+      const updated = await updatePendingOrder(orderNumber, body);
+      const telegramNotified = await sendTelegramNotification([
+        "MINI APP — PENDING ORDER EDITED",
+        `Order: ${orderNumber}`,
+        `Total: ETB ${updated.previousTotal.toLocaleString("en-ET")} → ETB ${updated.total.toLocaleString("en-ET")}`,
+        `Items: ${updated.products.join(", ")}`,
+        `By: ${operator.first_name || operator.username || "Admin"}`,
+      ].join("\n"));
+      return NextResponse.json({
+        ok: true,
+        message: `Order ${orderNumber} updated. Total: ETB ${updated.total.toLocaleString("en-ET")}.`,
+        telegramNotified,
+      });
     }
 
     if (action === "review-approve" || action === "review-reject") {
@@ -166,7 +221,16 @@ export async function POST(request: NextRequest) {
         reviewId,
         action === "review-approve" ? "approve" : "reject",
       );
-      return NextResponse.json(result, { status: result.ok ? 200 : 409 });
+      if (!result.ok) return NextResponse.json(result, { status: 409 });
+
+      const actionLabel = action === "review-approve" ? "APPROVED & PUBLISHED" : "REJECTED";
+      const telegramNotified = await sendTelegramNotification([
+        `MINI APP — REVIEW ${actionLabel}`,
+        `Review ID: ${reviewId}`,
+        `By: ${operator.first_name || operator.username || "Admin"}`,
+        result.message,
+      ].join("\n"));
+      return NextResponse.json({ ...result, telegramNotified });
     }
 
     const productId = typeof body?.productId === "string" ? body.productId : "";
@@ -198,10 +262,25 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        return { name: updatedProduct.name, price: Number(updatedProduct.price) };
+        return {
+          name: updatedProduct.name,
+          previousPrice: Number(product.price),
+          price: Number(updatedProduct.price),
+        };
       }, { maxWait: 10_000, timeout: 30_000 });
 
-      return NextResponse.json({ ok: true, message: `${updated.name} price updated to ETB ${updated.price.toLocaleString("en-ET")}.`, price: updated.price });
+      const telegramNotified = await sendTelegramNotification([
+        "MINI APP — PRODUCT PRICE UPDATED",
+        `Product: ${updated.name}`,
+        `Price: ETB ${updated.previousPrice.toLocaleString("en-ET")} → ETB ${updated.price.toLocaleString("en-ET")}`,
+        `By: ${operator.first_name || operator.username || "Admin"}`,
+      ].join("\n"));
+      return NextResponse.json({
+        ok: true,
+        message: `${updated.name} price updated to ETB ${updated.price.toLocaleString("en-ET")}.`,
+        price: updated.price,
+        telegramNotified,
+      });
     }
 
     const quantity = Number(body?.quantity);
@@ -254,6 +333,14 @@ export async function POST(request: NextRequest) {
       };
     }, { maxWait: 10_000, timeout: 30_000 });
 
+    const telegramNotified = await sendTelegramNotification([
+      action === "restock" ? "MINI APP — PRODUCT RESTOCKED" : "MINI APP — PRODUCT MARKED OUT OF STOCK",
+      `Product: ${updated.product.name}`,
+      `Stock: ${updated.previousStock} → ${updated.product.stock}`,
+      action === "restock" ? `Units added: ${quantity}` : "",
+      `By: ${operator.first_name || operator.username || "Admin"}`,
+    ].filter(Boolean).join("\n"));
+
     return NextResponse.json({
       ok: true,
       product: updated.product.name,
@@ -263,10 +350,43 @@ export async function POST(request: NextRequest) {
       reservedStock: updated.product.reservedStock,
       availableStock: updated.product.stock - updated.product.reservedStock,
       updatedBy: operator.id,
+      telegramNotified,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "PRODUCT_NOT_FOUND") {
       return NextResponse.json({ error: "Product not found or inactive." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "ORDER_NOT_FOUND") {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "ORDER_NOT_EDITABLE") {
+      return NextResponse.json({ error: "Only pending orders can be edited." }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === "ORDER_RESERVATION_EXPIRED") {
+      return NextResponse.json({ error: "This order's stock reservation has expired. Refresh orders before editing." }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === "INVALID_ORDER_EDIT") {
+      return NextResponse.json({ error: "Check the customer details, fulfillment, prices, and order items." }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === "DUPLICATE_ORDER_PRODUCT") {
+      return NextResponse.json({ error: "Each product can appear only once. Combine its quantity into one line." }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === "ORDER_PRODUCT_NOT_FOUND") {
+      return NextResponse.json({ error: "One of the selected products is unavailable." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message.startsWith("ORDER_PRODUCT_UNAVAILABLE:")) {
+      return NextResponse.json({ error: `${error.message.split(":")[1]} is no longer available for additional units.` }, { status: 409 });
+    }
+    if (error instanceof Error && error.message.startsWith("ORDER_INSUFFICIENT_STOCK:")) {
+      const [, productName, available] = error.message.split(":");
+      return NextResponse.json({ error: `Not enough stock for ${productName}. Only ${available} additional unit(s) are available.` }, { status: 409 });
+    }
+    if (error instanceof Error && error.message.startsWith("ORDER_RESERVATION_MISMATCH:")) {
+      console.error("Order edit found inconsistent reserved stock:", error.message);
+      return NextResponse.json({ error: "Reserved stock could not be reconciled. No order changes were saved." }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === "ORDER_TOTAL_TOO_LARGE") {
+      return NextResponse.json({ error: "The order total is too large." }, { status: 400 });
     }
     if (error instanceof Error && error.message === "STOCK_RESERVED") {
       return NextResponse.json({ error: "Cannot mark out of stock while units are reserved for pending orders." }, { status: 409 });
