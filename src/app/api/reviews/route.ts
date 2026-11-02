@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramNotification } from "@/lib/telegram-notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,47 +146,21 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    let telegramNotified = false;
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-
-    if (!token || !chatId) {
-      console.error("Review saved but Telegram review notification is not configured.");
-    } else {
-      try {
-        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: [
-              "NEW PRODUCT REVIEW — APPROVAL REQUIRED",
-              `Review: ${review.id}`,
-              `Order: ${orderNumber}`,
-              `Customer: ${order.customerName}`,
-              `Product: ${product.name}`,
-              `Rating: ${rating}/5`,
-              "",
-              comment,
-            ].join("\n"),
-            reply_markup: {
-              inline_keyboard: [[
-                { text: "Approve and publish", callback_data: `review:approve:${review.id}` },
-                { text: "Reject", callback_data: `review:reject:${review.id}` },
-              ]],
-            },
-          }),
-          signal: AbortSignal.timeout(8000),
-        });
-        const result = await response.json();
-        telegramNotified = response.ok && result.ok === true;
-        if (!telegramNotified) {
-          console.error("Telegram review notification failed:", result.description || response.status);
-        }
-      } catch (error) {
-        console.error("Telegram review notification could not be delivered:", error);
-      }
-    }
+    const telegramNotified = await sendTelegramNotification([
+      "NEW PRODUCT REVIEW — APPROVAL REQUIRED",
+      `Review: ${review.id}`,
+      `Order: ${orderNumber}`,
+      `Customer: ${order.customerName}`,
+      `Product: ${product.name}`,
+      `Rating: ${rating}/5`,
+      "",
+      comment,
+    ].join("\n"), {
+      inline_keyboard: [[
+        { text: "Approve and publish", callback_data: `review:approve:${review.id}` },
+        { text: "Reject", callback_data: `review:reject:${review.id}` },
+      ]],
+    });
 
     return NextResponse.json(
       { message: telegramNotified

@@ -4,6 +4,7 @@ import {
   createMiniAppSession,
   miniAppSessionCookie,
 } from "@/lib/telegram-miniapp-auth";
+import { sendTelegramNotification } from "@/lib/telegram-notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
       path: "/api/telegram/miniapp",
       maxAge: session.maxAge,
     });
+    await sendTelegramNotification("MINI APP — Admin signed in.");
     return response;
   } catch (error) {
     console.error("Could not create Mini App login session:", error);
