@@ -11,7 +11,7 @@ const categories = [
   {
     name: "Mojito Syrups",
     slug: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
     description: "Bright, fruit-inspired flavors for refreshing drinks.",
   },
   {
@@ -38,7 +38,7 @@ const products = [
     size: "750 ml",
     badge: "Bestseller",
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Strawberry Mojito Syrup",
@@ -47,7 +47,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Pineapple Mojito Syrup",
@@ -56,7 +56,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Mango Mojito Syrup",
@@ -65,7 +65,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Lemon Mojito Syrup",
@@ -74,7 +74,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Tropical Mojito Syrup",
@@ -83,7 +83,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Ice Cream Powder",
@@ -112,7 +112,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Orange Mojito Syrup",
@@ -121,7 +121,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Coconut Mojito Syrup",
@@ -130,7 +130,7 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
     name: "Milano Special Syrup",
@@ -139,7 +139,7 @@ const products = [
     size: "750 ml",
     badge: "Signature",
     category: "mojito-syrups",
-    imageUrl: "/images/bottle.png",
+    imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
 ];
 

@@ -78,7 +78,7 @@ export default function CartPage() {
                     <div className="cart-item" key={item.id}>
                       <Image
                         className={
-                          item.image === "/images/bottle.png"
+                          item.image === "/images/milano-mint-bottle-cutout.png"
                             ? "cart-item-image-bottle"
                             : ""
                         }
