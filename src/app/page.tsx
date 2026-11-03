@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AboutPreview, BusinessBanner, CategorySection, FeaturedProducts, RecipeFeature } from "@/components/sections";
-import { ProductReviewsSection } from "@/components/product-reviews-section";
 
 /* ------------------------------------------------------------------ */
 /* 1. HERO SLIDES                                                      */
