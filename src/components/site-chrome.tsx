@@ -6,7 +6,7 @@ import { LanguageSelector } from "./language-selector";
 import { useStore } from "./store-provider";
 export function SiteHeader(){
  const {count}=useStore(); const [open,setOpen]=useState(false);
- const links=[["Home","/"],["Products","/products"],["Recipes","/recipes"],["About Us","/about"],["Contact","/contact"]];
+ const links=[["Home","/"],["Products","/products"],["Product Guide","/product-guide"],["Recipes","/recipes"],["About Us","/about"],["Contact","/contact"]];
  return <header className="site-header"><div className="wrap header-inner">
   <Link href="/" className="brand" aria-label="Milano Foods home"><span className="brand-main">Milano</span><span className="brand-sub">FOODS</span></Link>
   <nav className="nav">{links.map(([label,href])=><Link key={href} href={href}>{label}</Link>)}</nav>

@@ -16,7 +16,6 @@ import { AboutPreview, BusinessBanner, CategorySection, FeaturedProducts, Recipe
 
 type HeroSlide = {
   id: string;
-  guideId: string;
   name: string; // short label on the slide bar (desktop)
   mark: string; // the big outlined word behind the product; keep it to 5 letters or fewer
   lines: [string, string]; // headline: first line upright, second line italic in the accent color
@@ -32,58 +31,9 @@ type HeroSlide = {
   accent: string; // italic headline line and progress bar; keep it readable on the wash
 };
 
-type FamilyGuide = {
-  id: string;
-  name: string;
-  image: string;
-  intro: string;
-  howItWorks: string;
-  howToUse: string;
-  ideas: string[];
-  fallbackFlavors: string[];
-};
-
-const familyGuides: FamilyGuide[] = [
-  {
-    id: "mojito-syrups",
-    name: "Mojito Syrup",
-    image: "/images/milano-mint-bottle-cutout.png",
-    intro: "A colorful syrup range for refreshing drinks, café menus, and easy-to-make favorites.",
-    howItWorks: "Choose a flavor, then use the syrup as the flavor base for your drink. Serving amounts can vary, so follow the product label and adjust to taste.",
-    howToUse: "Add to a glass or jug with ice, citrus or fruit, and still or sparkling water. Stir, taste, and garnish.",
-    ideas: ["Mocktails", "Lemonades", "Fruit coolers"],
-    fallbackFlavors: [
-      "Mint", "Pineapple", "Lemon", "Watermelon", "Mango", "Peach", "Coconut",
-      "Orange", "Kiwi", "Strawberry", "Passion Fruit", "Tropical Blue",
-      "Tropical", "Cinnamon", "Milano Special",
-    ],
-  },
-  {
-    id: "ice-cream-powders",
-    name: "Ice Cream Powder",
-    image: "/images/milanoice.png",
-    intro: "A versatile powder range for making creamy scoops and frozen desserts at home or for a menu.",
-    howItWorks: "Select a flavor and hard- or soft-serve style where available. Prepare with the ingredients and equipment specified on the pack.",
-    howToUse: "Measure and mix according to the product directions, then freeze or process using the instructions for your chosen style.",
-    ideas: ["Scoops and cones", "Soft serve", "Dessert menus"],
-    fallbackFlavors: ["Strawberry", "Chocolate", "Mango", "Vanilla"],
-  },
-  {
-    id: "milkshake-powders",
-    name: "Milkshake Powder",
-    image: "/images/milanomilk.png",
-    intro: "A smooth, easy-to-prepare shake base for café-style drinks and creamy treats.",
-    howItWorks: "Choose from the flavors and formats currently available. Use the serving guidance on the package for a consistent result.",
-    howToUse: "Blend the measured product with chilled milk as directed on the pack. Add ice or toppings to make it your own.",
-    ideas: ["Classic milkshakes", "Blended drinks", "Café specials"],
-    fallbackFlavors: [],
-  },
-];
-
 const heroSlides: HeroSlide[] = [
   {
     id: "mojito-syrup",
-    guideId: "mojito-syrups",
     name: "Mojito Syrup",
     mark: "Mojito",
     lines: ["Bright flavors,", "ready to pour."],
@@ -100,7 +50,6 @@ const heroSlides: HeroSlide[] = [
   },
   {
     id: "ice-cream-powder",
-    guideId: "ice-cream-powders",
     name: "Ice Cream Powder",
     mark: "Cream",
     lines: ["Make every scoop", "a Milano moment."],
@@ -117,7 +66,6 @@ const heroSlides: HeroSlide[] = [
   },
   {
     id: "milkshake-powder",
-    guideId: "milkshake-powders",
     name: "Milkshake Powder",
     mark: "Shake",
     lines: ["Make it creamy,", "make it Milano."],
@@ -911,7 +859,7 @@ function HeroCarousel() {
                   <Link href={s.href} className="hc-btn hc-btn-solid">
                     {s.cta}
                   </Link>
-                  <Link href={`#${s.guideId}`} className="hc-btn hc-btn-quiet">
+                  <Link href="/product-guide" className="hc-btn hc-btn-quiet">
                     Flavor &amp; use guide
                   </Link>
                 </div>
@@ -1008,124 +956,6 @@ function HeroCarousel() {
   );
 }
 
-type GuideProduct = {
-  categorySlug: string;
-  flavor?: string | null;
-  variantType?: string | null;
-  size?: string | null;
-};
-
-function ProductFamilyGuide() {
-  const [products, setProducts] = useState<GuideProduct[]>([]);
-  const [loadError, setLoadError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadProducts() {
-      try {
-        const response = await fetch("/api/products", { cache: "no-store" });
-        if (!response.ok) throw new Error(`Products request failed (${response.status})`);
-        const result: unknown = await response.json();
-        if (!Array.isArray(result)) throw new Error("Products response was not a list");
-
-        const validProducts = result.filter(
-          (item): item is GuideProduct =>
-            typeof item === "object" &&
-            item !== null &&
-            "categorySlug" in item &&
-            typeof item.categorySlug === "string",
-        );
-        if (active) setProducts(validProducts);
-      } catch (error) {
-        console.error("Unable to load product family details:", error);
-        if (active) setLoadError(true);
-      }
-    }
-
-    void loadProducts();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return (
-    <section className="family-guide-section" aria-labelledby="family-guide-title">
-      <div className="wrap">
-        <div className="family-guide-heading">
-          <span className="eyebrow">Find your Milano favorite</span>
-          <h2 id="family-guide-title">Flavor, prep &amp; inspiration</h2>
-          <p>Get to know our three product families, see available options, and find simple ways to enjoy them.</p>
-        </div>
-        <div className="family-guide-grid">
-          {familyGuides.map((family) => {
-            const familyProducts = products.filter((product) => product.categorySlug === family.id);
-            const flavors = [...new Set(familyProducts.map((product) => product.flavor?.trim()).filter((value): value is string => Boolean(value)))];
-            const styles = [...new Set(familyProducts.map((product) => product.variantType?.trim()).filter((value): value is string => Boolean(value)))];
-            const sizes = [...new Set(familyProducts.map((product) => product.size?.trim()).filter((value): value is string => Boolean(value)))];
-            const shownFlavors = flavors.length > 0 ? flavors : family.fallbackFlavors;
-
-            return (
-              <article className={`family-guide-card family-guide-${family.id}`} id={family.id} key={family.id}>
-                <div className="family-guide-image">
-                  <Image src={family.image} alt={family.name} fill sizes="(max-width: 860px) 100vw, 33vw" />
-                </div>
-                <div className="family-guide-copy">
-                  <h3>{family.name}</h3>
-                  <p className="family-guide-intro">{family.intro}</p>
-                  <div className="family-guide-detail">
-                    <h4>How it works</h4>
-                    <p>{family.howItWorks}</p>
-                  </div>
-                  <div className="family-guide-detail">
-                    <h4>How to use</h4>
-                    <p>{family.howToUse}</p>
-                  </div>
-                  {shownFlavors.length > 0 && (
-                    <div className="family-guide-options">
-                      <h4>{flavors.length > 0 ? "Available flavors" : "Flavor ideas"}</h4>
-                      <ul className="family-guide-chips" aria-label={`${family.name} flavors`}>
-                        {shownFlavors.map((flavor) => <li key={flavor}>{flavor}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {styles.length > 0 && (
-                    <div className="family-guide-options">
-                      <h4>Styles</h4>
-                      <ul className="family-guide-chips">
-                        {styles.map((style) => <li key={style}>{style}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {sizes.length > 0 && (
-                    <div className="family-guide-options">
-                      <h4>Pack sizes</h4>
-                      <ul className="family-guide-chips">
-                        {sizes.map((size) => <li key={size}>{size}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {loadError && (
-                    <p className="family-guide-note">Showing flavor ideas; check the product page for current availability.</p>
-                  )}
-                  <div className="family-guide-ideas">
-                    <span>Try it in</span>
-                    {family.ideas.map((idea) => <span className="family-guide-idea" key={idea}>{idea}</span>)}
-                  </div>
-                  <Link className="family-guide-link" href={`/products?category=${family.id}`}>
-                    Explore {family.name}
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* 4. PAGE                                                             */
 /* ------------------------------------------------------------------ */
@@ -1137,7 +967,6 @@ export default function HomePage() {
 
       <div id="discover">
         <CategorySection />
-        <ProductFamilyGuide />
         <FeaturedProducts />
         <RecipeFeature />
         <AboutPreview />
