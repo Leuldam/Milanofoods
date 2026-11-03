@@ -28,25 +28,35 @@ export type AggregateProduct = {
 
 export type ProductAvgAggregateOutputType = {
   price: runtime.Decimal | null
+  minimumOrderQuantity: number | null
+  promotionDiscountPercent: runtime.Decimal | null
   stock: number | null
   reservedStock: number | null
 }
 
 export type ProductSumAggregateOutputType = {
   price: runtime.Decimal | null
+  minimumOrderQuantity: number | null
+  promotionDiscountPercent: runtime.Decimal | null
   stock: number | null
   reservedStock: number | null
 }
 
 export type ProductMinAggregateOutputType = {
   id: string | null
+  sku: string | null
   name: string | null
   slug: string | null
   description: string | null
   price: runtime.Decimal | null
   imageUrl: string | null
   size: string | null
+  flavor: string | null
+  variantType: string | null
   badge: string | null
+  minimumOrderQuantity: number | null
+  promotionEnabled: boolean | null
+  promotionDiscountPercent: runtime.Decimal | null
   categoryId: string | null
   stock: number | null
   reservedStock: number | null
@@ -58,13 +68,19 @@ export type ProductMinAggregateOutputType = {
 
 export type ProductMaxAggregateOutputType = {
   id: string | null
+  sku: string | null
   name: string | null
   slug: string | null
   description: string | null
   price: runtime.Decimal | null
   imageUrl: string | null
   size: string | null
+  flavor: string | null
+  variantType: string | null
   badge: string | null
+  minimumOrderQuantity: number | null
+  promotionEnabled: boolean | null
+  promotionDiscountPercent: runtime.Decimal | null
   categoryId: string | null
   stock: number | null
   reservedStock: number | null
@@ -76,13 +92,20 @@ export type ProductMaxAggregateOutputType = {
 
 export type ProductCountAggregateOutputType = {
   id: number
+  sku: number
   name: number
   slug: number
   description: number
   price: number
   imageUrl: number
+  galleryImageUrls: number
   size: number
+  flavor: number
+  variantType: number
   badge: number
+  minimumOrderQuantity: number
+  promotionEnabled: number
+  promotionDiscountPercent: number
   categoryId: number
   stock: number
   reservedStock: number
@@ -96,25 +119,35 @@ export type ProductCountAggregateOutputType = {
 
 export type ProductAvgAggregateInputType = {
   price?: true
+  minimumOrderQuantity?: true
+  promotionDiscountPercent?: true
   stock?: true
   reservedStock?: true
 }
 
 export type ProductSumAggregateInputType = {
   price?: true
+  minimumOrderQuantity?: true
+  promotionDiscountPercent?: true
   stock?: true
   reservedStock?: true
 }
 
 export type ProductMinAggregateInputType = {
   id?: true
+  sku?: true
   name?: true
   slug?: true
   description?: true
   price?: true
   imageUrl?: true
   size?: true
+  flavor?: true
+  variantType?: true
   badge?: true
+  minimumOrderQuantity?: true
+  promotionEnabled?: true
+  promotionDiscountPercent?: true
   categoryId?: true
   stock?: true
   reservedStock?: true
@@ -126,13 +159,19 @@ export type ProductMinAggregateInputType = {
 
 export type ProductMaxAggregateInputType = {
   id?: true
+  sku?: true
   name?: true
   slug?: true
   description?: true
   price?: true
   imageUrl?: true
   size?: true
+  flavor?: true
+  variantType?: true
   badge?: true
+  minimumOrderQuantity?: true
+  promotionEnabled?: true
+  promotionDiscountPercent?: true
   categoryId?: true
   stock?: true
   reservedStock?: true
@@ -144,13 +183,20 @@ export type ProductMaxAggregateInputType = {
 
 export type ProductCountAggregateInputType = {
   id?: true
+  sku?: true
   name?: true
   slug?: true
   description?: true
   price?: true
   imageUrl?: true
+  galleryImageUrls?: true
   size?: true
+  flavor?: true
+  variantType?: true
   badge?: true
+  minimumOrderQuantity?: true
+  promotionEnabled?: true
+  promotionDiscountPercent?: true
   categoryId?: true
   stock?: true
   reservedStock?: true
@@ -249,13 +295,20 @@ export type ProductGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type ProductGroupByOutputType = {
   id: string
+  sku: string
   name: string
   slug: string
   description: string | null
   price: runtime.Decimal
   imageUrl: string | null
+  galleryImageUrls: string[]
   size: string | null
+  flavor: string | null
+  variantType: string | null
   badge: string | null
+  minimumOrderQuantity: number
+  promotionEnabled: boolean
+  promotionDiscountPercent: runtime.Decimal | null
   categoryId: string
   stock: number
   reservedStock: number
@@ -290,13 +343,20 @@ export type ProductWhereInput = {
   OR?: Prisma.ProductWhereInput[]
   NOT?: Prisma.ProductWhereInput | Prisma.ProductWhereInput[]
   id?: Prisma.StringFilter<"Product"> | string
+  sku?: Prisma.StringFilter<"Product"> | string
   name?: Prisma.StringFilter<"Product"> | string
   slug?: Prisma.StringFilter<"Product"> | string
   description?: Prisma.StringNullableFilter<"Product"> | string | null
   price?: Prisma.DecimalFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.StringNullableFilter<"Product"> | string | null
+  galleryImageUrls?: Prisma.StringNullableListFilter<"Product">
   size?: Prisma.StringNullableFilter<"Product"> | string | null
+  flavor?: Prisma.StringNullableFilter<"Product"> | string | null
+  variantType?: Prisma.StringNullableFilter<"Product"> | string | null
   badge?: Prisma.StringNullableFilter<"Product"> | string | null
+  minimumOrderQuantity?: Prisma.IntFilter<"Product"> | number
+  promotionEnabled?: Prisma.BoolFilter<"Product"> | boolean
+  promotionDiscountPercent?: Prisma.DecimalNullableFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFilter<"Product"> | string
   stock?: Prisma.IntFilter<"Product"> | number
   reservedStock?: Prisma.IntFilter<"Product"> | number
@@ -309,17 +369,25 @@ export type ProductWhereInput = {
   reviews?: Prisma.ProductReviewListRelationFilter
   stockMovements?: Prisma.ProductStockMovementListRelationFilter
   priceChanges?: Prisma.ProductPriceChangeListRelationFilter
+  packagingOptions?: Prisma.ProductPackagingOptionListRelationFilter
 }
 
 export type ProductOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  sku?: Prisma.SortOrder
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  galleryImageUrls?: Prisma.SortOrder
   size?: Prisma.SortOrderInput | Prisma.SortOrder
+  flavor?: Prisma.SortOrderInput | Prisma.SortOrder
+  variantType?: Prisma.SortOrderInput | Prisma.SortOrder
   badge?: Prisma.SortOrderInput | Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionEnabled?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrderInput | Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
@@ -332,10 +400,12 @@ export type ProductOrderByWithRelationInput = {
   reviews?: Prisma.ProductReviewOrderByRelationAggregateInput
   stockMovements?: Prisma.ProductStockMovementOrderByRelationAggregateInput
   priceChanges?: Prisma.ProductPriceChangeOrderByRelationAggregateInput
+  packagingOptions?: Prisma.ProductPackagingOptionOrderByRelationAggregateInput
 }
 
 export type ProductWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  sku?: string
   slug?: string
   AND?: Prisma.ProductWhereInput | Prisma.ProductWhereInput[]
   OR?: Prisma.ProductWhereInput[]
@@ -344,8 +414,14 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringNullableFilter<"Product"> | string | null
   price?: Prisma.DecimalFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.StringNullableFilter<"Product"> | string | null
+  galleryImageUrls?: Prisma.StringNullableListFilter<"Product">
   size?: Prisma.StringNullableFilter<"Product"> | string | null
+  flavor?: Prisma.StringNullableFilter<"Product"> | string | null
+  variantType?: Prisma.StringNullableFilter<"Product"> | string | null
   badge?: Prisma.StringNullableFilter<"Product"> | string | null
+  minimumOrderQuantity?: Prisma.IntFilter<"Product"> | number
+  promotionEnabled?: Prisma.BoolFilter<"Product"> | boolean
+  promotionDiscountPercent?: Prisma.DecimalNullableFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFilter<"Product"> | string
   stock?: Prisma.IntFilter<"Product"> | number
   reservedStock?: Prisma.IntFilter<"Product"> | number
@@ -358,17 +434,25 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   reviews?: Prisma.ProductReviewListRelationFilter
   stockMovements?: Prisma.ProductStockMovementListRelationFilter
   priceChanges?: Prisma.ProductPriceChangeListRelationFilter
-}, "id" | "slug">
+  packagingOptions?: Prisma.ProductPackagingOptionListRelationFilter
+}, "id" | "sku" | "slug">
 
 export type ProductOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  sku?: Prisma.SortOrder
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  galleryImageUrls?: Prisma.SortOrder
   size?: Prisma.SortOrderInput | Prisma.SortOrder
+  flavor?: Prisma.SortOrderInput | Prisma.SortOrder
+  variantType?: Prisma.SortOrderInput | Prisma.SortOrder
   badge?: Prisma.SortOrderInput | Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionEnabled?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrderInput | Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
@@ -388,13 +472,20 @@ export type ProductScalarWhereWithAggregatesInput = {
   OR?: Prisma.ProductScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ProductScalarWhereWithAggregatesInput | Prisma.ProductScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Product"> | string
+  sku?: Prisma.StringWithAggregatesFilter<"Product"> | string
   name?: Prisma.StringWithAggregatesFilter<"Product"> | string
   slug?: Prisma.StringWithAggregatesFilter<"Product"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
   price?: Prisma.DecimalWithAggregatesFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
+  galleryImageUrls?: Prisma.StringNullableListFilter<"Product">
   size?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
+  flavor?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
+  variantType?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
   badge?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
+  minimumOrderQuantity?: Prisma.IntWithAggregatesFilter<"Product"> | number
+  promotionEnabled?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
+  promotionDiscountPercent?: Prisma.DecimalNullableWithAggregatesFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringWithAggregatesFilter<"Product"> | string
   stock?: Prisma.IntWithAggregatesFilter<"Product"> | number
   reservedStock?: Prisma.IntWithAggregatesFilter<"Product"> | number
@@ -406,13 +497,20 @@ export type ProductScalarWhereWithAggregatesInput = {
 
 export type ProductCreateInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -424,17 +522,25 @@ export type ProductCreateInput = {
   reviews?: Prisma.ProductReviewCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId: string
   stock?: number
   reservedStock?: number
@@ -446,17 +552,25 @@ export type ProductUncheckedCreateInput = {
   reviews?: Prisma.ProductReviewUncheckedCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementUncheckedCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -468,17 +582,25 @@ export type ProductUpdateInput = {
   reviews?: Prisma.ProductReviewUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
@@ -490,17 +612,25 @@ export type ProductUncheckedUpdateInput = {
   reviews?: Prisma.ProductReviewUncheckedUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUncheckedUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateManyInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId: string
   stock?: number
   reservedStock?: number
@@ -512,13 +642,20 @@ export type ProductCreateManyInput = {
 
 export type ProductUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -529,13 +666,20 @@ export type ProductUpdateManyMutationInput = {
 
 export type ProductUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
@@ -555,15 +699,30 @@ export type ProductOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type ProductCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  sku?: Prisma.SortOrder
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
   price?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrder
+  galleryImageUrls?: Prisma.SortOrder
   size?: Prisma.SortOrder
+  flavor?: Prisma.SortOrder
+  variantType?: Prisma.SortOrder
   badge?: Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionEnabled?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
@@ -575,19 +734,27 @@ export type ProductCountOrderByAggregateInput = {
 
 export type ProductAvgOrderByAggregateInput = {
   price?: Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
 }
 
 export type ProductMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  sku?: Prisma.SortOrder
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
   price?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrder
   size?: Prisma.SortOrder
+  flavor?: Prisma.SortOrder
+  variantType?: Prisma.SortOrder
   badge?: Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionEnabled?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
@@ -599,13 +766,19 @@ export type ProductMaxOrderByAggregateInput = {
 
 export type ProductMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  sku?: Prisma.SortOrder
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
   price?: Prisma.SortOrder
   imageUrl?: Prisma.SortOrder
   size?: Prisma.SortOrder
+  flavor?: Prisma.SortOrder
+  variantType?: Prisma.SortOrder
   badge?: Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionEnabled?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
@@ -617,6 +790,8 @@ export type ProductMinOrderByAggregateInput = {
 
 export type ProductSumOrderByAggregateInput = {
   price?: Prisma.SortOrder
+  minimumOrderQuantity?: Prisma.SortOrder
+  promotionDiscountPercent?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   reservedStock?: Prisma.SortOrder
 }
@@ -673,6 +848,10 @@ export type ProductUncheckedUpdateManyWithoutCategoryNestedInput = {
   deleteMany?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
 }
 
+export type ProductCreategalleryImageUrlsInput = {
+  set: string[]
+}
+
 export type DecimalFieldUpdateOperationsInput = {
   set?: runtime.Decimal | runtime.DecimalJsLike | number | string
   increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -681,12 +860,39 @@ export type DecimalFieldUpdateOperationsInput = {
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
+export type ProductUpdategalleryImageUrlsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type IntFieldUpdateOperationsInput = {
   set?: number
   increment?: number
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type NullableDecimalFieldUpdateOperationsInput = {
+  set?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
+}
+
+export type ProductCreateNestedOneWithoutPackagingOptionsInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutPackagingOptionsInput, Prisma.ProductUncheckedCreateWithoutPackagingOptionsInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutPackagingOptionsInput
+  connect?: Prisma.ProductWhereUniqueInput
+}
+
+export type ProductUpdateOneRequiredWithoutPackagingOptionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutPackagingOptionsInput, Prisma.ProductUncheckedCreateWithoutPackagingOptionsInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutPackagingOptionsInput
+  upsert?: Prisma.ProductUpsertWithoutPackagingOptionsInput
+  connect?: Prisma.ProductWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutPackagingOptionsInput, Prisma.ProductUpdateWithoutPackagingOptionsInput>, Prisma.ProductUncheckedUpdateWithoutPackagingOptionsInput>
 }
 
 export type ProductCreateNestedOneWithoutStockMovementsInput = {
@@ -749,13 +955,20 @@ export type ProductUpdateOneWithoutOrderItemsNestedInput = {
 
 export type ProductCreateWithoutCategoryInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -766,17 +979,25 @@ export type ProductCreateWithoutCategoryInput = {
   reviews?: Prisma.ProductReviewCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateWithoutCategoryInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -787,6 +1008,7 @@ export type ProductUncheckedCreateWithoutCategoryInput = {
   reviews?: Prisma.ProductReviewUncheckedCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementUncheckedCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductCreateOrConnectWithoutCategoryInput = {
@@ -820,13 +1042,20 @@ export type ProductScalarWhereInput = {
   OR?: Prisma.ProductScalarWhereInput[]
   NOT?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
   id?: Prisma.StringFilter<"Product"> | string
+  sku?: Prisma.StringFilter<"Product"> | string
   name?: Prisma.StringFilter<"Product"> | string
   slug?: Prisma.StringFilter<"Product"> | string
   description?: Prisma.StringNullableFilter<"Product"> | string | null
   price?: Prisma.DecimalFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.StringNullableFilter<"Product"> | string | null
+  galleryImageUrls?: Prisma.StringNullableListFilter<"Product">
   size?: Prisma.StringNullableFilter<"Product"> | string | null
+  flavor?: Prisma.StringNullableFilter<"Product"> | string | null
+  variantType?: Prisma.StringNullableFilter<"Product"> | string | null
   badge?: Prisma.StringNullableFilter<"Product"> | string | null
+  minimumOrderQuantity?: Prisma.IntFilter<"Product"> | number
+  promotionEnabled?: Prisma.BoolFilter<"Product"> | boolean
+  promotionDiscountPercent?: Prisma.DecimalNullableFilter<"Product"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFilter<"Product"> | string
   stock?: Prisma.IntFilter<"Product"> | number
   reservedStock?: Prisma.IntFilter<"Product"> | number
@@ -836,15 +1065,154 @@ export type ProductScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
 }
 
-export type ProductCreateWithoutStockMovementsInput = {
+export type ProductCreateWithoutPackagingOptionsInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  stock?: number
+  reservedStock?: number
+  isPublished?: boolean
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutProductsInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
+  reviews?: Prisma.ProductReviewCreateNestedManyWithoutProductInput
+  stockMovements?: Prisma.ProductStockMovementCreateNestedManyWithoutProductInput
+  priceChanges?: Prisma.ProductPriceChangeCreateNestedManyWithoutProductInput
+}
+
+export type ProductUncheckedCreateWithoutPackagingOptionsInput = {
+  id?: string
+  sku: string
+  name: string
+  slug: string
+  description?: string | null
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
+  size?: string | null
+  flavor?: string | null
+  variantType?: string | null
+  badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  categoryId: string
+  stock?: number
+  reservedStock?: number
+  isPublished?: boolean
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
+  reviews?: Prisma.ProductReviewUncheckedCreateNestedManyWithoutProductInput
+  stockMovements?: Prisma.ProductStockMovementUncheckedCreateNestedManyWithoutProductInput
+  priceChanges?: Prisma.ProductPriceChangeUncheckedCreateNestedManyWithoutProductInput
+}
+
+export type ProductCreateOrConnectWithoutPackagingOptionsInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutPackagingOptionsInput, Prisma.ProductUncheckedCreateWithoutPackagingOptionsInput>
+}
+
+export type ProductUpsertWithoutPackagingOptionsInput = {
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutPackagingOptionsInput, Prisma.ProductUncheckedUpdateWithoutPackagingOptionsInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutPackagingOptionsInput, Prisma.ProductUncheckedCreateWithoutPackagingOptionsInput>
+  where?: Prisma.ProductWhereInput
+}
+
+export type ProductUpdateToOneWithWhereWithoutPackagingOptionsInput = {
+  where?: Prisma.ProductWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutPackagingOptionsInput, Prisma.ProductUncheckedUpdateWithoutPackagingOptionsInput>
+}
+
+export type ProductUpdateWithoutPackagingOptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
+  isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutProductsNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
+  reviews?: Prisma.ProductReviewUpdateManyWithoutProductNestedInput
+  stockMovements?: Prisma.ProductStockMovementUpdateManyWithoutProductNestedInput
+  priceChanges?: Prisma.ProductPriceChangeUpdateManyWithoutProductNestedInput
+}
+
+export type ProductUncheckedUpdateWithoutPackagingOptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
+  isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
+  reviews?: Prisma.ProductReviewUncheckedUpdateManyWithoutProductNestedInput
+  stockMovements?: Prisma.ProductStockMovementUncheckedUpdateManyWithoutProductNestedInput
+  priceChanges?: Prisma.ProductPriceChangeUncheckedUpdateManyWithoutProductNestedInput
+}
+
+export type ProductCreateWithoutStockMovementsInput = {
+  id?: string
+  sku: string
+  name: string
+  slug: string
+  description?: string | null
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
+  size?: string | null
+  flavor?: string | null
+  variantType?: string | null
+  badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -855,17 +1223,25 @@ export type ProductCreateWithoutStockMovementsInput = {
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   reviews?: Prisma.ProductReviewCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateWithoutStockMovementsInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId: string
   stock?: number
   reservedStock?: number
@@ -876,6 +1252,7 @@ export type ProductUncheckedCreateWithoutStockMovementsInput = {
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   reviews?: Prisma.ProductReviewUncheckedCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductCreateOrConnectWithoutStockMovementsInput = {
@@ -896,13 +1273,20 @@ export type ProductUpdateToOneWithWhereWithoutStockMovementsInput = {
 
 export type ProductUpdateWithoutStockMovementsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -913,17 +1297,25 @@ export type ProductUpdateWithoutStockMovementsInput = {
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   reviews?: Prisma.ProductReviewUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutStockMovementsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
@@ -934,17 +1326,25 @@ export type ProductUncheckedUpdateWithoutStockMovementsInput = {
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   reviews?: Prisma.ProductReviewUncheckedUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateWithoutPriceChangesInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -955,17 +1355,25 @@ export type ProductCreateWithoutPriceChangesInput = {
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   reviews?: Prisma.ProductReviewCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateWithoutPriceChangesInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId: string
   stock?: number
   reservedStock?: number
@@ -976,6 +1384,7 @@ export type ProductUncheckedCreateWithoutPriceChangesInput = {
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   reviews?: Prisma.ProductReviewUncheckedCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementUncheckedCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductCreateOrConnectWithoutPriceChangesInput = {
@@ -996,13 +1405,20 @@ export type ProductUpdateToOneWithWhereWithoutPriceChangesInput = {
 
 export type ProductUpdateWithoutPriceChangesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1013,17 +1429,25 @@ export type ProductUpdateWithoutPriceChangesInput = {
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   reviews?: Prisma.ProductReviewUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutPriceChangesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1034,17 +1458,25 @@ export type ProductUncheckedUpdateWithoutPriceChangesInput = {
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   reviews?: Prisma.ProductReviewUncheckedUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUncheckedUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateWithoutReviewsInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -1055,17 +1487,25 @@ export type ProductCreateWithoutReviewsInput = {
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateWithoutReviewsInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId: string
   stock?: number
   reservedStock?: number
@@ -1076,6 +1516,7 @@ export type ProductUncheckedCreateWithoutReviewsInput = {
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementUncheckedCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductCreateOrConnectWithoutReviewsInput = {
@@ -1096,13 +1537,20 @@ export type ProductUpdateToOneWithWhereWithoutReviewsInput = {
 
 export type ProductUpdateWithoutReviewsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1113,17 +1561,25 @@ export type ProductUpdateWithoutReviewsInput = {
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutReviewsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1134,17 +1590,25 @@ export type ProductUncheckedUpdateWithoutReviewsInput = {
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUncheckedUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateWithoutOrderItemsInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -1155,17 +1619,25 @@ export type ProductCreateWithoutOrderItemsInput = {
   reviews?: Prisma.ProductReviewCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateWithoutOrderItemsInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId: string
   stock?: number
   reservedStock?: number
@@ -1176,6 +1648,7 @@ export type ProductUncheckedCreateWithoutOrderItemsInput = {
   reviews?: Prisma.ProductReviewUncheckedCreateNestedManyWithoutProductInput
   stockMovements?: Prisma.ProductStockMovementUncheckedCreateNestedManyWithoutProductInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedCreateNestedManyWithoutProductInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductCreateOrConnectWithoutOrderItemsInput = {
@@ -1196,13 +1669,20 @@ export type ProductUpdateToOneWithWhereWithoutOrderItemsInput = {
 
 export type ProductUpdateWithoutOrderItemsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1213,17 +1693,25 @@ export type ProductUpdateWithoutOrderItemsInput = {
   reviews?: Prisma.ProductReviewUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutOrderItemsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1234,17 +1722,25 @@ export type ProductUncheckedUpdateWithoutOrderItemsInput = {
   reviews?: Prisma.ProductReviewUncheckedUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUncheckedUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateManyCategoryInput = {
   id?: string
+  sku: string
   name: string
   slug: string
   description?: string | null
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: string | null
+  galleryImageUrls?: Prisma.ProductCreategalleryImageUrlsInput | string[]
   size?: string | null
+  flavor?: string | null
+  variantType?: string | null
   badge?: string | null
+  minimumOrderQuantity?: number
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: number
   reservedStock?: number
   isPublished?: boolean
@@ -1255,13 +1751,20 @@ export type ProductCreateManyCategoryInput = {
 
 export type ProductUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1272,17 +1775,25 @@ export type ProductUpdateWithoutCategoryInput = {
   reviews?: Prisma.ProductReviewUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1293,17 +1804,25 @@ export type ProductUncheckedUpdateWithoutCategoryInput = {
   reviews?: Prisma.ProductReviewUncheckedUpdateManyWithoutProductNestedInput
   stockMovements?: Prisma.ProductStockMovementUncheckedUpdateManyWithoutProductNestedInput
   priceChanges?: Prisma.ProductPriceChangeUncheckedUpdateManyWithoutProductNestedInput
+  packagingOptions?: Prisma.ProductPackagingOptionUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateManyWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  galleryImageUrls?: Prisma.ProductUpdategalleryImageUrlsInput | string[]
   size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  flavor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   badge?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minimumOrderQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  promotionEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  promotionDiscountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   reservedStock?: Prisma.IntFieldUpdateOperationsInput | number
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1322,6 +1841,7 @@ export type ProductCountOutputType = {
   reviews: number
   stockMovements: number
   priceChanges: number
+  packagingOptions: number
 }
 
 export type ProductCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1329,6 +1849,7 @@ export type ProductCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   reviews?: boolean | ProductCountOutputTypeCountReviewsArgs
   stockMovements?: boolean | ProductCountOutputTypeCountStockMovementsArgs
   priceChanges?: boolean | ProductCountOutputTypeCountPriceChangesArgs
+  packagingOptions?: boolean | ProductCountOutputTypeCountPackagingOptionsArgs
 }
 
 /**
@@ -1369,16 +1890,30 @@ export type ProductCountOutputTypeCountPriceChangesArgs<ExtArgs extends runtime.
   where?: Prisma.ProductPriceChangeWhereInput
 }
 
+/**
+ * ProductCountOutputType without action
+ */
+export type ProductCountOutputTypeCountPackagingOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProductPackagingOptionWhereInput
+}
+
 
 export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  sku?: boolean
   name?: boolean
   slug?: boolean
   description?: boolean
   price?: boolean
   imageUrl?: boolean
+  galleryImageUrls?: boolean
   size?: boolean
+  flavor?: boolean
+  variantType?: boolean
   badge?: boolean
+  minimumOrderQuantity?: boolean
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: boolean
   categoryId?: boolean
   stock?: boolean
   reservedStock?: boolean
@@ -1391,18 +1926,26 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   reviews?: boolean | Prisma.Product$reviewsArgs<ExtArgs>
   stockMovements?: boolean | Prisma.Product$stockMovementsArgs<ExtArgs>
   priceChanges?: boolean | Prisma.Product$priceChangesArgs<ExtArgs>
+  packagingOptions?: boolean | Prisma.Product$packagingOptionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
 
 export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  sku?: boolean
   name?: boolean
   slug?: boolean
   description?: boolean
   price?: boolean
   imageUrl?: boolean
+  galleryImageUrls?: boolean
   size?: boolean
+  flavor?: boolean
+  variantType?: boolean
   badge?: boolean
+  minimumOrderQuantity?: boolean
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: boolean
   categoryId?: boolean
   stock?: boolean
   reservedStock?: boolean
@@ -1415,13 +1958,20 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 
 export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  sku?: boolean
   name?: boolean
   slug?: boolean
   description?: boolean
   price?: boolean
   imageUrl?: boolean
+  galleryImageUrls?: boolean
   size?: boolean
+  flavor?: boolean
+  variantType?: boolean
   badge?: boolean
+  minimumOrderQuantity?: boolean
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: boolean
   categoryId?: boolean
   stock?: boolean
   reservedStock?: boolean
@@ -1434,13 +1984,20 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 
 export type ProductSelectScalar = {
   id?: boolean
+  sku?: boolean
   name?: boolean
   slug?: boolean
   description?: boolean
   price?: boolean
   imageUrl?: boolean
+  galleryImageUrls?: boolean
   size?: boolean
+  flavor?: boolean
+  variantType?: boolean
   badge?: boolean
+  minimumOrderQuantity?: boolean
+  promotionEnabled?: boolean
+  promotionDiscountPercent?: boolean
   categoryId?: boolean
   stock?: boolean
   reservedStock?: boolean
@@ -1450,13 +2007,14 @@ export type ProductSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "description" | "price" | "imageUrl" | "size" | "badge" | "categoryId" | "stock" | "reservedStock" | "isPublished" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sku" | "name" | "slug" | "description" | "price" | "imageUrl" | "galleryImageUrls" | "size" | "flavor" | "variantType" | "badge" | "minimumOrderQuantity" | "promotionEnabled" | "promotionDiscountPercent" | "categoryId" | "stock" | "reservedStock" | "isPublished" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   orderItems?: boolean | Prisma.Product$orderItemsArgs<ExtArgs>
   reviews?: boolean | Prisma.Product$reviewsArgs<ExtArgs>
   stockMovements?: boolean | Prisma.Product$stockMovementsArgs<ExtArgs>
   priceChanges?: boolean | Prisma.Product$priceChangesArgs<ExtArgs>
+  packagingOptions?: boolean | Prisma.Product$packagingOptionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProductIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1474,16 +2032,24 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     reviews: Prisma.$ProductReviewPayload<ExtArgs>[]
     stockMovements: Prisma.$ProductStockMovementPayload<ExtArgs>[]
     priceChanges: Prisma.$ProductPriceChangePayload<ExtArgs>[]
+    packagingOptions: Prisma.$ProductPackagingOptionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    sku: string
     name: string
     slug: string
     description: string | null
     price: runtime.Decimal
     imageUrl: string | null
+    galleryImageUrls: string[]
     size: string | null
+    flavor: string | null
+    variantType: string | null
     badge: string | null
+    minimumOrderQuantity: number
+    promotionEnabled: boolean
+    promotionDiscountPercent: runtime.Decimal | null
     categoryId: string
     stock: number
     reservedStock: number
@@ -1890,6 +2456,7 @@ export interface Prisma__ProductClient<T, Null = never, ExtArgs extends runtime.
   reviews<T extends Prisma.Product$reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   stockMovements<T extends Prisma.Product$stockMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductStockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   priceChanges<T extends Prisma.Product$priceChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$priceChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPriceChangePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  packagingOptions<T extends Prisma.Product$packagingOptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$packagingOptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPackagingOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1920,13 +2487,20 @@ export interface Prisma__ProductClient<T, Null = never, ExtArgs extends runtime.
  */
 export interface ProductFieldRefs {
   readonly id: Prisma.FieldRef<"Product", 'String'>
+  readonly sku: Prisma.FieldRef<"Product", 'String'>
   readonly name: Prisma.FieldRef<"Product", 'String'>
   readonly slug: Prisma.FieldRef<"Product", 'String'>
   readonly description: Prisma.FieldRef<"Product", 'String'>
   readonly price: Prisma.FieldRef<"Product", 'Decimal'>
   readonly imageUrl: Prisma.FieldRef<"Product", 'String'>
+  readonly galleryImageUrls: Prisma.FieldRef<"Product", 'String[]'>
   readonly size: Prisma.FieldRef<"Product", 'String'>
+  readonly flavor: Prisma.FieldRef<"Product", 'String'>
+  readonly variantType: Prisma.FieldRef<"Product", 'String'>
   readonly badge: Prisma.FieldRef<"Product", 'String'>
+  readonly minimumOrderQuantity: Prisma.FieldRef<"Product", 'Int'>
+  readonly promotionEnabled: Prisma.FieldRef<"Product", 'Boolean'>
+  readonly promotionDiscountPercent: Prisma.FieldRef<"Product", 'Decimal'>
   readonly categoryId: Prisma.FieldRef<"Product", 'String'>
   readonly stock: Prisma.FieldRef<"Product", 'Int'>
   readonly reservedStock: Prisma.FieldRef<"Product", 'Int'>
@@ -2428,6 +3002,30 @@ export type Product$priceChangesArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.ProductPriceChangeScalarFieldEnum | Prisma.ProductPriceChangeScalarFieldEnum[]
+}
+
+/**
+ * Product.packagingOptions
+ */
+export type Product$packagingOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProductPackagingOption
+   */
+  select?: Prisma.ProductPackagingOptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProductPackagingOption
+   */
+  omit?: Prisma.ProductPackagingOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductPackagingOptionInclude<ExtArgs> | null
+  where?: Prisma.ProductPackagingOptionWhereInput
+  orderBy?: Prisma.ProductPackagingOptionOrderByWithRelationInput | Prisma.ProductPackagingOptionOrderByWithRelationInput[]
+  cursor?: Prisma.ProductPackagingOptionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProductPackagingOptionScalarFieldEnum | Prisma.ProductPackagingOptionScalarFieldEnum[]
 }
 
 /**

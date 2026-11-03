@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { releaseExpiredReservations } from "@/lib/stock-reservations";
+import { getProductGalleryImageUrls, getProductImageUrl } from "@/lib/product-images";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET() {
         isPublished: true,
         category: { isActive: true },
       },
-      include: { category: true },
+      include: { category: true, packagingOptions: { where: { isEnabled: true }, orderBy: { unitsPerPackage: "asc" } } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -27,24 +28,70 @@ export async function GET() {
         0,
         product.stock - product.reservedStock
       );
+      const price = Number(product.price);
+      const minimumOrderQuantity = product.minimumOrderQuantity;
+      const promotionDiscountPercent = product.promotionDiscountPercent?.toString() || null;
+      const galleryImageUrls = getProductGalleryImageUrls(
+        product.imageUrl,
+        product.galleryImageUrls,
+        product.id,
+        product.updatedAt,
+        product.category.imageUrl,
+        product.category.id,
+        product.category.slug,
+        product.category.updatedAt,
+      );
 
       return {
         id: product.slug,
         databaseId: product.id,
+        sku: product.sku,
         slug: product.slug,
         name: product.name,
         category: product.category.name,
         categorySlug: product.category.slug,
-        price: Number(product.price),
-        image: product.imageUrl || "/images/milano-mint-bottle-cutout.png",
-        imageUrl: product.imageUrl || "/images/milano-mint-bottle-cutout.png",
+        price,
+        minimumOrderQuantity,
+        promotionEnabled: product.promotionEnabled,
+        promotionDiscountPercent,
+        packagingOptions: product.packagingOptions.map((option) => ({
+          id: option.id,
+          label: option.label,
+          unitsPerPackage: option.unitsPerPackage,
+        })),
+        galleryImageUrls,
+        image:
+          getProductImageUrl(
+            product.imageUrl,
+            product.id,
+            product.updatedAt,
+            product.category.imageUrl,
+            product.category.id,
+            product.category.slug,
+            product.category.updatedAt,
+          ) ||
+          "/images/milano-mint-bottle-cutout.png",
+        imageUrl:
+          getProductImageUrl(
+            product.imageUrl,
+            product.id,
+            product.updatedAt,
+            product.category.imageUrl,
+            product.category.id,
+            product.category.slug,
+            product.category.updatedAt,
+          ) ||
+          "/images/milano-mint-bottle-cutout.png",
         description: product.description || "",
         badge: product.badge || undefined,
         size: product.size || "",
+        flavor: product.flavor,
+        variantType: product.variantType,
         stock: product.stock,
         reservedStock: product.reservedStock,
         availableStock,
-        inStock: availableStock > 0,
+        isPublished: product.isPublished,
+        inStock: product.isPublished && price > 0 && availableStock >= minimumOrderQuantity,
       };
     });
 

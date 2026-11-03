@@ -2,15 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import { ProductReviewForm, type SubmittedReview } from "@/components/product-review-form";
 
-type Review = {
-  id: string;
-  productName: string;
-  displayName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-};
+type Review = SubmittedReview;
 
 export function ProductReviewsSection() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -20,7 +14,7 @@ export function ProductReviewsSection() {
     async function loadReviews() {
       try {
         const response = await fetch("/api/reviews", { cache: "no-store" });
-        if (!response.ok) throw new Error("Unable to load approved customer reviews.");
+        if (!response.ok) throw new Error("Unable to load customer reviews.");
         setReviews(await response.json());
       } catch (loadError) {
         console.error(loadError);
@@ -32,13 +26,13 @@ export function ProductReviewsSection() {
   }, []);
 
   return (
-    <section className="section product-reviews-section" aria-labelledby="product-reviews-title">
+    <section id="customer-reviews" className="section product-reviews-section" aria-labelledby="product-reviews-title">
       <div className="wrap">
         <div className="section-head">
           <div>
             <span className="eyebrow">From our customers</span>
             <h2 id="product-reviews-title">Customer reviews</h2>
-            <p>Reviews from verified Milano customers, published after approval.</p>
+            <p>Honest feedback from verified Milano customers. New reviews appear right away.</p>
           </div>
         </div>
 
@@ -46,7 +40,7 @@ export function ProductReviewsSection() {
           {error ? (
             <p className="review-status review-error">{error}</p>
           ) : reviews.length === 0 ? (
-            <p className="review-status">No approved reviews yet.</p>
+            <p className="review-status">No customer reviews yet. Be the first to share your experience.</p>
           ) : (
             reviews.map((review) => (
               <article className="product-review-card" key={review.id}>
@@ -66,6 +60,11 @@ export function ProductReviewsSection() {
               </article>
             ))
           )}
+        </div>
+        <div className="review-submission">
+          <ProductReviewForm onReviewSubmitted={(review) => {
+            setReviews((current) => [review, ...current]);
+          }} />
         </div>
       </div>
     </section>

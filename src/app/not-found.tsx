@@ -1,2 +1,2 @@
 import Link from "next/link";
-export default function NotFound(){return <main className="wrap empty-state section"><span className="eyebrow">404 · Not found</span><h1>That page has wandered off.</h1><p>Let's help you find something delicious instead.</p><Link href="/products" className="btn">Explore products</Link></main>}
+export default function NotFound(){return <main className="wrap empty-state section"><span className="eyebrow">404 · Not found</span><h1>That page has wandered off.</h1><p>Let&apos;s help you find something delicious instead.</p><Link href="/products" className="btn">Explore products</Link></main>}

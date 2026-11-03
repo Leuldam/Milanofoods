@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { dessertProductVariants } from "../src/lib/product-variants";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -17,16 +18,16 @@ const categories = [
   {
     name: "Ice Cream Powders",
     slug: "ice-cream-powders",
-    imageUrl:
-      "https://images.unsplash.com/photo-1563805042-7684c019e1cb",
-    description: "Powders for creating delicious ice cream.",
+    imageUrl: "/images/milanoice.png",
+    description:
+      "Choose strawberry, chocolate, mango, or vanilla in hard or soft powder and 1 kg, 2 kg, 3 kg, or 5 kg packs.",
   },
   {
     name: "Milkshake Powders",
     slug: "milkshake-powders",
-    imageUrl:
-      "https://images.unsplash.com/photo-1572490122747-3968b75cc699",
-    description: "Powders for creamy, flavorful milkshakes.",
+    imageUrl: "/images/milanomilk.png",
+    description:
+      "Choose strawberry, chocolate, vanilla, or mango milkshake powder (5 kg) or liquid (5 L).",
   },
 ];
 
@@ -38,6 +39,8 @@ const products = [
     size: "750 ml",
     badge: "Bestseller",
     category: "mojito-syrups",
+    flavor: "Mint",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -47,6 +50,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Strawberry",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -56,6 +61,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Pineapple",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -65,6 +72,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Mango",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -74,6 +83,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Lemon",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -83,27 +94,9 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Tropical",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
-  },
-  {
-    name: "Ice Cream Powder",
-    slug: "ice-cream-powder",
-    price: 650,
-    size: "1 kg",
-    badge: "Popular",
-    category: "ice-cream-powders",
-    imageUrl:
-      "https://images.unsplash.com/photo-1563805042-7684c019e1cb",
-  },
-  {
-    name: "Milkshake Powder",
-    slug: "milkshake-powder",
-    price: 580,
-    size: "1 kg",
-    badge: null,
-    category: "milkshake-powders",
-    imageUrl:
-      "https://images.unsplash.com/photo-1572490122747-3968b75cc699",
   },
   {
     name: "Peach Mojito Syrup",
@@ -112,6 +105,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Peach",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -121,6 +116,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Orange",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -130,6 +127,8 @@ const products = [
     size: "750 ml",
     badge: null,
     category: "mojito-syrups",
+    flavor: "Coconut",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
   {
@@ -139,8 +138,11 @@ const products = [
     size: "750 ml",
     badge: "Signature",
     category: "mojito-syrups",
+    flavor: "Milano Special",
+    variantType: "Syrup",
     imageUrl: "/images/milano-mint-bottle-cutout.png",
   },
+  ...dessertProductVariants,
 ];
 
 async function main() {
@@ -175,10 +177,13 @@ async function main() {
       },
       update: {},
       create: {
+        sku: product.slug.toUpperCase(),
         name: product.name,
         slug: product.slug,
         price: product.price,
         size: product.size,
+        flavor: product.flavor,
+        variantType: product.variantType,
         badge: product.badge,
         imageUrl: product.imageUrl,
         categoryId,

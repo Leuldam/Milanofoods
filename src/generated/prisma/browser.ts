@@ -28,6 +28,11 @@ export type Category = Prisma.CategoryModel
  */
 export type Product = Prisma.ProductModel
 /**
+ * Model ProductPackagingOption
+ * 
+ */
+export type ProductPackagingOption = Prisma.ProductPackagingOptionModel
+/**
  * Model ProductStockMovement
  * 
  */
@@ -38,6 +43,11 @@ export type ProductStockMovement = Prisma.ProductStockMovementModel
  */
 export type ProductPriceChange = Prisma.ProductPriceChangeModel
 /**
+ * Model PaymentMethodConfig
+ * 
+ */
+export type PaymentMethodConfig = Prisma.PaymentMethodConfigModel
+/**
  * Model ProductReview
  * 
  */
@@ -47,6 +57,11 @@ export type ProductReview = Prisma.ProductReviewModel
  * 
  */
 export type Order = Prisma.OrderModel
+/**
+ * Model OrderPaymentProof
+ * 
+ */
+export type OrderPaymentProof = Prisma.OrderPaymentProofModel
 /**
  * Model OrderItem
  * 

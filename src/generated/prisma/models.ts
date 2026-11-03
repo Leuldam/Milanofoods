@@ -10,9 +10,12 @@
  */
 export type * from './models/Category'
 export type * from './models/Product'
+export type * from './models/ProductPackagingOption'
 export type * from './models/ProductStockMovement'
 export type * from './models/ProductPriceChange'
+export type * from './models/PaymentMethodConfig'
 export type * from './models/ProductReview'
 export type * from './models/Order'
+export type * from './models/OrderPaymentProof'
 export type * from './models/OrderItem'
 export type * from './commonInputTypes'

@@ -1,3 +1,113 @@
-import Image from "next/image";import Link from "next/link";import { notFound } from "next/navigation";import { recipes,products } from "@/lib/products";import { ProductCard } from "@/components/product-card";
-export function generateStaticParams(){return recipes.map(r=>({slug:r.slug}));}
-export default async function RecipePage({params}:{params:Promise<{slug:string}>}){const {slug}=await params;const r=recipes.find(x=>x.slug===slug);if(!r)notFound();return <main><section className="page-hero"><div className="wrap"><div className="breadcrumb"><Link href="/">Home</Link> / <Link href="/recipes">Recipes</Link> / {r.title}</div><span className="eyebrow">{r.category}</span><h1>{r.title}</h1><p>{r.description}</p></div></section><section className="section"><div className="wrap" style={{maxWidth:950}}><Image src={r.image} alt={r.title} width={1400} height={850} style={{width:"100%",maxHeight:520,objectFit:"cover"}}/><div className="content-prose" style={{paddingTop:28}}><span className="eyebrow">Preparation idea · {r.time}</span><h2>Ingredients</h2><p>Use the relevant Milano product according to its verified package instructions, along with fresh ingredients suited to this recipe. Confirm exact quantities for your serving size before preparing.</p><ul><li>Milano syrup or beverage ingredient suited to the selected flavor</li><li>Fresh fruit or citrus, as desired</li><li>Fresh mint or garnish, if appropriate</li><li>Ice and drinking water or sparkling water, depending on the recipe</li></ul><h2>Method</h2><ol><li>Prepare your glass and fresh ingredients.</li><li>Add the selected Milano product using the quantities specified on its packaging or an approved recipe.</li><li>Mix or blend with the remaining ingredients.</li><li>Garnish and serve immediately.</li></ol><p><em>Recipe content shown here is an editable starter example. Replace it with Milano-approved recipe quantities and video links before publication.</em></p><Link href="/products" className="btn">Explore Milano products</Link></div></div></section><section className="section" style={{background:"#fffdf9"}}><div className="wrap"><div className="section-head"><div><span className="eyebrow">Shop the range</span><h2>Products to explore</h2></div></div><div className="product-grid">{products.slice(0,4).map(p=><ProductCard key={p.id} product={p}/>)}</div></div></section></main>}
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, ArrowRight, Clock3, UsersRound } from "lucide-react";
+import { products, recipes } from "@/lib/products";
+import { ProductCard } from "@/components/product-card";
+
+export function generateStaticParams() {
+  return recipes.map((recipe) => ({ slug: recipe.slug }));
+}
+
+export default async function RecipePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const recipe = recipes.find((item) => item.slug === slug);
+  if (!recipe) notFound();
+
+  return (
+    <main className="recipe-detail-page">
+      <section className="recipe-detail-hero">
+        <div className="wrap">
+          <div className="breadcrumb">
+            <Link href="/">Home</Link> / <Link href="/recipes">Recipes</Link> / {recipe.title}
+          </div>
+          <div className="recipe-detail-layout">
+            <div className="recipe-detail-copy">
+              <span className="eyebrow">{recipe.category}</span>
+              <h1>{recipe.title}</h1>
+              <p>{recipe.description}</p>
+              <div className="recipe-detail-meta">
+                <span><Clock3 size={17} /> Ready in {recipe.time}</span>
+                <span><UsersRound size={17} /> Makes {recipe.serves}</span>
+              </div>
+              <Link href="#recipe-instructions" className="btn">
+                Start cooking <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="recipe-detail-image">
+              <Image
+                src={recipe.image}
+                alt={recipe.title}
+                fill
+                priority
+                sizes="(max-width: 860px) 100vw, 52vw"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" id="recipe-instructions">
+        <div className="wrap recipe-instructions">
+          <aside className="recipe-ingredients">
+            <span className="eyebrow">What you’ll need</span>
+            <h2>Ingredients</h2>
+            <ul>
+              {recipe.ingredients.map((ingredient) => (
+                <li key={ingredient}>{ingredient}</li>
+              ))}
+            </ul>
+            <p className="recipe-tip">
+              Taste as you go: adjust syrup and citrus to suit your glass and
+              preferred sweetness.
+            </p>
+          </aside>
+          <div className="recipe-method">
+            <span className="eyebrow">Let’s make it</span>
+            <h2>Method</h2>
+            <ol>
+              {recipe.steps.map((step, index) => (
+                <li key={step}>
+                  <span className="recipe-step-number">{String(index + 1).padStart(2, "0")}</span>
+                  <p>{step}</p>
+                </li>
+              ))}
+            </ol>
+            {recipe.slug === "creamy-milkshake" && (
+              <p className="recipe-tip">
+                Follow the serving measurement on your Milano powder package;
+                product formulations may vary.
+              </p>
+            )}
+            <Link href="/recipes" className="text-link">
+              <ArrowLeft size={15} /> All recipes
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="section recipe-products-section">
+        <div className="wrap">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Make it Milano</span>
+              <h2>Explore the range.</h2>
+            </div>
+            <Link href="/products" className="text-link">
+              Shop all products <ArrowRight size={15} />
+            </Link>
+          </div>
+          <div className="product-grid">
+            {products.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

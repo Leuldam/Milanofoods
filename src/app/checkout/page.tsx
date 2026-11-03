@@ -1,20 +1,32 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Package, ShoppingBag } from "lucide-react";
+import { Banknote, CheckCircle2, ImagePlus, MapPin, Package, ShoppingBag, X } from "lucide-react";
 
 import { useStore } from "@/components/store-provider";
+import { getCartLinePrice, getCartLineTotal, getCartLineUnits } from "@/components/store-provider";
+import { formatTotalMeasure } from "@/lib/product-pricing";
 import { money } from "@/lib/products";
 
 type CurrentProduct = {
   id: string;
   slug: string;
   price: number;
+  minimumOrderQuantity: number;
+  promotionEnabled: boolean;
+  promotionDiscountPercent: string | null;
+  packagingOptions: { id: string; label: string; unitsPerPackage: number }[];
   availableStock: number;
   inStock: boolean;
+};
+type PaymentMethodConfig = {
+  code: "cbe" | "telebirr" | "awash" | "boa";
+  displayName: string;
+  accountName: string;
+  accountNumber: string;
 };
 
 export default function CheckoutPage() {
@@ -28,9 +40,64 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const [method, setMethod] = useState<"delivery" | "pickup">("delivery");
-  const [payment, setPayment] = useState("Cash on Delivery");
+  const [payment, setPayment] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodConfig[]>([]);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
+  const [paymentMethodsError, setPaymentMethodsError] = useState("");
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentProofError, setPaymentProofError] = useState("");
+  const [paymentProofPreview, setPaymentProofPreview] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const selectedPaymentMethod = paymentMethods.find((item) => item.code === payment) || null;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPaymentMethods() {
+      try {
+        const response = await fetch("/api/payment-methods", { cache: "no-store" });
+        const payload = await response.json() as { methods?: PaymentMethodConfig[]; error?: string };
+        if (!response.ok) throw new Error(payload.error || "Unable to load payment account details.");
+        if (!cancelled) setPaymentMethods(payload.methods || []);
+      } catch (loadError) {
+        if (!cancelled) setPaymentMethodsError(loadError instanceof Error ? loadError.message : "Unable to load payment account details.");
+      } finally {
+        if (!cancelled) setPaymentMethodsLoading(false);
+      }
+    }
+
+    void loadPaymentMethods();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!paymentProof) {
+      setPaymentProofPreview("");
+      return;
+    }
+    const preview = URL.createObjectURL(paymentProof);
+    setPaymentProofPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [paymentProof]);
+
+  function choosePaymentProof(file: File | null) {
+    setPaymentProofError("");
+    if (!file) {
+      setPaymentProof(null);
+      return;
+    }
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setPaymentProofError("Choose a PNG, JPEG, or WebP screenshot.");
+      setPaymentProof(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPaymentProofError("The screenshot must be 5 MB or smaller.");
+      setPaymentProof(null);
+      return;
+    }
+    setPaymentProof(file);
+  }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,11 +128,24 @@ export default function CheckoutPage() {
 
       const currentProducts: CurrentProduct[] =
         await productsResponse.json();
+      const requestedUnitsByProduct = new Map<string, number>();
+      for (const item of cart) {
+        const totalUnits = item.qty * (item.unitsPerPackage || 1);
+        requestedUnitsByProduct.set(
+          item.slug,
+          (requestedUnitsByProduct.get(item.slug) || 0) + totalUnits,
+        );
+      }
 
       for (const item of cart) {
         const current = currentProducts.find(
           (product) => product.slug === item.slug
         );
+        const selectedPackaging = item.packagingOptionId
+          ? current?.packagingOptions.find((option) => option.id === item.packagingOptionId)
+          : null;
+        const unitsPerPackage = selectedPackaging?.unitsPerPackage ?? (item.packagingOptionId ? item.unitsPerPackage || 1 : 1);
+        const totalUnits = item.qty * unitsPerPackage;
 
         if (!current) {
           throw new Error(
@@ -73,13 +153,23 @@ export default function CheckoutPage() {
           );
         }
 
-        if (!current.inStock || current.availableStock < item.qty) {
+        if (
+          !current.inStock ||
+          !Number.isSafeInteger(totalUnits) ||
+          current.availableStock < (requestedUnitsByProduct.get(item.slug) || totalUnits) ||
+          totalUnits < current.minimumOrderQuantity ||
+          (item.packagingOptionId && !selectedPackaging)
+        ) {
           throw new Error(
-            `Insufficient stock for ${item.name}. Available quantity: ${current.availableStock}. Please update your cart.`
+            `The selected quantity or packaging for ${item.name} is no longer available. Available stock: ${current.availableStock} individual units. Please update your cart.`
           );
         }
 
-        if (Number(current.price) !== Number(item.price)) {
+        if (
+          Number(current.price) !== Number(item.price) ||
+          current.promotionEnabled !== item.promotionEnabled ||
+          current.promotionDiscountPercent !== (item.promotionDiscountPercent?.toString() || null)
+        ) {
           throw new Error(
             `The price of ${item.name} has changed. Please return to your cart and review the updated price.`
           );
@@ -108,17 +198,19 @@ export default function CheckoutPage() {
         fulfillment,
         payment,
         items: cart.map((item) => ({
-          id: item.id,
+          id: item.slug,
           qty: item.qty,
+          packagingOptionId: item.packagingOptionId || null,
         })),
       };
 
+      const orderForm = new FormData();
+      orderForm.set("order", JSON.stringify(data));
+      if (paymentProof) orderForm.set("paymentProof", paymentProof);
+
       const response = await fetch("/api/orders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        body: orderForm,
       });
 
       const result = await response.json();
@@ -127,16 +219,48 @@ export default function CheckoutPage() {
         throw new Error(result.error || "Unable to submit order.");
       }
 
+      const receiptCart = cart.map((item) => {
+        const savedItem = (result.items as {
+          slug: string;
+          sku: string;
+          packagingLabel: string;
+          unitsPerPackage: number;
+          packageQuantity: number;
+          listUnitPrice: number;
+          promotionApplied: boolean;
+          promotionDiscountPercent: string | null;
+        }[]).find((line) =>
+          line.slug === item.slug &&
+          line.packagingLabel === (item.packagingLabel || "Single unit") &&
+          line.unitsPerPackage === (item.unitsPerPackage || 1),
+        );
+        return savedItem
+          ? {
+              ...item,
+              sku: savedItem.sku,
+              price: savedItem.listUnitPrice,
+              promotionEnabled: savedItem.promotionApplied,
+              promotionDiscountPercent: savedItem.promotionDiscountPercent,
+            }
+          : item;
+      });
+
       sessionStorage.setItem(
         "milano-last-order",
         JSON.stringify({
           orderNumber: result.orderNumber,
-          cart,
-          subtotal,
+          createdAt: result.createdAt,
+          cart: receiptCart,
+          subtotal: result.subtotal,
+          deliveryFee: result.deliveryFee,
+          total: result.total,
           method,
-          payment,
+          payment: payment ? paymentMethods.find((item) => item.code === payment)?.displayName || "Not specified" : "Not specified",
+          paymentAccountName: result.paymentAccountName,
+          paymentAccountNumber: result.paymentAccountNumber,
+          paymentProofUploaded: Boolean(paymentProof),
           customer,
-          reservationExpiresAt: result.reservationExpiresAt,
+          fulfillment,
         })
       );
 
@@ -327,34 +451,43 @@ export default function CheckoutPage() {
 
               <div className="form-card" style={{ marginTop: 18 }}>
                 <h2>
-                  <span className="eyebrow">03 · Payment preference</span>
+                  <span className="eyebrow">03 · Payment (optional)</span>
                   <br />
-                  How would you like to pay?
+                  Pay now or arrange later
                 </h2>
-
-                <div className="field">
-                  <label htmlFor="payment">Payment method</label>
-                  <select
-                    id="payment"
-                    value={payment}
-                    onChange={(e) => setPayment(e.target.value)}
-                  >
-                    <option>Cash on Delivery</option>
-                    <option>Cash on Pickup</option>
-                    <option>Bank Transfer (confirm with Milano)</option>
-                  </select>
+                <p className="payment-optional-note">Choosing a payment method and uploading a receipt are both optional. You can place your order and arrange payment with Milano Foods later.</p>
+                <div className="payment-method-grid" role="group" aria-label="Optional payment method">
+                  <button type="button" className={`payment-method-choice${payment === "" ? " is-selected" : ""}`} onClick={() => { setPayment(""); setPaymentProof(null); }} aria-pressed={payment === ""}>
+                    <span className="payment-method-logo payment-logo-later"><Banknote size={18}/></span>
+                    <span className="payment-method-info"><strong>Choose later</strong><small>No payment method selected</small></span>
+                    {payment === "" && <CheckCircle2 className="payment-method-check" size={18}/>}
+                  </button>
+                  {paymentMethods.map((paymentMethod) => (
+                    <button key={paymentMethod.code} type="button" className={`payment-method-choice${payment === paymentMethod.code ? " is-selected" : ""}`} onClick={() => setPayment(paymentMethod.code)} aria-pressed={payment === paymentMethod.code}>
+                      <PaymentMethodLogo code={paymentMethod.code}/>
+                      <span className="payment-method-info">
+                        <strong>{paymentMethod.displayName}</strong>
+                        <small>Account name: <b>{paymentMethod.accountName}</b></small>
+                        <small>Account number: <b>{paymentMethod.accountNumber}</b></small>
+                      </span>
+                      {payment === paymentMethod.code && <CheckCircle2 className="payment-method-check" size={18}/>}
+                    </button>
+                  ))}
                 </div>
-
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "var(--muted)",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Milano Foods will contact you to confirm delivery fees
-                  and payment arrangements before final fulfillment.
-                </p>
+                {paymentMethodsLoading && <p className="payment-method-hint">Loading payment accounts…</p>}
+                {paymentMethodsError && <p className="payment-method-warning" role="status">{paymentMethodsError} You can still place your order and arrange payment later.</p>}
+                {!paymentMethodsLoading && !paymentMethodsError && paymentMethods.length === 0 && <p className="payment-method-hint">Digital payment accounts are not configured yet. You can still place the order without selecting a method.</p>}
+                {selectedPaymentMethod && <div className="payment-proof-upload">
+                  <label htmlFor="paymentProof"><ImagePlus size={18}/><span><strong>Payment screenshot (optional)</strong><small>PNG, JPEG, or WebP · up to 5 MB</small></span></label>
+                  <input id="paymentProof" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => choosePaymentProof(event.target.files?.[0] || null)}/>
+                  {paymentProofError && <p role="alert">{paymentProofError}</p>}
+                  {paymentProof && <div className="payment-proof-preview">
+                    {paymentProofPreview && <img src={paymentProofPreview} alt="Payment screenshot preview"/>}
+                    <span><strong>{paymentProof.name}</strong><small>{(paymentProof.size / 1024).toFixed(0)} KB · stored securely with your order</small></span>
+                    <button type="button" aria-label="Remove payment screenshot" onClick={() => choosePaymentProof(null)}><X size={17}/></button>
+                  </div>}
+                </div>}
+                <p className="payment-method-hint">Milano Foods will confirm your order and any delivery fees before fulfillment. A payment screenshot is only shared with the admin team.</p>
               </div>
 
               {error && (
@@ -439,6 +572,7 @@ export default function CheckoutPage() {
                     >
                       {item.name}
                     </strong>
+                    {item.sku && <span style={{ display: "block", fontSize: 9, color: "var(--muted)" }}>SKU · {item.sku}</span>}
 
                     <span
                       style={{
@@ -446,12 +580,17 @@ export default function CheckoutPage() {
                         color: "var(--muted)",
                       }}
                     >
-                      {item.size} · Qty {item.qty}
+                      {[item.flavor, item.variantType, item.size].filter(Boolean).join(" · ")}
+                      <br />
+                      {item.qty} × {item.packagingLabel || "Single unit"} · {getCartLineUnits(item)} individual units
+                      {formatTotalMeasure(item.size, getCartLineUnits(item)) ? ` · ${formatTotalMeasure(item.size, getCartLineUnits(item))} total` : ""}
+                      <br />
+                      ETB {getCartLinePrice(item).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / individual unit
                     </span>
                   </div>
 
                   <span style={{ fontSize: 12, fontWeight: 700 }}>
-                    {money(item.price * item.qty)}
+                    {money(getCartLineTotal(item))}
                   </span>
                 </div>
               ))}
@@ -471,4 +610,17 @@ export default function CheckoutPage() {
       </section>
     </main>
   );
+}
+
+function PaymentMethodLogo({ code }: { code: PaymentMethodConfig["code"] }) {
+  const logos: Record<PaymentMethodConfig["code"], { src: string; alt: string }> = {
+    cbe: { src: "/images/payment-methods/cbe.jpg", alt: "Commercial Bank of Ethiopia" },
+    telebirr: { src: "/images/payment-methods/telebirr.png", alt: "Telebirr" },
+    awash: { src: "/images/payment-methods/awash.png", alt: "Awash Bank" },
+    boa: { src: "/images/payment-methods/boa.png", alt: "Bank of Abyssinia" },
+  };
+  const logo = logos[code];
+  return <span className={`payment-method-logo payment-logo-${code}`}>
+    <Image src={logo.src} alt={logo.alt} width={100} height={60}/>
+  </span>;
 }

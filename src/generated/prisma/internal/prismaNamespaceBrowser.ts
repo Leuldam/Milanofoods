@@ -53,10 +53,13 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Category: 'Category',
   Product: 'Product',
+  ProductPackagingOption: 'ProductPackagingOption',
   ProductStockMovement: 'ProductStockMovement',
   ProductPriceChange: 'ProductPriceChange',
+  PaymentMethodConfig: 'PaymentMethodConfig',
   ProductReview: 'ProductReview',
   Order: 'Order',
+  OrderPaymentProof: 'OrderPaymentProof',
   OrderItem: 'OrderItem'
 } as const
 
@@ -92,13 +95,20 @@ export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typ
 
 export const ProductScalarFieldEnum = {
   id: 'id',
+  sku: 'sku',
   name: 'name',
   slug: 'slug',
   description: 'description',
   price: 'price',
   imageUrl: 'imageUrl',
+  galleryImageUrls: 'galleryImageUrls',
   size: 'size',
+  flavor: 'flavor',
+  variantType: 'variantType',
   badge: 'badge',
+  minimumOrderQuantity: 'minimumOrderQuantity',
+  promotionEnabled: 'promotionEnabled',
+  promotionDiscountPercent: 'promotionDiscountPercent',
   categoryId: 'categoryId',
   stock: 'stock',
   reservedStock: 'reservedStock',
@@ -109,6 +119,19 @@ export const ProductScalarFieldEnum = {
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
+
+
+export const ProductPackagingOptionScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  label: 'label',
+  unitsPerPackage: 'unitsPerPackage',
+  isEnabled: 'isEnabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProductPackagingOptionScalarFieldEnum = (typeof ProductPackagingOptionScalarFieldEnum)[keyof typeof ProductPackagingOptionScalarFieldEnum]
 
 
 export const ProductStockMovementScalarFieldEnum = {
@@ -136,6 +159,18 @@ export const ProductPriceChangeScalarFieldEnum = {
 } as const
 
 export type ProductPriceChangeScalarFieldEnum = (typeof ProductPriceChangeScalarFieldEnum)[keyof typeof ProductPriceChangeScalarFieldEnum]
+
+
+export const PaymentMethodConfigScalarFieldEnum = {
+  code: 'code',
+  displayName: 'displayName',
+  accountName: 'accountName',
+  accountNumber: 'accountNumber',
+  isEnabled: 'isEnabled',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentMethodConfigScalarFieldEnum = (typeof PaymentMethodConfigScalarFieldEnum)[keyof typeof PaymentMethodConfigScalarFieldEnum]
 
 
 export const ProductReviewScalarFieldEnum = {
@@ -178,13 +213,32 @@ export const OrderScalarFieldEnum = {
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
 
 
+export const OrderPaymentProofScalarFieldEnum = {
+  orderId: 'orderId',
+  mimeType: 'mimeType',
+  data: 'data',
+  uploadedAt: 'uploadedAt'
+} as const
+
+export type OrderPaymentProofScalarFieldEnum = (typeof OrderPaymentProofScalarFieldEnum)[keyof typeof OrderPaymentProofScalarFieldEnum]
+
+
 export const OrderItemScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   productId: 'productId',
   productName: 'productName',
   productSize: 'productSize',
+  productFlavor: 'productFlavor',
+  productSku: 'productSku',
+  productVariantType: 'productVariantType',
+  packagingLabel: 'packagingLabel',
+  unitsPerPackage: 'unitsPerPackage',
+  packageQuantity: 'packageQuantity',
   unitPrice: 'unitPrice',
+  listUnitPrice: 'listUnitPrice',
+  promotionApplied: 'promotionApplied',
+  promotionDiscountPercent: 'promotionDiscountPercent',
   quantity: 'quantity',
   lineTotal: 'lineTotal'
 } as const
