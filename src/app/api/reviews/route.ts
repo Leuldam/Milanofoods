@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramNotification } from "@/lib/telegram-notifications";
+import { isSecureOrderNumber } from "@/lib/order-number";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,9 +55,9 @@ export async function POST(request: NextRequest) {
     if (!productId) {
       return NextResponse.json({ error: "Choose a product to review." }, { status: 400 });
     }
-    if (!orderNumber || orderNumber.length > 50) {
+    if (!isSecureOrderNumber(orderNumber)) {
       return NextResponse.json(
-        { error: "Enter the order number from your confirmed order." },
+        { error: "Enter the secure order number from your confirmed order." },
         { status: 400 },
       );
     }
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
           displayName: order.customerName,
           rating,
           comment,
+          isApproved: true,
         },
       });
     } catch (error) {
@@ -146,8 +148,8 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    const telegramNotified = await sendTelegramNotification([
-      "NEW PRODUCT REVIEW — APPROVAL REQUIRED",
+    await sendTelegramNotification([
+      "NEW CUSTOMER REVIEW — PUBLISHED",
       `Review: ${review.id}`,
       `Order: ${orderNumber}`,
       `Customer: ${order.customerName}`,
@@ -155,17 +157,20 @@ export async function POST(request: NextRequest) {
       `Rating: ${rating}/5`,
       "",
       comment,
-    ].join("\n"), {
-      inline_keyboard: [[
-        { text: "Approve and publish", callback_data: `review:approve:${review.id}` },
-        { text: "Reject", callback_data: `review:reject:${review.id}` },
-      ]],
-    });
+    ].join("\n"));
 
     return NextResponse.json(
-      { message: telegramNotified
-        ? "Thanks! Your review was sent to Milano Foods for approval."
-        : "Your review is saved and awaiting admin approval." },
+      {
+        message: "Thanks! Your review is now published.",
+        review: {
+          id: review.id,
+          productName: product.name,
+          displayName: review.displayName,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt.toISOString(),
+        },
+      },
       { status: 201 },
     );
   } catch (error) {

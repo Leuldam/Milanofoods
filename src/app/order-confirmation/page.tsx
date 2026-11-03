@@ -5,7 +5,7 @@ export default function OrderConfirmationPage() {
   return (
     <Suspense
       fallback={
-        <main className="wrap">
+        <main className="wrap order-confirmation-page">
           <section className="confirmation" aria-busy="true">
             <p>Loading your order confirmation…</p>
           </section>

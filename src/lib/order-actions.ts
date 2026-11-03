@@ -184,18 +184,25 @@ export async function updatePendingOrder(
     const item = rawItem as Record<string, unknown>;
     const productId = typeof item.productId === "string" ? item.productId.trim() : "";
     const quantity = Number(item.quantity);
+    const unitsPerPackage = Number(item.unitsPerPackage ?? 1);
+    const packageQuantity = Number(item.packageQuantity ?? quantity);
+    const packagingLabel = typeof item.packagingLabel === "string" ? item.packagingLabel.trim() : "Single unit";
     const unitPriceValue = Number(item.unitPrice);
     const unitPriceCents = Math.round(unitPriceValue * 100);
     if (
       !productId || productId.length > 150 ||
-      !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 99 ||
+      !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000 ||
+      !Number.isSafeInteger(unitsPerPackage) || unitsPerPackage < 1 || unitsPerPackage > 1000 ||
+      !Number.isSafeInteger(packageQuantity) || packageQuantity < 1 || packageQuantity > 100_000 ||
+      packageQuantity * unitsPerPackage !== quantity ||
+      !packagingLabel || packagingLabel.length > 80 ||
       !Number.isFinite(unitPriceValue) || unitPriceValue <= 0 ||
       unitPriceValue > 1_000_000_000 ||
       Math.abs(unitPriceCents / 100 - unitPriceValue) > 0.000001
     ) {
       throw new Error("INVALID_ORDER_EDIT");
     }
-    return { productId, quantity, unitPriceCents };
+    return { productId, quantity, unitsPerPackage, packageQuantity, packagingLabel, unitPriceCents };
   });
 
   if (new Set(items.map((item) => item.productId)).size !== items.length) {
@@ -245,7 +252,7 @@ export async function updatePendingOrder(
 
     const products = await tx.product.findMany({
       where: { id: { in: items.map((item) => item.productId) } },
-      select: { id: true, name: true, size: true, stock: true, reservedStock: true, isActive: true, isPublished: true },
+      select: { id: true, sku: true, name: true, size: true, flavor: true, variantType: true, stock: true, reservedStock: true, isActive: true, isPublished: true },
     });
     const productsById = new Map(products.map((product) => [product.id, product]));
     const normalizedItems = items.map((item) => {
@@ -257,10 +264,19 @@ export async function updatePendingOrder(
       }
       return {
         productId: product.id,
+        productSku: product.sku,
         productName: product.name,
         productSize: product.size,
+        productFlavor: product.flavor,
+        productVariantType: product.variantType,
+        packagingLabel: item.packagingLabel,
+        unitsPerPackage: item.unitsPerPackage,
+        packageQuantity: item.packageQuantity,
         quantity: item.quantity,
         unitPrice: (item.unitPriceCents / 100).toFixed(2),
+        listUnitPrice: (item.unitPriceCents / 100).toFixed(2),
+        promotionApplied: false,
+        promotionDiscountPercent: null,
         lineTotal: ((item.quantity * item.unitPriceCents) / 100).toFixed(2),
       };
     });

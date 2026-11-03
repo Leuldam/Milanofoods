@@ -11,23 +11,35 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/components/store-provider";
+import { getCartLinePrice, getCartLineTotal, getCartLineUnits } from "@/components/store-provider";
+import { formatTotalMeasure, minimumPackageQuantity } from "@/lib/product-pricing";
 import { money } from "@/lib/products";
 
 export default function CartPage() {
   const {
     cart,
     setQty,
+    setPackaging,
     remove,
     subtotal,
     productsLoaded,
   } = useStore();
+
+  const requestedUnitsByProduct = new Map<string, number>();
+  for (const item of cart) {
+    requestedUnitsByProduct.set(
+      item.slug,
+      (requestedUnitsByProduct.get(item.slug) || 0) + getCartLineUnits(item),
+    );
+  }
 
   const hasUnavailableItems = cart.some(
     (item) =>
       productsLoaded &&
       (item.inStock !== true ||
         item.availableStock === undefined ||
-        item.availableStock < item.qty)
+        item.availableStock < (requestedUnitsByProduct.get(item.slug) || getCartLineUnits(item)) ||
+        getCartLineUnits(item) < (item.minimumOrderQuantity || 1))
   );
 
   const canCheckout =
@@ -68,11 +80,19 @@ export default function CartPage() {
                 )}
 
                 {cart.map((item) => {
+                  const unitsPerPackage = item.unitsPerPackage || 1;
+                  const minimumQty = minimumPackageQuantity(item.minimumOrderQuantity || 1, unitsPerPackage);
+                  const totalUnits = getCartLineUnits(item);
+                  const requestedProductUnits = requestedUnitsByProduct.get(item.slug) || totalUnits;
+                  const availableForThisLine = (item.availableStock || 0) - (requestedProductUnits - totalUnits);
+                  const maximumPackages = Math.floor(Math.max(0, availableForThisLine) / unitsPerPackage);
+                  const totalMeasure = formatTotalMeasure(item.size, totalUnits);
                   const unavailable =
                     productsLoaded &&
                     (item.inStock !== true ||
                       item.availableStock === undefined ||
-                      item.availableStock < item.qty);
+                      item.availableStock < requestedProductUnits ||
+                      totalUnits < (item.minimumOrderQuantity || 1));
 
                   return (
                     <div className="cart-item" key={item.id}>
@@ -90,11 +110,28 @@ export default function CartPage() {
 
                       <div>
                         <h3>{item.name}</h3>
-                        <p>{item.size}</p>
+                        {item.sku && <p className="cart-item-sku">SKU · {item.sku}</p>}
+                        <p>{[item.flavor, item.variantType, item.size].filter(Boolean).join(" · ")}</p>
 
-                        <strong className="price">
-                          {money(item.price)}
-                        </strong>
+                        <label className="cart-packaging-field">
+                          <span>Packaging</span>
+                          <select
+                            aria-label={`Packaging for ${item.name}`}
+                            value={item.packagingOptionId || ""}
+                            onChange={(event) => setPackaging(item.id, event.target.value || null)}
+                          >
+                            <option value="">Single unit</option>
+                            {(item.packagingOptions || []).map((option) => (
+                              <option key={option.id} value={option.id}>{option.label} · {option.unitsPerPackage} units</option>
+                            ))}
+                          </select>
+                        </label>
+                        <p className="cart-packaging-summary">
+                          {item.qty} × {item.packagingLabel || "Single unit"} · {totalUnits} individual units
+                          {totalMeasure ? ` · ${totalMeasure} total` : ""}
+                        </p>
+                        <strong className="price">ETB {getCartLinePrice(item).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / individual unit</strong>
+                        {item.promotionEnabled && item.promotionDiscountPercent && <small className="cart-promotion-note">Configured promotion: {item.promotionDiscountPercent}% off per unit</small>}
 
                         {productsLoaded && (
                           <p
@@ -106,7 +143,7 @@ export default function CartPage() {
                           >
                             {unavailable
                               ? "Unavailable or insufficient stock"
-                              : `${item.availableStock} available`}
+                              : `${Math.max(0, availableForThisLine)} individual units available for this line`}
                           </p>
                         )}
 
@@ -131,7 +168,7 @@ export default function CartPage() {
                           <button
                             onClick={() => setQty(item.id, item.qty - 1)}
                             aria-label="Decrease quantity"
-                            disabled={item.qty <= 1}
+                            disabled={item.qty <= minimumQty}
                           >
                             <Minus size={12} />
                           </button>
@@ -145,7 +182,7 @@ export default function CartPage() {
                               !productsLoaded ||
                               unavailable ||
                               item.availableStock === undefined ||
-                              item.qty >= item.availableStock
+                              item.qty >= maximumPackages
                             }
                           >
                             <Plus size={12} />
@@ -159,7 +196,7 @@ export default function CartPage() {
                             marginTop: 13,
                           }}
                         >
-                          {money(item.price * item.qty)}
+                          {money(getCartLineTotal(item))}
                         </div>
                       </div>
                     </div>

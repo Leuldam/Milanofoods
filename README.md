@@ -5,9 +5,13 @@ Premium, responsive Milano Foods storefront built with Next.js App Router and Ty
 ## Included
 - Responsive homepage and brand design system
 - Product catalog with category filters and search
+- Three storefront product families—Mojito Syrup, Ice Cream Powder, and Milkshake—with flavor, style, format, and pack-size filtering
 - Product detail pages
+- Database-backed per-SKU flavor, style, weight/volume, image galleries, carton configuration, minimum quantities, and explicitly enabled promotions
+- Wholesale cart pricing derived only from each SKU's individual unit price; carton counts multiply base-unit quantity and inventory reservations
 - Client-side shopping cart persisted in local storage
 - Checkout with delivery/pickup choice and payment preference
+- Optional checkout payments through CBE, Telebirr, Awash Bank, or Bank of Abyssinia; admins configure account names and numbers in the Mini App, and customers can optionally attach a payment screenshot
 - Order confirmation page
 - Recipes, About, Contact, Delivery, Pickup, Privacy and Terms pages
 - Server-side order API validation and optional Telegram notification
@@ -32,6 +36,10 @@ Premium, responsive Milano Foods storefront built with Next.js App Router and Ty
 - Add a production email provider (Resend, Postmark, SMTP, etc.) to send order emails; this starter does not claim email is active until configured.
 - Connect and verify a persistent production database before accepting real orders.
 - Configure actual delivery areas/fees, store policies, privacy/terms and payment arrangements.
+- Products remain hidden from the storefront until published. In Mini App → Inventory, choose **Add product** to add another flavor or variant, or **Add category** to create a product family. New products start at zero price and stock; open their inventory details to set a price and add stock before publishing. Publishing requires both a positive price and available stock.
+- Upload product photos in product details and category photos in Inventory → Category photos. Only PNG/JPG images up to 2 MB are accepted; uploaded images are stored in the database so they persist on serverless deployments. Categories appear in the storefront once they contain at least one published product.
+- Each product row is an independently priced and stocked SKU (flavor/type/size). In product details, configure carton choices as one `Label=units` entry per line; single-unit sale is always available. Stock, reservations, and order quantities remain individual units. The optional promotion is inactive unless explicitly enabled. After applying the product packaging migration, regenerate Prisma Client with `npx prisma generate`.
+- Configure and enable payment accounts in the Mini App's Payment accounts section before they appear at checkout. Payment selection and screenshot upload are optional; uploaded screenshots are stored with the order in the database and visible only to authenticated Mini App admins.
 - Test order creation, duplicate submissions, notification failures, stock validation, security, accessibility, and mobile checkout before launch.
 
 ## Routes

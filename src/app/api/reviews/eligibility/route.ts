@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isSecureOrderNumber } from "@/lib/order-number";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,8 +28,11 @@ export async function POST(request: NextRequest) {
       ? input.phone.replace(/\D/g, "")
       : "";
 
-    if (!orderNumber || phone.length < 7 || phone.length > 20) {
-      return NextResponse.json({ error: "Order details are incomplete." }, { status: 400 });
+    if (!isSecureOrderNumber(orderNumber) || phone.length < 7 || phone.length > 20) {
+      return NextResponse.json(
+        { error: "Enter the 32-character secure order number shown on your confirmation." },
+        { status: 400 },
+      );
     }
 
     const order = await prisma.order.findUnique({

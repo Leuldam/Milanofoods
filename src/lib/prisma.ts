@@ -6,7 +6,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaSchemaVersion: string | undefined;
 };
 
-const prismaSchemaVersion = "20261102181000";
+const prismaSchemaVersion = "20261103011500";
 
 export const prisma =
   (globalForPrisma.prismaSchemaVersion === prismaSchemaVersion

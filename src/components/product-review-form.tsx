@@ -1,22 +1,35 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
 type ReviewableProduct = { id: string; name: string };
+export type SubmittedReview = {
+  id: string;
+  productName: string;
+  displayName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
 
 export function ProductReviewForm({
-  orderNumber,
-  phone,
+  orderNumber: initialOrderNumber,
+  phone: initialPhone,
+  onReviewSubmitted,
 }: {
-  orderNumber: string;
-  phone: string;
+  orderNumber?: string;
+  phone?: string;
+  onReviewSubmitted?: (review: SubmittedReview) => void;
 }) {
   const [products, setProducts] = useState<ReviewableProduct[]>([]);
-  const [eligibilityMessage, setEligibilityMessage] = useState(
-    "Checking your order...",
-  );
+  const [orderNumber, setOrderNumber] = useState(initialOrderNumber || "");
+  const [phone, setPhone] = useState(initialPhone || "");
+  const [verifiedOrderNumber, setVerifiedOrderNumber] = useState("");
+  const [verifiedPhone, setVerifiedPhone] = useState("");
+  const [eligibilityMessage, setEligibilityMessage] = useState("");
   const [eligible, setEligible] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [productId, setProductId] = useState("");
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -24,50 +37,53 @@ export function ProductReviewForm({
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    let active = true;
+  const checkEligibility = useCallback(async (order: string, customerPhone: string) => {
+    setEligibilityMessage("Checking your order...");
+    setEligible(false);
+    setProducts([]);
+    setVerifying(true);
 
-    async function checkEligibility() {
-      try {
-        const response = await fetch("/api/reviews/eligibility", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderNumber, phone }),
-          cache: "no-store",
-        });
-        const result: {
-          canReview?: boolean;
-          products?: ReviewableProduct[];
-          message?: string;
-          error?: string;
-        } = await response.json();
+    try {
+      const response = await fetch("/api/reviews/eligibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderNumber: order, phone: customerPhone }),
+        cache: "no-store",
+      });
+      const result: {
+        canReview?: boolean;
+        products?: ReviewableProduct[];
+        message?: string;
+        error?: string;
+      } = await response.json();
 
-        if (!response.ok) {
-          throw new Error(result.error || "Unable to verify this order.");
-        }
-        if (!Array.isArray(result.products) || typeof result.canReview !== "boolean") {
-          throw new Error("The order verification response was incomplete.");
-        }
-        if (!active) return;
-
-        setEligible(result.canReview);
-        setProducts(result.products);
-        setEligibilityMessage(result.message || "");
-      } catch (error) {
-        console.error(error);
-        if (active) {
-          setEligibilityMessage(
-            error instanceof Error ? error.message : "Unable to verify this order.",
-          );
-        }
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to verify this order.");
       }
-    }
+      if (!Array.isArray(result.products) || typeof result.canReview !== "boolean") {
+        throw new Error("The order verification response was incomplete.");
+      }
 
-    checkEligibility();
-    return () => {
-      active = false;
-    };
-  }, [orderNumber, phone]);
+      setVerifiedOrderNumber(order.trim().toUpperCase());
+      setVerifiedPhone(customerPhone);
+      setEligible(result.canReview);
+      setProducts(result.products);
+      setEligibilityMessage(result.message || "");
+    } catch (error) {
+      console.error(error);
+      setEligibilityMessage(
+        error instanceof Error ? error.message : "Unable to verify this order.",
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialOrderNumber && initialPhone) {
+      void checkEligibility(initialOrderNumber, initialPhone);
+    }
+  }, [checkEligibility, initialOrderNumber, initialPhone]);
 
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,16 +95,24 @@ export function ProductReviewForm({
       const response = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, orderNumber, phone, rating, comment }),
+        body: JSON.stringify({
+          productId,
+          orderNumber: verifiedOrderNumber,
+          phone: verifiedPhone,
+          rating,
+          comment,
+        }),
       });
-      const result: { message?: string; error?: string } = await response.json();
+      const result: { message?: string; error?: string; review?: SubmittedReview } = await response.json();
 
       if (!response.ok) {
         throw new Error(result.error || "Unable to submit your review.");
       }
       if (!result.message) throw new Error("The review response was incomplete.");
+      if (!result.review) throw new Error("The published review response was incomplete.");
 
       setSuccess(result.message);
+      onReviewSubmitted?.(result.review);
       setProducts((current) => current.filter((product) => product.id !== productId));
       setProductId("");
       setRating(5);
@@ -104,17 +128,51 @@ export function ProductReviewForm({
   }
 
   return (
-    <section className="section product-reviews-section" aria-labelledby="leave-review-title">
-      <div className="wrap">
-        <div className="review-form">
-          <h2 id="leave-review-title">Review your order</h2>
+    <div className="review-form" aria-labelledby="leave-review-title">
+          <h2 id="leave-review-title">Share your experience</h2>
           {!eligible || products.length === 0 ? (
-            <p className="review-status" role="status">
-              {success || eligibilityMessage}
-            </p>
+            <>
+              {eligibilityMessage && (
+                <p className="review-status" role="status">
+                  {success || eligibilityMessage}
+                </p>
+              )}
+              {!initialOrderNumber && (
+                <>
+                  <p>Enter your order number and phone number to review a product you purchased. Reviews from verified orders publish right away.</p>
+                  <label className="field">
+                    <span>Order number</span>
+                    <input
+                      required
+                      autoComplete="off"
+                      value={orderNumber}
+                      onChange={(event) => setOrderNumber(event.target.value)}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Phone number used for your order</span>
+                    <input
+                      required
+                      autoComplete="tel"
+                      inputMode="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  </label>
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={verifying || !orderNumber.trim() || !phone.trim()}
+                    onClick={() => void checkEligibility(orderNumber, phone)}
+                  >
+                    {verifying ? "Checking order..." : "Find my order"}
+                  </button>
+                </>
+              )}
+            </>
           ) : (
             <>
-              <p>Your review will be published on our homepage after admin approval.</p>
+              <p>Your review will appear in customer reviews immediately after submission.</p>
               <form onSubmit={submitReview}>
                 <label className="field">
                   <span>Product from your order</span>
@@ -184,8 +242,6 @@ export function ProductReviewForm({
               </form>
             </>
           )}
-        </div>
-      </div>
-    </section>
+    </div>
   );
 }
