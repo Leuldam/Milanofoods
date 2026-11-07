@@ -8,6 +8,7 @@ import {
   calculateUnitPriceCents,
   decimalToCents,
 } from "@/lib/product-pricing";
+import { sendNewOrderPushNotification } from "@/lib/web-push-notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -495,6 +496,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let pushSent = 0;
+    try {
+      pushSent = await sendNewOrderPushNotification({ orderNumber });
+    } catch (error) {
+      console.error("Web Push order notification could not be delivered:", error);
+    }
+
     return NextResponse.json(
       {
         ok: true,
@@ -523,6 +531,7 @@ export async function POST(req: NextRequest) {
         paymentAccountName: paymentConfig?.accountName || "",
         paymentAccountNumber: paymentConfig?.accountNumber || "",
         telegramSent,
+        pushSent,
         status: "PENDING",
         reservationExpiresAt: reservationExpiresAt.toISOString(),
         message:

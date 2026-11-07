@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { PushNotificationButton } from "@/components/admin/push-notification-button";
 import {
   LayoutDashboard,
   Package,
@@ -268,6 +269,7 @@ export function AdminShell({ admin, children }: AdminShellProps) {
           </div>
 
           <div className="admin-topbar-actions" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <PushNotificationButton app="admin" />
             <div className="admin-location-badge" style={{
               display: "flex",
               alignItems: "center",
