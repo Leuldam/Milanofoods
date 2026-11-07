@@ -18,9 +18,18 @@ export type AdminCustomer = Prisma.CustomerGetPayload<{
         id: true;
         orderNumber: true;
         total: true;
+        paidAmount: true;
         status: true;
         paymentStatus: true;
         createdAt: true;
+        items: {
+          select: {
+            id: true;
+            productName: true;
+            quantity: true;
+            lineTotal: true;
+          };
+        };
       };
     };
   };
@@ -28,6 +37,22 @@ export type AdminCustomer = Prisma.CustomerGetPayload<{
   totalOrders: number;
   totalPurchases: number;
   unpaidBalance: number;
+  creditBalance: number;
+  creditTransactions: Array<{
+    id: string;
+    type: "CREDIT" | "REPAYMENT";
+    amount: number;
+    notes: string | null;
+    recordedBy: string | null;
+    createdAt: Date | string;
+    items: Array<{
+      id: string;
+      productName: string;
+      productSku: string;
+      quantity: number;
+      lineTotal: number;
+    }>;
+  }>;
 };
 
 export type AdminOrder = Prisma.OrderGetPayload<{
@@ -94,6 +119,7 @@ export interface AdminStaffMember {
 }
 
 export interface AdminDashboardData {
+  canViewCrm: boolean;
   metrics: {
     todaySales: number;
     todayOrdersCount: number;

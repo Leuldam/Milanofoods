@@ -4,20 +4,18 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
-  ShoppingBag,
   Clock,
-  CheckCircle2,
   Factory,
   Boxes,
-  Wheat,
   AlertTriangle,
   ArrowUpRight,
   Plus,
   RefreshCw,
-  Calendar,
+  Handshake,
 } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminDashboardData } from "@/lib/admin-types";
+import { AdminPageLoading } from "@/components/admin/admin-loading";
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -26,6 +24,7 @@ export default function AdminDashboardPage() {
 
   const loadData = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/admin/dashboard");
       if (res.status === 401 || res.status === 403) {
@@ -47,12 +46,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div style={{ padding: "60px 0", textAlign: "center", color: "#777C75" }}>
-        <RefreshCw size={28} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-        <div style={{ fontSize: "14px", fontWeight: 600 }}>Loading Milano Factory Dashboard...</div>
-      </div>
-    );
+    return <AdminPageLoading label="Loading your dashboard..." />;
   }
 
   if (error || !data) {
@@ -81,9 +75,9 @@ export default function AdminDashboardPage() {
   const { metrics, lowStockAlerts, recentOrders, recentBatches, salesTrend } = data;
 
   return (
-    <div>
+    <div className="admin-dashboard-page">
       {/* Top Header bar */}
-      <div style={{
+      <div className="admin-dashboard-header admin-dashboard-hero" style={{
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
@@ -92,6 +86,7 @@ export default function AdminDashboardPage() {
         marginBottom: "28px",
       }}>
         <div>
+          <span className="admin-dashboard-eyebrow">MILANO FOODS · OPERATIONS</span>
           <h1 style={{
             margin: "0 0 4px",
             fontSize: "24px",
@@ -107,9 +102,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+        <div className="admin-dashboard-actions" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
           <Link
             href="/admin/orders?new=true"
+            className="admin-dashboard-action"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -127,6 +123,7 @@ export default function AdminDashboardPage() {
           </Link>
           <Link
             href="/admin/production?new=true"
+            className="admin-dashboard-action"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -144,6 +141,7 @@ export default function AdminDashboardPage() {
           </Link>
           <button
             onClick={loadData}
+            className="admin-dashboard-action"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -163,15 +161,26 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {data.canViewCrm && (
+        <Link href="/admin/crm" className="admin-dashboard-crm-card">
+          <span className="admin-dashboard-crm-icon"><Handshake size={20} /></span>
+          <span className="admin-dashboard-crm-copy">
+            <strong>Customer relationship management</strong>
+            <small>Manage your sales pipeline, contact activity, and follow-up schedule</small>
+          </span>
+          <span className="admin-dashboard-crm-link">Open CRM <ArrowUpRight size={15} /></span>
+        </Link>
+      )}
+
       {/* KPI Cards Grid */}
-      <div style={{
+      <div className="admin-kpi-grid" style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
         gap: "16px",
         marginBottom: "28px",
       }}>
         {/* Today's Sales */}
-        <div style={{
+        <div className="admin-kpi-card" style={{
           background: "#FFFFFF",
           border: "1px solid #E8E1D5",
           borderRadius: "8px",
@@ -186,7 +195,7 @@ export default function AdminDashboardPage() {
               <TrendingUp size={18} />
             </div>
           </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "#073D2E", letterSpacing: "-0.03em" }}>
+          <div className="admin-kpi-value" style={{ fontSize: "26px", fontWeight: 800, color: "#073D2E", letterSpacing: "-0.03em" }}>
             ETB {metrics.todaySales.toLocaleString()}
           </div>
           <div style={{ fontSize: "11px", color: "#777C75", marginTop: "4px" }}>
@@ -195,7 +204,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Pending Orders */}
-        <div style={{
+        <div className="admin-kpi-card" style={{
           background: "#FFFFFF",
           border: "1px solid #E8E1D5",
           borderRadius: "8px",
@@ -210,7 +219,7 @@ export default function AdminDashboardPage() {
               <Clock size={18} />
             </div>
           </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "#E65100", letterSpacing: "-0.03em" }}>
+          <div className="admin-kpi-value" style={{ fontSize: "26px", fontWeight: 800, color: "#E65100", letterSpacing: "-0.03em" }}>
             {metrics.pendingOrdersCount}
           </div>
           <div style={{ fontSize: "11px", color: "#777C75", marginTop: "4px" }}>
@@ -219,7 +228,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Today's Production Output */}
-        <div style={{
+        <div className="admin-kpi-card" style={{
           background: "#FFFFFF",
           border: "1px solid #E8E1D5",
           borderRadius: "8px",
@@ -234,7 +243,7 @@ export default function AdminDashboardPage() {
               <Factory size={18} />
             </div>
           </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "#073D2E", letterSpacing: "-0.03em" }}>
+          <div className="admin-kpi-value" style={{ fontSize: "26px", fontWeight: 800, color: "#073D2E", letterSpacing: "-0.03em" }}>
             {metrics.todayProductionQty} <span style={{ fontSize: "14px", fontWeight: 600, color: "#777C75" }}>units</span>
           </div>
           <div style={{ fontSize: "11px", color: "#777C75", marginTop: "4px" }}>
@@ -243,7 +252,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Total Finished Stock */}
-        <div style={{
+        <div className="admin-kpi-card" style={{
           background: "#FFFFFF",
           border: "1px solid #E8E1D5",
           borderRadius: "8px",
@@ -258,7 +267,7 @@ export default function AdminDashboardPage() {
               <Boxes size={18} />
             </div>
           </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "#073D2E", letterSpacing: "-0.03em" }}>
+          <div className="admin-kpi-value" style={{ fontSize: "26px", fontWeight: 800, color: "#073D2E", letterSpacing: "-0.03em" }}>
             {metrics.totalFinishedStock} <span style={{ fontSize: "14px", fontWeight: 600, color: "#777C75" }}>units</span>
           </div>
           <div style={{ fontSize: "11px", color: "#777C75", marginTop: "4px" }}>
@@ -269,23 +278,24 @@ export default function AdminDashboardPage() {
 
       {/* Low Stock Alerts Banner (if any) */}
       {lowStockAlerts && lowStockAlerts.length > 0 && (
-        <div style={{
+        <div className="admin-low-stock-alert" style={{
           background: "#FFFBEB",
           border: "1px solid #FCD34D",
           borderRadius: "8px",
           padding: "16px 20px",
           marginBottom: "28px",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#B45309", marginBottom: "10px" }}>
+          <div className="admin-low-stock-heading" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#B45309", marginBottom: "10px" }}>
             <AlertTriangle size={18} />
             <span style={{ fontWeight: 800, fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Low Stock &amp; Reorder Alerts ({lowStockAlerts.length} items)
             </span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <div className="admin-low-stock-list" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {lowStockAlerts.map((item) => (
               <span
                 key={item.id}
+                className="admin-low-stock-item"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -299,7 +309,8 @@ export default function AdminDashboardPage() {
                   fontWeight: 600,
                 }}
               >
-                <strong>{item.name}:</strong> {item.currentStock} {item.unit} (Reorder at {item.threshold})
+                <strong>{item.name}</strong>
+                <span>{item.currentStock} {item.unit} · Reorder {item.threshold}</span>
               </span>
             ))}
           </div>
@@ -307,7 +318,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* 7-Day Performance Trend */}
-      <div style={{
+      <div className="admin-dashboard-sales-chart" style={{
         background: "#FFFFFF",
         border: "1px solid #E8E1D5",
         borderRadius: "8px",
@@ -320,7 +331,7 @@ export default function AdminDashboardPage() {
           </h2>
           <span style={{ fontSize: "11px", color: "#777C75" }}>Based on live orders</span>
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", height: "140px", paddingTop: "20px" }}>
+        <div className="admin-dashboard-chart-bars" style={{ display: "flex", alignItems: "flex-end", gap: "16px", height: "140px", paddingTop: "20px" }}>
           {salesTrend.map((day, idx) => {
             const max = Math.max(...salesTrend.map((d) => d.amount), 100);
             const heightPercent = Math.max(10, Math.round((day.amount / max) * 100));
@@ -356,7 +367,7 @@ export default function AdminDashboardPage() {
         gap: "24px",
       }}>
         {/* Recent Orders */}
-        <div style={{
+        <div className="admin-recent-orders-panel" style={{
           background: "#FFFFFF",
           border: "1px solid #E8E1D5",
           borderRadius: "8px",
@@ -391,6 +402,7 @@ export default function AdminDashboardPage() {
               recentOrders.map((order) => (
                 <div
                   key={order.id}
+                  className="admin-recent-order"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -401,9 +413,9 @@ export default function AdminDashboardPage() {
                     background: "#FAFAF8",
                   }}
                 >
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontWeight: 800, fontSize: "13px", color: "#073D2E" }}>
+                  <div className="admin-recent-order-details">
+                    <div className="admin-recent-order-heading" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span className="admin-recent-order-number" style={{ fontWeight: 800, fontSize: "13px", color: "#073D2E" }}>
                         #{order.orderNumber}
                       </span>
                       <span style={{
@@ -417,11 +429,11 @@ export default function AdminDashboardPage() {
                         {order.source}
                       </span>
                     </div>
-                    <div style={{ fontSize: "12px", color: "#515B54", marginTop: "2px" }}>
+                    <div className="admin-recent-order-customer" style={{ fontSize: "12px", color: "#515B54", marginTop: "2px" }}>
                       {order.customerName} ({order.customerPhone}) · {order.itemsCount} items
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
+                  <div className="admin-recent-order-total" style={{ textAlign: "right" }}>
                     <div style={{ fontWeight: 800, fontSize: "13px", color: "#17251F" }}>
                       ETB {order.total.toLocaleString()}
                     </div>

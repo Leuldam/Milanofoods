@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Search, Filter, RefreshCw, X, Check, AlertCircle, ShoppingBag, Phone, MapPin, CreditCard } from "lucide-react";
+import { Plus, Search, Filter, X, Check, AlertCircle, ShoppingBag, Phone, MapPin, CreditCard } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminOrder, AdminProduct } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -192,6 +193,15 @@ export default function AdminOrdersPage() {
     const matchesSource = sourceFilter === "ALL" || o.source === sourceFilter;
     return matchesSearch && matchesStatus && matchesSource;
   });
+  const pipelineStages = [
+    { value: "ALL", label: "All", count: orders.length },
+    { value: "PENDING", label: "Pending", count: orders.filter((order) => order.status === "PENDING").length },
+    { value: "CONFIRMED", label: "Confirmed", count: orders.filter((order) => order.status === "CONFIRMED").length },
+    { value: "PREPARING", label: "Preparing", count: orders.filter((order) => order.status === "PREPARING").length },
+    { value: "READY_FOR_PICKUP", label: "Ready", count: orders.filter((order) => order.status === "READY_FOR_PICKUP").length },
+    { value: "OUT_FOR_DELIVERY", label: "Dispatched", count: orders.filter((order) => order.status === "OUT_FOR_DELIVERY").length },
+    { value: "COMPLETED", label: "Completed", count: orders.filter((order) => order.status === "COMPLETED").length },
+  ];
 
   return (
     <div>
@@ -266,6 +276,19 @@ export default function AdminOrdersPage() {
         </select>
       </div>
 
+      <div className="admin-order-pipeline-mobile" aria-label="Filter orders by pipeline status">
+        {pipelineStages.map((stage) => (
+          <button
+            type="button"
+            key={stage.value}
+            className={statusFilter === stage.value ? "is-active" : ""}
+            onClick={() => setStatusFilter(stage.value)}
+          >
+            {stage.label}<span>{stage.count}</span>
+          </button>
+        ))}
+      </div>
+
       {success && (
         <div style={{ padding: "12px 16px", marginBottom: "16px", background: "#DCFCE7", color: "#166534", borderRadius: "6px", fontSize: "13px" }}>
           {success}
@@ -273,7 +296,7 @@ export default function AdminOrdersPage() {
       )}
 
       {/* Orders Table */}
-      <div style={{ background: "#FFFFFF", border: "1px solid #E8E1D5", borderRadius: "8px", overflowX: "auto" }}>
+      <div className="admin-workflow-desktop-table" style={{ background: "#FFFFFF", border: "1px solid #E8E1D5", borderRadius: "8px", overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
           <thead>
             <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E1D5", color: "#777C75", fontWeight: 700, fontSize: "11px", textTransform: "uppercase" }}>
@@ -288,12 +311,7 @@ export default function AdminOrdersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading orders...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={7} label="Loading orders..." />
             ) : filteredOrders.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
@@ -366,6 +384,32 @@ export default function AdminOrdersPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="admin-workflow-mobile-list admin-order-mobile-list">
+        {loading ? <div className="admin-workflow-loading">Loading orders…</div> : filteredOrders.length === 0 ? (
+          <div className="admin-workflow-empty">No orders found.</div>
+        ) : filteredOrders.map((order) => (
+          <article className="admin-order-mobile-card" key={order.id}>
+            <div className="admin-order-mobile-heading">
+              <div><strong>#{order.orderNumber}</strong><span>{new Date(order.createdAt).toLocaleDateString()} · {order.source.replace("MANUAL_", "")}</span></div>
+              <span className={`admin-order-status status-${order.status.toLowerCase()}`}>{order.status.replaceAll("_", " ")}</span>
+            </div>
+            <div className="admin-order-mobile-customer">
+              <strong>{order.customerName}</strong>
+              <span>{order.customerPhone}</span>
+              {order.deliveryAddress && <span>{order.deliveryAddress}</span>}
+            </div>
+            <p className="admin-order-mobile-items">{order.items?.map((item) => `${item.productName} × ${item.quantity}`).join(", ") || "No item details"}</p>
+            <div className="admin-order-mobile-footer">
+              <span>ETB {Number(order.total).toLocaleString()}</span>
+              <span className={`admin-order-payment payment-${(order.paymentStatus || "UNPAID").toLowerCase()}`}>{(order.paymentStatus || "UNPAID").replace("_", " ")}</span>
+            </div>
+            <button type="button" className="admin-workflow-button admin-order-mobile-update" onClick={() => openStatusModal(order)}>
+              Update Order Status
+            </button>
+          </article>
+        ))}
       </div>
 
       {/* New Manual Order Modal */}

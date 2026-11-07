@@ -34,6 +34,10 @@ export type CustomerMinAggregateOutputType = {
   city: string | null
   customerType: string | null
   notes: string | null
+  crmStage: $Enums.CustomerCrmStage | null
+  crmLeadSource: string | null
+  assignedTo: string | null
+  nextFollowUpAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,6 +52,10 @@ export type CustomerMaxAggregateOutputType = {
   city: string | null
   customerType: string | null
   notes: string | null
+  crmStage: $Enums.CustomerCrmStage | null
+  crmLeadSource: string | null
+  assignedTo: string | null
+  nextFollowUpAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -62,6 +70,10 @@ export type CustomerCountAggregateOutputType = {
   city: number
   customerType: number
   notes: number
+  crmStage: number
+  crmLeadSource: number
+  assignedTo: number
+  nextFollowUpAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -78,6 +90,10 @@ export type CustomerMinAggregateInputType = {
   city?: true
   customerType?: true
   notes?: true
+  crmStage?: true
+  crmLeadSource?: true
+  assignedTo?: true
+  nextFollowUpAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -92,6 +108,10 @@ export type CustomerMaxAggregateInputType = {
   city?: true
   customerType?: true
   notes?: true
+  crmStage?: true
+  crmLeadSource?: true
+  assignedTo?: true
+  nextFollowUpAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -106,6 +126,10 @@ export type CustomerCountAggregateInputType = {
   city?: true
   customerType?: true
   notes?: true
+  crmStage?: true
+  crmLeadSource?: true
+  assignedTo?: true
+  nextFollowUpAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -193,6 +217,10 @@ export type CustomerGroupByOutputType = {
   city: string | null
   customerType: string
   notes: string | null
+  crmStage: $Enums.CustomerCrmStage
+  crmLeadSource: string | null
+  assignedTo: string | null
+  nextFollowUpAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: CustomerCountAggregateOutputType | null
@@ -228,9 +256,15 @@ export type CustomerWhereInput = {
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
   customerType?: Prisma.StringFilter<"Customer"> | string
   notes?: Prisma.StringNullableFilter<"Customer"> | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFilter<"Customer"> | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.StringNullableFilter<"Customer"> | string | null
+  assignedTo?: Prisma.StringNullableFilter<"Customer"> | string | null
+  nextFollowUpAt?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   orders?: Prisma.OrderListRelationFilter
+  creditTransactions?: Prisma.CustomerCreditTransactionListRelationFilter
+  crmActivities?: Prisma.CustomerCrmActivityListRelationFilter
 }
 
 export type CustomerOrderByWithRelationInput = {
@@ -243,9 +277,15 @@ export type CustomerOrderByWithRelationInput = {
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   customerType?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  crmStage?: Prisma.SortOrder
+  crmLeadSource?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedTo?: Prisma.SortOrderInput | Prisma.SortOrder
+  nextFollowUpAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   orders?: Prisma.OrderOrderByRelationAggregateInput
+  creditTransactions?: Prisma.CustomerCreditTransactionOrderByRelationAggregateInput
+  crmActivities?: Prisma.CustomerCrmActivityOrderByRelationAggregateInput
 }
 
 export type CustomerWhereUniqueInput = Prisma.AtLeast<{
@@ -261,9 +301,15 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
   customerType?: Prisma.StringFilter<"Customer"> | string
   notes?: Prisma.StringNullableFilter<"Customer"> | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFilter<"Customer"> | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.StringNullableFilter<"Customer"> | string | null
+  assignedTo?: Prisma.StringNullableFilter<"Customer"> | string | null
+  nextFollowUpAt?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   orders?: Prisma.OrderListRelationFilter
+  creditTransactions?: Prisma.CustomerCreditTransactionListRelationFilter
+  crmActivities?: Prisma.CustomerCrmActivityListRelationFilter
 }, "id" | "phone">
 
 export type CustomerOrderByWithAggregationInput = {
@@ -276,6 +322,10 @@ export type CustomerOrderByWithAggregationInput = {
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   customerType?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  crmStage?: Prisma.SortOrder
+  crmLeadSource?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedTo?: Prisma.SortOrderInput | Prisma.SortOrder
+  nextFollowUpAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CustomerCountOrderByAggregateInput
@@ -296,6 +346,10 @@ export type CustomerScalarWhereWithAggregatesInput = {
   city?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   customerType?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   notes?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageWithAggregatesFilter<"Customer"> | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  assignedTo?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  nextFollowUpAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Customer"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Customer"> | Date | string
 }
@@ -310,9 +364,15 @@ export type CustomerCreateInput = {
   city?: string | null
   customerType?: string
   notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  creditTransactions?: Prisma.CustomerCreditTransactionCreateNestedManyWithoutCustomerInput
+  crmActivities?: Prisma.CustomerCrmActivityCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUncheckedCreateInput = {
@@ -325,9 +385,15 @@ export type CustomerUncheckedCreateInput = {
   city?: string | null
   customerType?: string
   notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  creditTransactions?: Prisma.CustomerCreditTransactionUncheckedCreateNestedManyWithoutCustomerInput
+  crmActivities?: Prisma.CustomerCrmActivityUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUpdateInput = {
@@ -340,9 +406,15 @@ export type CustomerUpdateInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerType?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  creditTransactions?: Prisma.CustomerCreditTransactionUpdateManyWithoutCustomerNestedInput
+  crmActivities?: Prisma.CustomerCrmActivityUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateInput = {
@@ -355,9 +427,15 @@ export type CustomerUncheckedUpdateInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerType?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  creditTransactions?: Prisma.CustomerCreditTransactionUncheckedUpdateManyWithoutCustomerNestedInput
+  crmActivities?: Prisma.CustomerCrmActivityUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerCreateManyInput = {
@@ -370,6 +448,10 @@ export type CustomerCreateManyInput = {
   city?: string | null
   customerType?: string
   notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -384,6 +466,10 @@ export type CustomerUpdateManyMutationInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerType?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -398,8 +484,17 @@ export type CustomerUncheckedUpdateManyInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerType?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CustomerScalarRelationFilter = {
+  is?: Prisma.CustomerWhereInput
+  isNot?: Prisma.CustomerWhereInput
 }
 
 export type CustomerNullableScalarRelationFilter = {
@@ -417,6 +512,10 @@ export type CustomerCountOrderByAggregateInput = {
   city?: Prisma.SortOrder
   customerType?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  crmStage?: Prisma.SortOrder
+  crmLeadSource?: Prisma.SortOrder
+  assignedTo?: Prisma.SortOrder
+  nextFollowUpAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -431,6 +530,10 @@ export type CustomerMaxOrderByAggregateInput = {
   city?: Prisma.SortOrder
   customerType?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  crmStage?: Prisma.SortOrder
+  crmLeadSource?: Prisma.SortOrder
+  assignedTo?: Prisma.SortOrder
+  nextFollowUpAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -445,8 +548,26 @@ export type CustomerMinOrderByAggregateInput = {
   city?: Prisma.SortOrder
   customerType?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  crmStage?: Prisma.SortOrder
+  crmLeadSource?: Prisma.SortOrder
+  assignedTo?: Prisma.SortOrder
+  nextFollowUpAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type CustomerCreateNestedOneWithoutCreditTransactionsInput = {
+  create?: Prisma.XOR<Prisma.CustomerCreateWithoutCreditTransactionsInput, Prisma.CustomerUncheckedCreateWithoutCreditTransactionsInput>
+  connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutCreditTransactionsInput
+  connect?: Prisma.CustomerWhereUniqueInput
+}
+
+export type CustomerUpdateOneRequiredWithoutCreditTransactionsNestedInput = {
+  create?: Prisma.XOR<Prisma.CustomerCreateWithoutCreditTransactionsInput, Prisma.CustomerUncheckedCreateWithoutCreditTransactionsInput>
+  connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutCreditTransactionsInput
+  upsert?: Prisma.CustomerUpsertWithoutCreditTransactionsInput
+  connect?: Prisma.CustomerWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerUpdateToOneWithWhereWithoutCreditTransactionsInput, Prisma.CustomerUpdateWithoutCreditTransactionsInput>, Prisma.CustomerUncheckedUpdateWithoutCreditTransactionsInput>
 }
 
 export type CustomerCreateNestedOneWithoutOrdersInput = {
@@ -465,6 +586,120 @@ export type CustomerUpdateOneWithoutOrdersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerUpdateToOneWithWhereWithoutOrdersInput, Prisma.CustomerUpdateWithoutOrdersInput>, Prisma.CustomerUncheckedUpdateWithoutOrdersInput>
 }
 
+export type EnumCustomerCrmStageFieldUpdateOperationsInput = {
+  set?: $Enums.CustomerCrmStage
+}
+
+export type CustomerCreateNestedOneWithoutCrmActivitiesInput = {
+  create?: Prisma.XOR<Prisma.CustomerCreateWithoutCrmActivitiesInput, Prisma.CustomerUncheckedCreateWithoutCrmActivitiesInput>
+  connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutCrmActivitiesInput
+  connect?: Prisma.CustomerWhereUniqueInput
+}
+
+export type CustomerUpdateOneRequiredWithoutCrmActivitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.CustomerCreateWithoutCrmActivitiesInput, Prisma.CustomerUncheckedCreateWithoutCrmActivitiesInput>
+  connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutCrmActivitiesInput
+  upsert?: Prisma.CustomerUpsertWithoutCrmActivitiesInput
+  connect?: Prisma.CustomerWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerUpdateToOneWithWhereWithoutCrmActivitiesInput, Prisma.CustomerUpdateWithoutCrmActivitiesInput>, Prisma.CustomerUncheckedUpdateWithoutCrmActivitiesInput>
+}
+
+export type CustomerCreateWithoutCreditTransactionsInput = {
+  id?: string
+  phone: string
+  name: string
+  email?: string | null
+  company?: string | null
+  address?: string | null
+  city?: string | null
+  customerType?: string
+  notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  crmActivities?: Prisma.CustomerCrmActivityCreateNestedManyWithoutCustomerInput
+}
+
+export type CustomerUncheckedCreateWithoutCreditTransactionsInput = {
+  id?: string
+  phone: string
+  name: string
+  email?: string | null
+  company?: string | null
+  address?: string | null
+  city?: string | null
+  customerType?: string
+  notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  crmActivities?: Prisma.CustomerCrmActivityUncheckedCreateNestedManyWithoutCustomerInput
+}
+
+export type CustomerCreateOrConnectWithoutCreditTransactionsInput = {
+  where: Prisma.CustomerWhereUniqueInput
+  create: Prisma.XOR<Prisma.CustomerCreateWithoutCreditTransactionsInput, Prisma.CustomerUncheckedCreateWithoutCreditTransactionsInput>
+}
+
+export type CustomerUpsertWithoutCreditTransactionsInput = {
+  update: Prisma.XOR<Prisma.CustomerUpdateWithoutCreditTransactionsInput, Prisma.CustomerUncheckedUpdateWithoutCreditTransactionsInput>
+  create: Prisma.XOR<Prisma.CustomerCreateWithoutCreditTransactionsInput, Prisma.CustomerUncheckedCreateWithoutCreditTransactionsInput>
+  where?: Prisma.CustomerWhereInput
+}
+
+export type CustomerUpdateToOneWithWhereWithoutCreditTransactionsInput = {
+  where?: Prisma.CustomerWhereInput
+  data: Prisma.XOR<Prisma.CustomerUpdateWithoutCreditTransactionsInput, Prisma.CustomerUncheckedUpdateWithoutCreditTransactionsInput>
+}
+
+export type CustomerUpdateWithoutCreditTransactionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerType?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  crmActivities?: Prisma.CustomerCrmActivityUpdateManyWithoutCustomerNestedInput
+}
+
+export type CustomerUncheckedUpdateWithoutCreditTransactionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerType?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  crmActivities?: Prisma.CustomerCrmActivityUncheckedUpdateManyWithoutCustomerNestedInput
+}
+
 export type CustomerCreateWithoutOrdersInput = {
   id?: string
   phone: string
@@ -475,8 +710,14 @@ export type CustomerCreateWithoutOrdersInput = {
   city?: string | null
   customerType?: string
   notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  creditTransactions?: Prisma.CustomerCreditTransactionCreateNestedManyWithoutCustomerInput
+  crmActivities?: Prisma.CustomerCrmActivityCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUncheckedCreateWithoutOrdersInput = {
@@ -489,8 +730,14 @@ export type CustomerUncheckedCreateWithoutOrdersInput = {
   city?: string | null
   customerType?: string
   notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  creditTransactions?: Prisma.CustomerCreditTransactionUncheckedCreateNestedManyWithoutCustomerInput
+  crmActivities?: Prisma.CustomerCrmActivityUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerCreateOrConnectWithoutOrdersInput = {
@@ -519,8 +766,14 @@ export type CustomerUpdateWithoutOrdersInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerType?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditTransactions?: Prisma.CustomerCreditTransactionUpdateManyWithoutCustomerNestedInput
+  crmActivities?: Prisma.CustomerCrmActivityUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateWithoutOrdersInput = {
@@ -533,8 +786,110 @@ export type CustomerUncheckedUpdateWithoutOrdersInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customerType?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creditTransactions?: Prisma.CustomerCreditTransactionUncheckedUpdateManyWithoutCustomerNestedInput
+  crmActivities?: Prisma.CustomerCrmActivityUncheckedUpdateManyWithoutCustomerNestedInput
+}
+
+export type CustomerCreateWithoutCrmActivitiesInput = {
+  id?: string
+  phone: string
+  name: string
+  email?: string | null
+  company?: string | null
+  address?: string | null
+  city?: string | null
+  customerType?: string
+  notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  creditTransactions?: Prisma.CustomerCreditTransactionCreateNestedManyWithoutCustomerInput
+}
+
+export type CustomerUncheckedCreateWithoutCrmActivitiesInput = {
+  id?: string
+  phone: string
+  name: string
+  email?: string | null
+  company?: string | null
+  address?: string | null
+  city?: string | null
+  customerType?: string
+  notes?: string | null
+  crmStage?: $Enums.CustomerCrmStage
+  crmLeadSource?: string | null
+  assignedTo?: string | null
+  nextFollowUpAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  creditTransactions?: Prisma.CustomerCreditTransactionUncheckedCreateNestedManyWithoutCustomerInput
+}
+
+export type CustomerCreateOrConnectWithoutCrmActivitiesInput = {
+  where: Prisma.CustomerWhereUniqueInput
+  create: Prisma.XOR<Prisma.CustomerCreateWithoutCrmActivitiesInput, Prisma.CustomerUncheckedCreateWithoutCrmActivitiesInput>
+}
+
+export type CustomerUpsertWithoutCrmActivitiesInput = {
+  update: Prisma.XOR<Prisma.CustomerUpdateWithoutCrmActivitiesInput, Prisma.CustomerUncheckedUpdateWithoutCrmActivitiesInput>
+  create: Prisma.XOR<Prisma.CustomerCreateWithoutCrmActivitiesInput, Prisma.CustomerUncheckedCreateWithoutCrmActivitiesInput>
+  where?: Prisma.CustomerWhereInput
+}
+
+export type CustomerUpdateToOneWithWhereWithoutCrmActivitiesInput = {
+  where?: Prisma.CustomerWhereInput
+  data: Prisma.XOR<Prisma.CustomerUpdateWithoutCrmActivitiesInput, Prisma.CustomerUncheckedUpdateWithoutCrmActivitiesInput>
+}
+
+export type CustomerUpdateWithoutCrmActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerType?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  creditTransactions?: Prisma.CustomerCreditTransactionUpdateManyWithoutCustomerNestedInput
+}
+
+export type CustomerUncheckedUpdateWithoutCrmActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerType?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  crmStage?: Prisma.EnumCustomerCrmStageFieldUpdateOperationsInput | $Enums.CustomerCrmStage
+  crmLeadSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nextFollowUpAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  creditTransactions?: Prisma.CustomerCreditTransactionUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 
@@ -544,10 +899,14 @@ export type CustomerUncheckedUpdateWithoutOrdersInput = {
 
 export type CustomerCountOutputType = {
   orders: number
+  creditTransactions: number
+  crmActivities: number
 }
 
 export type CustomerCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders?: boolean | CustomerCountOutputTypeCountOrdersArgs
+  creditTransactions?: boolean | CustomerCountOutputTypeCountCreditTransactionsArgs
+  crmActivities?: boolean | CustomerCountOutputTypeCountCrmActivitiesArgs
 }
 
 /**
@@ -567,6 +926,20 @@ export type CustomerCountOutputTypeCountOrdersArgs<ExtArgs extends runtime.Types
   where?: Prisma.OrderWhereInput
 }
 
+/**
+ * CustomerCountOutputType without action
+ */
+export type CustomerCountOutputTypeCountCreditTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomerCreditTransactionWhereInput
+}
+
+/**
+ * CustomerCountOutputType without action
+ */
+export type CustomerCountOutputTypeCountCrmActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomerCrmActivityWhereInput
+}
+
 
 export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -578,9 +951,15 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   city?: boolean
   customerType?: boolean
   notes?: boolean
+  crmStage?: boolean
+  crmLeadSource?: boolean
+  assignedTo?: boolean
+  nextFollowUpAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   orders?: boolean | Prisma.Customer$ordersArgs<ExtArgs>
+  creditTransactions?: boolean | Prisma.Customer$creditTransactionsArgs<ExtArgs>
+  crmActivities?: boolean | Prisma.Customer$crmActivitiesArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -594,6 +973,10 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   city?: boolean
   customerType?: boolean
   notes?: boolean
+  crmStage?: boolean
+  crmLeadSource?: boolean
+  assignedTo?: boolean
+  nextFollowUpAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["customer"]>
@@ -608,6 +991,10 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   city?: boolean
   customerType?: boolean
   notes?: boolean
+  crmStage?: boolean
+  crmLeadSource?: boolean
+  assignedTo?: boolean
+  nextFollowUpAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["customer"]>
@@ -622,13 +1009,19 @@ export type CustomerSelectScalar = {
   city?: boolean
   customerType?: boolean
   notes?: boolean
+  crmStage?: boolean
+  crmLeadSource?: boolean
+  assignedTo?: boolean
+  nextFollowUpAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone" | "name" | "email" | "company" | "address" | "city" | "customerType" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone" | "name" | "email" | "company" | "address" | "city" | "customerType" | "notes" | "crmStage" | "crmLeadSource" | "assignedTo" | "nextFollowUpAt" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders?: boolean | Prisma.Customer$ordersArgs<ExtArgs>
+  creditTransactions?: boolean | Prisma.Customer$creditTransactionsArgs<ExtArgs>
+  crmActivities?: boolean | Prisma.Customer$crmActivitiesArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CustomerIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -638,6 +1031,8 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "Customer"
   objects: {
     orders: Prisma.$OrderPayload<ExtArgs>[]
+    creditTransactions: Prisma.$CustomerCreditTransactionPayload<ExtArgs>[]
+    crmActivities: Prisma.$CustomerCrmActivityPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -649,6 +1044,10 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     city: string | null
     customerType: string
     notes: string | null
+    crmStage: $Enums.CustomerCrmStage
+    crmLeadSource: string | null
+    assignedTo: string | null
+    nextFollowUpAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["customer"]>
@@ -1046,6 +1445,8 @@ readonly fields: CustomerFieldRefs;
 export interface Prisma__CustomerClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   orders<T extends Prisma.Customer$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Customer$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  creditTransactions<T extends Prisma.Customer$creditTransactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Customer$creditTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomerCreditTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  crmActivities<T extends Prisma.Customer$crmActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Customer$crmActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomerCrmActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1084,6 +1485,10 @@ export interface CustomerFieldRefs {
   readonly city: Prisma.FieldRef<"Customer", 'String'>
   readonly customerType: Prisma.FieldRef<"Customer", 'String'>
   readonly notes: Prisma.FieldRef<"Customer", 'String'>
+  readonly crmStage: Prisma.FieldRef<"Customer", 'CustomerCrmStage'>
+  readonly crmLeadSource: Prisma.FieldRef<"Customer", 'String'>
+  readonly assignedTo: Prisma.FieldRef<"Customer", 'String'>
+  readonly nextFollowUpAt: Prisma.FieldRef<"Customer", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Customer", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Customer", 'DateTime'>
 }
@@ -1500,6 +1905,54 @@ export type Customer$ordersArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.OrderScalarFieldEnum | Prisma.OrderScalarFieldEnum[]
+}
+
+/**
+ * Customer.creditTransactions
+ */
+export type Customer$creditTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomerCreditTransaction
+   */
+  select?: Prisma.CustomerCreditTransactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomerCreditTransaction
+   */
+  omit?: Prisma.CustomerCreditTransactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomerCreditTransactionInclude<ExtArgs> | null
+  where?: Prisma.CustomerCreditTransactionWhereInput
+  orderBy?: Prisma.CustomerCreditTransactionOrderByWithRelationInput | Prisma.CustomerCreditTransactionOrderByWithRelationInput[]
+  cursor?: Prisma.CustomerCreditTransactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomerCreditTransactionScalarFieldEnum | Prisma.CustomerCreditTransactionScalarFieldEnum[]
+}
+
+/**
+ * Customer.crmActivities
+ */
+export type Customer$crmActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomerCrmActivity
+   */
+  select?: Prisma.CustomerCrmActivitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomerCrmActivity
+   */
+  omit?: Prisma.CustomerCrmActivityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomerCrmActivityInclude<ExtArgs> | null
+  where?: Prisma.CustomerCrmActivityWhereInput
+  orderBy?: Prisma.CustomerCrmActivityOrderByWithRelationInput | Prisma.CustomerCrmActivityOrderByWithRelationInput[]
+  cursor?: Prisma.CustomerCrmActivityWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomerCrmActivityScalarFieldEnum | Prisma.CustomerCrmActivityScalarFieldEnum[]
 }
 
 /**

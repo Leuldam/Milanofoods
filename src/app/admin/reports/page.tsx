@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BarChart3, Download, RefreshCw, Calendar, TrendingUp, DollarSign, ShoppingCart, Globe, PhoneCall } from "lucide-react";
+import { BarChart3, Download, Calendar, TrendingUp, DollarSign, ShoppingCart, Globe, PhoneCall } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminReportData } from "@/lib/admin-types";
+import { AdminPageLoading } from "@/components/admin/admin-loading";
 
 export default function AdminReportsPage() {
   const [data, setData] = useState<AdminReportData | null>(null);
@@ -50,12 +51,7 @@ export default function AdminReportsPage() {
   };
 
   if (loading && !data) {
-    return (
-      <div style={{ padding: "60px 0", textAlign: "center", color: "#777C75" }}>
-        <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-        Generating business sales reports...
-      </div>
-    );
+    return <AdminPageLoading label="Preparing your sales report..." />;
   }
 
   const { summary, productSales = [], paymentMethodBreakdown } = data || {};

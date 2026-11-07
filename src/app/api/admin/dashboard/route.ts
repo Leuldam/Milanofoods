@@ -148,6 +148,7 @@ export async function GET() {
     });
 
     return NextResponse.json({
+      canViewCrm: hasPermission(admin, "customers_view"),
       metrics: {
         todaySales,
         todayOrdersCount,

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Search, RefreshCw, X, Wheat, PackageCheck, AlertTriangle } from "lucide-react";
+import { Plus, Search, X, Wheat, PackageCheck, AlertTriangle } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminInventoryItem } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminRawMaterialsPage() {
   const [items, setItems] = useState<AdminInventoryItem[]>([]);
@@ -228,12 +229,7 @@ export default function AdminRawMaterialsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading materials...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={7} label="Loading materials..." />
             ) : filteredItems.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>

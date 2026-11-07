@@ -462,7 +462,17 @@ export default function CheckoutPage() {
                     <span className="payment-method-info"><strong>Choose later</strong><small>No payment method selected</small></span>
                     {payment === "" && <CheckCircle2 className="payment-method-check" size={18}/>}
                   </button>
-                  {paymentMethods.map((paymentMethod) => (
+                  {paymentMethodsLoading && [0, 1].map((item) => (
+                    <div className="payment-method-skeleton" key={item} aria-hidden="true">
+                      <span className="site-skeleton payment-method-skeleton-logo" />
+                      <span className="payment-method-skeleton-copy">
+                        <span className="site-skeleton payment-method-skeleton-name" />
+                        <span className="site-skeleton payment-method-skeleton-detail" />
+                        <span className="site-skeleton payment-method-skeleton-detail short" />
+                      </span>
+                    </div>
+                  ))}
+                  {!paymentMethodsLoading && paymentMethods.map((paymentMethod) => (
                     <button key={paymentMethod.code} type="button" className={`payment-method-choice${payment === paymentMethod.code ? " is-selected" : ""}`} onClick={() => setPayment(paymentMethod.code)} aria-pressed={payment === paymentMethod.code}>
                       <PaymentMethodLogo code={paymentMethod.code}/>
                       <span className="payment-method-info">
@@ -474,7 +484,7 @@ export default function CheckoutPage() {
                     </button>
                   ))}
                 </div>
-                {paymentMethodsLoading && <p className="payment-method-hint">Loading payment accounts…</p>}
+                {paymentMethodsLoading && <p className="site-skeleton-label" role="status">Loading payment accounts…</p>}
                 {paymentMethodsError && <p className="payment-method-warning" role="status">{paymentMethodsError} You can still place your order and arrange payment later.</p>}
                 {!paymentMethodsLoading && !paymentMethodsError && paymentMethods.length === 0 && <p className="payment-method-hint">Digital payment accounts are not configured yet. You can still place the order without selecting a method.</p>}
                 {selectedPaymentMethod && <div className="payment-proof-upload">

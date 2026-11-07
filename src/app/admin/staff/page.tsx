@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Edit, RefreshCw, X, Shield, Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { Plus, Edit, X, Shield, Lock, ShieldCheck, UserCheck } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminStaffMember } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminStaffPage() {
   const [staff, setStaff] = useState<AdminStaffMember[]>([]);
@@ -179,12 +180,7 @@ export default function AdminStaffPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading staff accounts...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={6} label="Loading staff accounts..." />
             ) : staff.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>

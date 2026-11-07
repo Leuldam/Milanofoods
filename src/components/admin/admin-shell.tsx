@@ -12,7 +12,9 @@ import {
   Wheat,
   ShoppingBag,
   Users,
+  Handshake,
   CreditCard,
+  BookOpen,
   BarChart3,
   UserCheck,
   Sliders,
@@ -42,20 +44,25 @@ export function AdminShell({ admin, children }: AdminShellProps) {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const navItems = [
-    { label: "Overview", href: "/admin", icon: LayoutDashboard },
-    { label: "Products", href: "/admin/products", icon: Package },
-    { label: "Categories", href: "/admin/categories", icon: Layers },
-    { label: "Inventory", href: "/admin/inventory", icon: Boxes },
-    { label: "Production", href: "/admin/production", icon: Factory },
-    { label: "Raw Materials", href: "/admin/raw-materials", icon: Wheat },
-    { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
-    { label: "Customers", href: "/admin/customers", icon: Users },
-    { label: "Payments", href: "/admin/payments", icon: CreditCard },
-    { label: "Sales Reports", href: "/admin/reports", icon: BarChart3 },
-    { label: "Staff & Permissions", href: "/admin/staff", icon: UserCheck },
-    { label: "Settings", href: "/admin/settings", icon: Sliders },
-    { label: "Activity Logs", href: "/admin/audit", icon: FileText },
+    { label: "Overview", href: "/admin", icon: LayoutDashboard, permission: "dashboard_view" },
+    { label: "Products", href: "/admin/products", icon: Package, permission: "products_view" },
+    { label: "Categories", href: "/admin/categories", icon: Layers, permission: "categories_manage" },
+    { label: "Inventory", href: "/admin/inventory", icon: Boxes, permission: "inventory_view" },
+    { label: "Production", href: "/admin/production", icon: Factory, permission: "production_view" },
+    { label: "Raw Materials", href: "/admin/raw-materials", icon: Wheat, permission: "inventory_view" },
+    { label: "Orders", href: "/admin/orders", icon: ShoppingBag, permission: "orders_view" },
+    { label: "CRM Pipeline", href: "/admin/crm", icon: Handshake, permission: "customers_view" },
+    { label: "Customers", href: "/admin/customers", icon: Users, permission: "customers_view" },
+    { label: "Credit Book", href: "/admin/credit", icon: BookOpen, permission: "customers_view" },
+    { label: "Payments", href: "/admin/payments", icon: CreditCard, permission: "payments_view" },
+    { label: "Sales Reports", href: "/admin/reports", icon: BarChart3, permission: "reports_view" },
+    { label: "Staff & Permissions", href: "/admin/staff", icon: UserCheck, permission: "staff_manage" },
+    { label: "Settings", href: "/admin/settings", icon: Sliders, permission: "settings_manage" },
+    { label: "Activity Logs", href: "/admin/audit", icon: FileText, permission: "audit_view" },
   ];
+  const visibleNavItems = navItems.filter(
+    (item) => admin.isOwner || admin.permissions.includes(item.permission),
+  );
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -118,7 +125,7 @@ export function AdminShell({ admin, children }: AdminShellProps) {
 
         {/* Navigation list */}
         <nav style={{ flex: 1, overflowY: "auto", padding: "16px 12px", display: "grid", gap: "4px" }}>
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
             const Icon = item.icon;
 
@@ -346,7 +353,7 @@ export function AdminShell({ admin, children }: AdminShellProps) {
             </div>
 
             <nav style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
                 const Icon = item.icon;
                 return (

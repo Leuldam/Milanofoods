@@ -61,6 +61,7 @@ model Product {
   orderItems    OrderItem[]
   reviews       ProductReview[]
   stockMovements ProductStockMovement[]
+  creditItems   CustomerCreditItem[]
   priceChanges  ProductPriceChange[]
   packagingOptions ProductPackagingOption[]
   recipes       Recipe[]
@@ -97,6 +98,50 @@ model ProductStockMovement {
   product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, createdAt])
+}
+
+enum CustomerCreditType {
+  CREDIT
+  REPAYMENT
+}
+
+enum CustomerCrmStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CUSTOMER
+  LOST
+}
+
+model CustomerCreditTransaction {
+  id         String    @id @default(cuid())
+  customerId String
+  type       CustomerCreditType
+  amount     Decimal   @db.Decimal(12, 2)
+  notes      String?
+  recordedBy String?
+  createdAt  DateTime  @default(now())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items      CustomerCreditItem[]
+
+  @@index([customerId, createdAt])
+  @@index([type, createdAt])
+}
+
+model CustomerCreditItem {
+  id            String   @id @default(cuid())
+  transactionId String
+  productId     String?
+  productName   String
+  productSku    String
+  quantity      Int
+  unitPrice     Decimal                   @db.Decimal(12, 2)
+  lineTotal     Decimal                   @db.Decimal(12, 2)
+  transaction   CustomerCreditTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([transactionId])
 }
 
 model ProductPriceChange {
@@ -439,11 +484,33 @@ model Customer {
   city         String?
   customerType String    @default("RETAIL")
   notes        String?
+  crmStage     CustomerCrmStage @default(CUSTOMER)
+  crmLeadSource String?
+  assignedTo   String?
+  nextFollowUpAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   orders       Order[]
+  creditTransactions CustomerCreditTransaction[]
+  crmActivities CustomerCrmActivity[]
 
   @@index([phone])
+  @@index([crmStage, nextFollowUpAt])
+  @@index([assignedTo, crmStage])
+}
+
+model CustomerCrmActivity {
+  id          String   @id @default(cuid())
+  customerId  String
+  type        String
+  summary     String
+  followUpAt  DateTime?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
+  @@index([followUpAt])
 }
 
 model OrderStatusHistory {
