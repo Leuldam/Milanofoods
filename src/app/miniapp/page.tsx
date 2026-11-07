@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { groupProductVariants } from "@/lib/product-variants";
 import { formatTotalMeasure } from "@/lib/product-pricing";
+import { PushNotificationButton } from "@/components/admin/push-notification-button";
 import "./miniapp.css";
 import "./miniapp-auth.css";
 import "./miniapp-management.css";
@@ -416,6 +417,7 @@ function MiniAppSkeleton({ className }: { className: string }) {
 
 // ── Main Page Component ───────────────────────────────────────────────────────
 export default function MilanoMiniAppPage() {
+  const [hasMounted, setHasMounted] = useState(false);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -477,6 +479,10 @@ export default function MilanoMiniAppPage() {
   const [promoDraft, setPromoDraft] = useState({ enabled: false, discount: "" });
 
   const initData = useCallback(() => window.Telegram?.WebApp?.initData || "", []);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   function scrollCategoryCarousel(direction: -1 | 1) {
     const carousel = categoryCarouselRef.current;
@@ -737,11 +743,12 @@ export default function MilanoMiniAppPage() {
     : 0;
 
   const greeting = useMemo(() => {
+    if (!hasMounted) return "Welcome";
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
     if (hour < 17) return "Good afternoon";
     return "Good evening";
-  }, []);
+  }, [hasMounted]);
 
   const orderStats = useMemo(() => {
     const orders = dashboard?.orders || [];
@@ -1338,12 +1345,12 @@ export default function MilanoMiniAppPage() {
                   <h1>{greeting}, {dashboard?.operator.name?.split(" ")[0] || "Operator"}</h1>
                   <p>
                     Live Operations Snapshot ·{" "}
-                    {new Date().toLocaleDateString("en-ET", {
+                    {hasMounted ? new Date().toLocaleDateString("en-ET", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
                       year: "numeric",
-                    })}
+                    }) : ""}
                   </p>
                 </div>
 
@@ -3823,6 +3830,19 @@ export default function MilanoMiniAppPage() {
               </button>
             </div>
             <div className="mf-sheet-body" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <PushNotificationButton app="miniapp" />
+
+              {process.env.NEXT_PUBLIC_ANDROID_APK_URL && (
+                <a
+                  href={process.env.NEXT_PUBLIC_ANDROID_APK_URL}
+                  className="mf-btn-secondary"
+                  style={{ justifyContent: "flex-start", height: "48px", textDecoration: "none" }}
+                  download
+                >
+                  <ArrowDownToLine size={18} /> Download Android App
+                </a>
+              )}
+
               <button
                 className="mf-btn-secondary"
                 style={{ justifyContent: "flex-start", height: "48px" }}

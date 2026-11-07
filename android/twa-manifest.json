@@ -1,0 +1,43 @@
+{
+  "packageId": "com.milanofoods.ops",
+  "host": "milanofoods.vercel.app",
+  "name": "Milano Foods Management",
+  "launcherName": "Milano Foods",
+  "display": "standalone",
+  "displayOverride": [],
+  "themeColor": "#0B5639",
+  "themeColorDark": "#0B5639",
+  "navigationColor": "#0B5639",
+  "navigationColorDark": "#0B5639",
+  "navigationDividerColor": "#0B5639",
+  "navigationDividerColorDark": "#0B5639",
+  "backgroundColor": "#F5F7F2",
+  "enableNotifications": true,
+  "startUrl": "/miniapp",
+  "iconUrl": "https://milanofoods.vercel.app/miniapp-icon.svg",
+  "maskableIconUrl": "https://milanofoods.vercel.app/miniapp-icon.svg",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./upload-key.jks",
+    "alias": "milanofoods"
+  },
+  "appVersionCode": 2,
+  "appVersion": "1.0.1",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://milanofoods.vercel.app/miniapp.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://milanofoods.vercel.app/miniapp",
+  "minSdkVersion": 24,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

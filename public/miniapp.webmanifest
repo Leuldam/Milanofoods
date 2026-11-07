@@ -10,9 +10,9 @@
   "theme_color": "#0B5639",
   "icons": [
     {
-      "src": "/miniapp-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/miniapp-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
