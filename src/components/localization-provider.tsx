@@ -23,7 +23,13 @@ const originalText = new WeakMap<Text, string>();
 const renderedText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const renderedAttributes = new WeakMap<Element, Map<string, string>>();
-const translatableAttributes = ["alt", "aria-label", "placeholder", "title"];
+const translatableAttributes = [
+  "alt",
+  "aria-label",
+  "content",
+  "placeholder",
+  "title",
+];
 
 function getSourceValue(
   current: string,
@@ -135,9 +141,9 @@ export function LocalizationProvider({
 
     document.documentElement.lang = selected.code;
     document.documentElement.dir = selected.direction;
-    if (!document.body) return;
+    if (!document.body || !document.documentElement) return;
 
-    translateSubtree(document.body, language);
+    translateSubtree(document.documentElement, language);
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         if (record.type === "characterData" && record.target.parentNode) {
@@ -148,7 +154,7 @@ export function LocalizationProvider({
         }
       }
     });
-    observer.observe(document.body, {
+    observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: translatableAttributes,
       childList: true,

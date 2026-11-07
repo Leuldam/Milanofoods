@@ -12,12 +12,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/products",
     "/product-guide",
     "/recipes",
+    "/for-businesses",
+    "/customer-stories",
+    "/quality",
+    "/faq",
     "/about",
     "/contact",
     "/delivery",
     "/pickup",
-    "/privacy",
-    "/terms",
   ];
   const products = await prisma.product.findMany({
     where: { isActive: true, isPublished: true, category: { isActive: true } },

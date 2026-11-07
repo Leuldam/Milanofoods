@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getTelegramMiniAppUser } from "@/lib/telegram-miniapp-auth";
+import { getTelegramMiniAppUser, hasMiniAppPermission } from "@/lib/telegram-miniapp-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,9 +30,15 @@ function getPeriodStart(period: SalesPeriod, now: Date): Date {
 }
 
 export async function GET(request: NextRequest) {
-  const operator = getTelegramMiniAppUser(request);
+  const operator = await getTelegramMiniAppUser(request);
   if (!operator) {
     return NextResponse.json({ error: "Unauthorized Telegram session." }, { status: 401 });
+  }
+  if (!hasMiniAppPermission(operator, "reports_view")) {
+    return NextResponse.json(
+      { error: "Your account does not have permission to view sales reports." },
+      { status: 403 },
+    );
   }
 
   const requestedPeriod = request.nextUrl.searchParams.get("period");

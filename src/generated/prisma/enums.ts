@@ -28,3 +28,71 @@ export const FulfillmentMethod = {
 } as const
 
 export type FulfillmentMethod = (typeof FulfillmentMethod)[keyof typeof FulfillmentMethod]
+
+
+export const PermissionKey = {
+  dashboard_view: 'dashboard_view',
+  products_view: 'products_view',
+  products_manage: 'products_manage',
+  categories_manage: 'categories_manage',
+  inventory_view: 'inventory_view',
+  inventory_receive: 'inventory_receive',
+  inventory_adjust: 'inventory_adjust',
+  production_view: 'production_view',
+  production_create: 'production_create',
+  production_complete: 'production_complete',
+  orders_view: 'orders_view',
+  orders_create: 'orders_create',
+  orders_update: 'orders_update',
+  customers_view: 'customers_view',
+  customers_manage: 'customers_manage',
+  payments_view: 'payments_view',
+  payments_record: 'payments_record',
+  reports_view: 'reports_view',
+  reports_export: 'reports_export',
+  staff_manage: 'staff_manage',
+  settings_manage: 'settings_manage',
+  audit_view: 'audit_view'
+} as const
+
+export type PermissionKey = (typeof PermissionKey)[keyof typeof PermissionKey]
+
+
+export const PaymentStatus = {
+  UNPAID: 'UNPAID',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
+  PAID: 'PAID',
+  REFUNDED: 'REFUNDED'
+} as const
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
+
+export const InventoryType = {
+  RAW_MATERIAL: 'RAW_MATERIAL',
+  PACKAGING: 'PACKAGING',
+  FINISHED_GOOD: 'FINISHED_GOOD'
+} as const
+
+export type InventoryType = (typeof InventoryType)[keyof typeof InventoryType]
+
+
+export const MovementType = {
+  RECEIVE: 'RECEIVE',
+  ADJUSTMENT: 'ADJUSTMENT',
+  PRODUCTION_CONSUMPTION: 'PRODUCTION_CONSUMPTION',
+  DAMAGE_WASTAGE: 'DAMAGE_WASTAGE',
+  RETURN: 'RETURN'
+} as const
+
+export type MovementType = (typeof MovementType)[keyof typeof MovementType]
+
+
+export const BatchStatus = {
+  DRAFT: 'DRAFT',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type BatchStatus = (typeof BatchStatus)[keyof typeof BatchStatus]

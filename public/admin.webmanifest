@@ -1,0 +1,19 @@
+{
+  "id": "/admin",
+  "name": "Milano Foods Admin",
+  "short_name": "Milano Admin",
+  "description": "Private Milano Foods operations dashboard.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#FAF7F0",
+  "theme_color": "#073D2E",
+  "icons": [
+    {
+      "src": "/admin-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

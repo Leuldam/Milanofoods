@@ -1,5 +1,12 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcrypt";
+import { prisma } from "@/lib/prisma";
+import {
+  clearAdminLoginFailures,
+  isAdminLoginThrottled,
+  recordAdminLoginFailure,
+} from "@/lib/admin-login-throttle";
 import {
   createMiniAppSession,
   miniAppSessionCookie,
@@ -9,9 +16,12 @@ import { sendTelegramNotification } from "@/lib/telegram-notifications";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILED_ATTEMPTS = 5;
-const failedAttempts = new Map<string, { count: number; resetAt: number }>();
+function normalizeEthiopianPhone(p: string): string {
+  const digits = p.replace(/\D/g, "");
+  if (digits.startsWith("251")) return "0" + digits.slice(3);
+  if (digits.startsWith("9")) return "0" + digits;
+  return digits;
+}
 
 function matches(value: string, expected: string) {
   const suppliedHash = createHash("sha256").update(value).digest();
@@ -20,12 +30,13 @@ function matches(value: string, expected: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const expectedPhone = process.env.MINIAPP_LOGIN_PHONE?.replace(/\D/g, "");
-  const expectedPasscode = process.env.MINIAPP_LOGIN_PASSCODE;
+  const expectedPhoneRaw = process.env.MINIAPP_LOGIN_PHONE || "";
+  const expectedPhone = normalizeEthiopianPhone(expectedPhoneRaw);
+  const expectedPasscode = process.env.MINIAPP_LOGIN_PASSCODE || "";
   const sessionSecret = process.env.MINIAPP_SESSION_SECRET;
 
-  if (!expectedPhone || !expectedPasscode || !sessionSecret || sessionSecret.length < 32) {
-    console.error("Mini App login is unavailable: required credentials or session secret are not configured.");
+  if (!sessionSecret || sessionSecret.length < 32) {
+    console.error("Mini App login is unavailable: session secret is not configured.");
     return NextResponse.json(
       { error: "Admin login is not configured on this deployment." },
       { status: 503 },
@@ -44,52 +55,73 @@ export async function POST(request: NextRequest) {
   }
 
   const input = body as Record<string, unknown>;
-  const phone = typeof input.phone === "string" ? input.phone.replace(/\D/g, "") : "";
+  const rawPhone = typeof input.phone === "string" ? input.phone.trim() : "";
+  const normalizedPhone = normalizeEthiopianPhone(rawPhone);
   const passcode = typeof input.passcode === "string" ? input.passcode : "";
-  const clientIp =
-    request.headers.get("x-real-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown";
-  const now = Date.now();
-  const attempt = failedAttempts.get(clientIp);
-
-  if (attempt && attempt.resetAt <= now) failedAttempts.delete(clientIp);
-  const activeAttempt = failedAttempts.get(clientIp);
-  if (activeAttempt && activeAttempt.count >= MAX_FAILED_ATTEMPTS) {
+  if (!rawPhone || !passcode) {
+    return NextResponse.json({ error: "Enter your phone number and passcode." }, { status: 400 });
+  }
+  if (await isAdminLoginThrottled(request, normalizedPhone)) {
     return NextResponse.json(
       { error: "Too many sign-in attempts. Try again in 15 minutes." },
       { status: 429 },
     );
   }
 
-  const validPhone = matches(phone, expectedPhone);
-  const validPasscode = matches(passcode, expectedPasscode);
+  let authenticatedName = "Administrator";
+  let isAuthenticated = false;
+  let adminUserId: string | undefined;
 
-  if (!validPhone || !validPasscode) {
-    const updatedAttempt = activeAttempt
-      ? { ...activeAttempt, count: activeAttempt.count + 1 }
-      : { count: 1, resetAt: now + LOGIN_WINDOW_MS };
-    failedAttempts.set(clientIp, updatedAttempt);
-    if (failedAttempts.size > 10000) {
-      for (const [ip, entry] of failedAttempts) {
-        if (entry.resetAt <= now) failedAttempts.delete(ip);
-      }
+  // 1. Check env credentials
+  if (expectedPhone && expectedPasscode && normalizedPhone === expectedPhone) {
+    if (matches(passcode, expectedPasscode)) {
+      isAuthenticated = true;
+      authenticatedName = "Milano Foods Admin";
     }
+  }
+
+  // 2. Check AdminUser database credentials (supports owner and staff accounts)
+  if (!isAuthenticated && rawPhone && passcode) {
+    try {
+      const candidates = await prisma.adminUser.findMany();
+      for (const admin of candidates) {
+        const adminNorm = normalizeEthiopianPhone(admin.phone);
+        if (adminNorm === normalizedPhone || admin.phone === rawPhone) {
+          const match = await bcrypt.compare(passcode, admin.passwordHash);
+          if (match) {
+            isAuthenticated = true;
+            authenticatedName = admin.name || (admin.isOwner ? "Owner" : "Admin");
+            adminUserId = admin.id;
+            break;
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.error("Error verifying admin credentials in database:", dbErr);
+      return NextResponse.json({ error: "Unable to verify admin credentials." }, { status: 500 });
+    }
+  }
+
+  if (!isAuthenticated) {
+    await recordAdminLoginFailure(request, normalizedPhone);
     return NextResponse.json({ error: "Phone number or passcode is incorrect." }, { status: 401 });
   }
 
-  failedAttempts.delete(clientIp);
+  await clearAdminLoginFailures(request, normalizedPhone);
   try {
-    const session = createMiniAppSession();
-    const response = NextResponse.json({ ok: true });
+    const session = createMiniAppSession({ name: authenticatedName, adminUserId });
+    const response = NextResponse.json({ ok: true, name: authenticatedName });
     response.cookies.set(miniAppSessionCookie, session.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/api/telegram/miniapp",
+      sameSite: "lax",
+      path: "/",
       maxAge: session.maxAge,
     });
-    await sendTelegramNotification("MINI APP — Admin signed in.");
+
+    // Send notification in background without blocking login
+    sendTelegramNotification(`🔐 <b>Milano Foods Mini App</b>\n\nAdmin signed in: <b>${authenticatedName}</b>`).catch(() => {});
+
     return response;
   } catch (error) {
     console.error("Could not create Mini App login session:", error);
@@ -102,8 +134,8 @@ export async function DELETE() {
   response.cookies.set(miniAppSessionCookie, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/api/telegram/miniapp",
+    sameSite: "lax",
+    path: "/",
     maxAge: 0,
   });
   return response;

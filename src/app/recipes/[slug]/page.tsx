@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,6 +10,29 @@ export function generateStaticParams() {
   return recipes.map((recipe) => ({ slug: recipe.slug }));
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const recipe = recipes.find((item) => item.slug === slug);
+  if (!recipe) notFound();
+
+  return {
+    title: `${recipe.title} Recipe`,
+    description: recipe.description,
+    alternates: { canonical: `/recipes/${recipe.slug}` },
+    openGraph: {
+      type: "article",
+      title: `${recipe.title} Recipe`,
+      description: recipe.description,
+      url: `/recipes/${recipe.slug}`,
+      images: [{ url: recipe.image, alt: recipe.title }],
+    },
+  };
+}
+
 export default async function RecipePage({
   params,
 }: {
@@ -17,8 +41,30 @@ export default async function RecipePage({
   const { slug } = await params;
   const recipe = recipes.find((item) => item.slug === slug);
   if (!recipe) notFound();
+  const recipeSchema = {
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    name: recipe.title,
+    description: recipe.description,
+    image: recipe.image,
+    recipeCategory: recipe.category,
+    prepTime: `PT${Number.parseInt(recipe.time, 10)}M`,
+    recipeYield: recipe.serves,
+    recipeIngredient: recipe.ingredients,
+    recipeInstructions: recipe.steps.map((text) => ({
+      "@type": "HowToStep",
+      text,
+    })),
+    author: {
+      "@type": "Organization",
+      name: "Milano Foods",
+      url: process.env.NEXT_PUBLIC_SITE_URL || "https://milanofoods.vercel.app",
+    },
+  };
 
   return (
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(recipeSchema).replace(/</g, "\\u003c") }} />
     <main className="recipe-detail-page">
       <section className="recipe-detail-hero">
         <div className="wrap">
@@ -109,5 +155,6 @@ export default async function RecipePage({
         </div>
       </section>
     </main>
+    </>
   );
 }
