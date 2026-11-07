@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { Plus, Edit, Eye, EyeOff, Search, RefreshCw, Check, X, AlertCircle } from "lucide-react";
+import { Plus, Edit, Eye, EyeOff, Search, Check, X, AlertCircle, PackagePlus } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminCategory, AdminProduct, AdminProductForm } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
@@ -17,6 +18,10 @@ export default function AdminProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [stockProduct, setStockProduct] = useState<AdminProduct | null>(null);
+  const [stockQuantity, setStockQuantity] = useState("");
+  const [stockReason, setStockReason] = useState("");
+  const [stockSubmitting, setStockSubmitting] = useState(false);
 
   // Form fields
   const [formData, setFormData] = useState<AdminProductForm>({
@@ -148,6 +153,40 @@ export default function AdminProductsPage() {
     }
   };
 
+  const openStockModal = (product: AdminProduct) => {
+    setStockProduct(product);
+    setStockQuantity("");
+    setStockReason("");
+    setError("");
+  };
+
+  const handleReceiveStock = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!stockProduct) return;
+    setStockSubmitting(true);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/products/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: stockProduct.id,
+          quantity: Number(stockQuantity),
+          reason: stockReason,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to add stock.");
+      setSuccess(`${stockQuantity} units added to ${stockProduct.name}.`);
+      setStockProduct(null);
+      await loadData();
+    } catch (stockError) {
+      setError(getAdminErrorMessage(stockError, "Failed to add stock."));
+    } finally {
+      setStockSubmitting(false);
+    }
+  };
+
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -239,7 +278,7 @@ export default function AdminProductsPage() {
       )}
 
       {/* Products Table */}
-      <div style={{ background: "#FFFFFF", border: "1px solid #E8E1D5", borderRadius: "8px", overflowX: "auto" }}>
+      <div className="admin-workflow-desktop-table" style={{ background: "#FFFFFF", border: "1px solid #E8E1D5", borderRadius: "8px", overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
           <thead>
             <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E1D5", color: "#777C75", fontWeight: 700, fontSize: "11px", textTransform: "uppercase" }}>
@@ -254,12 +293,7 @@ export default function AdminProductsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading products...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={7} label="Loading products..." />
             ) : filteredProducts.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
@@ -319,6 +353,25 @@ export default function AdminProductsPage() {
                     </td>
                     <td style={{ padding: "14px 16px", textAlign: "right" }}>
                       <button
+                        onClick={() => openStockModal(p)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "6px 10px",
+                          marginRight: "6px",
+                          background: "#F0F7F1",
+                          border: "1px solid #C9DCCB",
+                          borderRadius: "4px",
+                          color: "#073D2E",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <PackagePlus size={13} /> Add Stock
+                      </button>
+                      <button
                         onClick={() => openEditModal(p)}
                         style={{
                           display: "inline-flex",
@@ -343,6 +396,31 @@ export default function AdminProductsPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="admin-workflow-mobile-list admin-product-mobile-list">
+        {loading ? <div className="admin-workflow-loading">Loading products…</div> : filteredProducts.length === 0 ? (
+          <div className="admin-workflow-empty">No products found.</div>
+        ) : filteredProducts.map((product) => {
+          const available = Math.max(0, product.stock - product.reservedStock);
+          return (
+            <article key={product.id} className="admin-product-mobile-card">
+              <div className="admin-product-mobile-top">
+                <div><strong>{product.name}</strong><span>SKU: {product.sku}{product.size ? ` · ${product.size}` : ""}</span></div>
+                <span className={product.isPublished ? "admin-product-published" : "admin-product-draft"}>{product.isPublished ? "PUBLISHED" : "DRAFT"}</span>
+              </div>
+              <div className="admin-product-mobile-meta">
+                <span>{product.category?.name || "Uncategorized"}</span>
+                <strong>ETB {Number(product.price).toLocaleString()}</strong>
+                <span>{available} available{product.reservedStock > 0 ? ` · ${product.reservedStock} reserved` : ""}</span>
+              </div>
+              <div className="admin-product-mobile-actions">
+                <button type="button" className="admin-workflow-button is-secondary" onClick={() => openStockModal(product)}><PackagePlus size={15} /> Add stock</button>
+                <button type="button" className="admin-workflow-button" onClick={() => openEditModal(product)}><Edit size={15} /> Edit</button>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {/* Modal for Add / Edit Product */}
@@ -513,6 +591,32 @@ export default function AdminProductsPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {stockProduct && (
+        <div className="admin-workflow-modal" role="presentation">
+          <button type="button" className="admin-workflow-backdrop" aria-label="Close dialog" onClick={() => setStockProduct(null)} />
+          <section className="admin-workflow-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-product-stock-title">
+            <header>
+              <h2 id="admin-product-stock-title">Add Finished Product Stock</h2>
+              <button type="button" aria-label="Close" onClick={() => setStockProduct(null)}><X size={19} /></button>
+            </header>
+            {error && <div className="admin-workflow-notice is-error" role="alert">{error}</div>}
+            <form onSubmit={handleReceiveStock}>
+              <p className="admin-product-stock-name">{stockProduct.name} · Current stock: {stockProduct.stock} units ({Math.max(0, stockProduct.stock - stockProduct.reservedStock)} available)</p>
+              <label>Units received *
+                <input type="number" min="1" step="1" required value={stockQuantity} onChange={(event) => setStockQuantity(event.target.value)} />
+              </label>
+              <label>Reason *
+                <input required value={stockReason} onChange={(event) => setStockReason(event.target.value)} placeholder="e.g. Production batch or warehouse receipt" />
+              </label>
+              <footer>
+                <button type="button" className="admin-workflow-button is-secondary" onClick={() => setStockProduct(null)}>Cancel</button>
+                <button type="submit" className="admin-workflow-button" disabled={stockSubmitting}>{stockSubmitting ? "Saving…" : "Add Stock"}</button>
+              </footer>
+            </form>
+          </section>
         </div>
       )}
     </div>

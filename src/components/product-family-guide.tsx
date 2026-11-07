@@ -209,7 +209,18 @@ export function ProductFamilyGuide() {
                           No products in this family are currently listed. Browse the full range or check back later.
                         </p>
                       ) : loading ? (
-                        <p className="family-guide-catalog-message">Checking current product options…</p>
+                        <div className="family-guide-loading-list" role="status" aria-label="Loading product options">
+                          {[0, 1, 2].map((item) => (
+                            <div className="family-guide-loading-product" key={item} aria-hidden="true">
+                              <span className="site-skeleton family-guide-loading-thumb" />
+                              <span className="family-guide-loading-copy">
+                                <span className="site-skeleton family-guide-loading-name" />
+                                <span className="site-skeleton family-guide-loading-detail" />
+                              </span>
+                            </div>
+                          ))}
+                          <span className="site-skeleton-label">Checking current product options…</span>
+                        </div>
                       ) : (
                         <div className="family-guide-product-list">
                           {familyProducts.slice(0, 4).map((product) => (

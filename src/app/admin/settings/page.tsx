@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Sliders, Save, RefreshCw, CheckCircle2, ShieldCheck, Bell } from "lucide-react";
+import { Sliders, Save, CheckCircle2, ShieldCheck, Bell } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminSettings } from "@/lib/admin-types";
+import { AdminPageLoading } from "@/components/admin/admin-loading";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<AdminSettings>({
@@ -66,12 +67,7 @@ export default function AdminSettingsPage() {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: "60px 0", textAlign: "center", color: "#777C75" }}>
-        <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-        Loading settings...
-      </div>
-    );
+    return <AdminPageLoading label="Loading factory settings..." />;
   }
 
   return (

@@ -410,6 +410,10 @@ async function readProductImage(file: File): Promise<string> {
   });
 }
 
+function MiniAppSkeleton({ className }: { className: string }) {
+  return <span className={`mf-skeleton ${className}`} aria-hidden="true" />;
+}
+
 // ── Main Page Component ───────────────────────────────────────────────────────
 export default function MilanoMiniAppPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -1152,8 +1156,9 @@ export default function MilanoMiniAppPage() {
                 className="mf-btn-primary"
                 style={{ width: "100%", height: "46px", marginTop: "12px", fontSize: "14px" }}
                 disabled={loginBusy}
+                aria-busy={loginBusy}
               >
-                {loginBusy ? "Signing in…" : "Sign In Securely"}
+                {loginBusy ? <><RefreshCw size={16} className="mf-loading-spin" /> Signing in securely…</> : "Sign In Securely"}
               </button>
             </form>
 
@@ -1345,7 +1350,7 @@ export default function MilanoMiniAppPage() {
               </div>
 
               {/* 4 Analytical KPI Cards */}
-              <div className="mf-kpi-grid">
+              <div className="mf-kpi-grid" aria-busy={loading && !dashboard}>
                 {/* 1. Revenue */}
                 <div
                   className="mf-kpi-card"
@@ -1363,7 +1368,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-kpi-value">
                     {loading && !dashboard
-                      ? "—"
+                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
                       : `ETB ${(salesReport?.totalRevenue ?? orderStats.completedRevenue).toLocaleString("en-ET", {
                         maximumFractionDigits: 0,
                       })}`}
@@ -1398,7 +1403,7 @@ export default function MilanoMiniAppPage() {
                     </div>
                   </div>
                   <div className="mf-kpi-value">
-                    {loading && !dashboard ? "—" : dashboard?.orders.length ?? 0}
+                    {loading && !dashboard ? <MiniAppSkeleton className="mf-skeleton-kpi-value short" /> : dashboard?.orders.length ?? 0}
                   </div>
                   <div className="mf-kpi-sub">
                     {Boolean(dashboard?.summary.pendingOrders) ? (
@@ -1430,7 +1435,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-kpi-value">
                     {loading && !dashboard
-                      ? "—"
+                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
                       : (dashboard?.summary.totalUnits ?? 0).toLocaleString("en-ET")}
                   </div>
                   <div className="mf-kpi-sub">
@@ -1461,7 +1466,7 @@ export default function MilanoMiniAppPage() {
                     className="mf-kpi-value"
                     style={{ color: dashboard?.summary.lowStockCount ? "#b45309" : undefined }}
                   >
-                    {loading && !dashboard ? "—" : dashboard?.summary.lowStockCount ?? 0}
+                    {loading && !dashboard ? <MiniAppSkeleton className="mf-skeleton-kpi-value short" /> : dashboard?.summary.lowStockCount ?? 0}
                   </div>
                   <div className="mf-kpi-sub">
                     {dashboard?.summary.lowStockCount ? (
@@ -1730,8 +1735,18 @@ export default function MilanoMiniAppPage() {
                   </button>
                 </div>
 
-                <div className="mf-orders-stack">
-                  {(dashboard?.orders || []).slice(0, 5).map((order) => (
+                <div className="mf-orders-stack" aria-busy={loading && !dashboard}>
+                  {loading && !dashboard ? Array.from({ length: 3 }, (_, index) => (
+                    <div className="mf-order-card mf-order-skeleton" key={`recent-skeleton-${index}`} aria-hidden="true">
+                      <div className="mf-order-skeleton-heading">
+                        <MiniAppSkeleton className="mf-skeleton-avatar" />
+                        <span><MiniAppSkeleton className="mf-skeleton-order-name" /><MiniAppSkeleton className="mf-skeleton-order-meta" /></span>
+                        <MiniAppSkeleton className="mf-skeleton-status" />
+                      </div>
+                      <MiniAppSkeleton className="mf-skeleton-order-line" />
+                      <MiniAppSkeleton className="mf-skeleton-order-button" />
+                    </div>
+                  )) : (dashboard?.orders || []).slice(0, 5).map((order) => (
                     <div
                       className="mf-order-card"
                       key={order.orderNumber}
@@ -1948,8 +1963,18 @@ export default function MilanoMiniAppPage() {
               </div>
 
               {/* Orders List */}
-              <div className="mf-orders-stack">
-                {filteredOrders.map((order) => (
+              <div className="mf-orders-stack" aria-busy={loading && !dashboard}>
+                {loading && !dashboard ? Array.from({ length: 3 }, (_, index) => (
+                  <div className="mf-order-card mf-order-skeleton" key={`orders-skeleton-${index}`} aria-hidden="true">
+                    <div className="mf-order-skeleton-heading">
+                      <MiniAppSkeleton className="mf-skeleton-avatar" />
+                      <span><MiniAppSkeleton className="mf-skeleton-order-name" /><MiniAppSkeleton className="mf-skeleton-order-meta" /></span>
+                      <MiniAppSkeleton className="mf-skeleton-status" />
+                    </div>
+                    <MiniAppSkeleton className="mf-skeleton-order-line" />
+                    <MiniAppSkeleton className="mf-skeleton-order-button" />
+                  </div>
+                )) : filteredOrders.map((order) => (
                   <div className="mf-order-card" key={order.orderNumber}>
                     <div className="mf-order-card-top">
                       <div className="mf-order-customer-row">
@@ -2575,7 +2600,18 @@ export default function MilanoMiniAppPage() {
 
               {/* ── MODE 1: Interactive Family Cards ── */}
               {viewMode === "cards" && (
-                <div className="mf-products-grid">
+                <div className="mf-products-grid" aria-busy={loading && !dashboard}>
+                  {loading && !dashboard && Array.from({ length: 4 }, (_, index) => (
+                    <div className="mf-product-card mf-product-skeleton" key={`product-skeleton-${index}`} aria-hidden="true">
+                      <MiniAppSkeleton className="mf-skeleton-product-thumb" />
+                      <span className="mf-product-skeleton-copy">
+                        <MiniAppSkeleton className="mf-skeleton-product-title" />
+                        <MiniAppSkeleton className="mf-skeleton-product-meta" />
+                        <MiniAppSkeleton className="mf-skeleton-product-meta short" />
+                        <MiniAppSkeleton className="mf-skeleton-product-price" />
+                      </span>
+                    </div>
+                  ))}
                   {inventoryGroups.map((group) => {
                     const products = group.products;
 
@@ -2964,7 +3000,14 @@ export default function MilanoMiniAppPage() {
                         <th style={{ textAlign: "right" }}>Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody aria-busy={loading && !dashboard}>
+                      {loading && !dashboard && Array.from({ length: 4 }, (_, index) => (
+                        <tr key={`inventory-skeleton-${index}`} aria-hidden="true">
+                          {[0, 1, 2, 3, 4, 5].map((cell) => (
+                            <td key={cell}><MiniAppSkeleton className="mf-skeleton-table-cell" /></td>
+                          ))}
+                        </tr>
+                      ))}
                       {filteredProducts.map((prod) => (
                         <tr key={prod.id}>
                           <td>
@@ -3093,7 +3136,7 @@ export default function MilanoMiniAppPage() {
               )}
 
               {/* 4 Clean Analytical KPI Cards */}
-              <div className="mf-analytics-kpi-grid">
+              <div className="mf-analytics-kpi-grid" aria-busy={salesLoading && !salesReport}>
                 {/* 1. Revenue */}
                 <div className="mf-kpi-card">
                   <div className="mf-kpi-head">
@@ -3104,7 +3147,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-kpi-value">
                     {salesLoading && !salesReport
-                      ? "—"
+                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
                       : `ETB ${(salesReport?.totalRevenue ?? 0).toLocaleString("en-ET", {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0,
@@ -3132,7 +3175,7 @@ export default function MilanoMiniAppPage() {
                     </div>
                   </div>
                   <div className="mf-kpi-value">
-                    {salesLoading && !salesReport ? "—" : salesReport?.totalOrders ?? 0}
+                    {salesLoading && !salesReport ? <MiniAppSkeleton className="mf-skeleton-kpi-value short" /> : salesReport?.totalOrders ?? 0}
                   </div>
                   <div className="mf-kpi-sub">
                     <span className="mf-trend-badge is-up">✓ Recorded</span>
@@ -3150,7 +3193,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-kpi-value">
                     {salesLoading && !salesReport
-                      ? "—"
+                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
                       : `${(salesReport?.totalUnits ?? 0).toLocaleString()} units`}
                   </div>
                   <div className="mf-kpi-sub">
@@ -3169,7 +3212,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-kpi-value">
                     {salesLoading && !salesReport
-                      ? "—"
+                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
                       : `ETB ${(salesReport?.averageOrderValue ?? 0).toLocaleString("en-ET", {
                         maximumFractionDigits: 0,
                       })}`}
@@ -3199,7 +3242,13 @@ export default function MilanoMiniAppPage() {
                     <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--mf-forest)" }}>ETB</span>
                   </div>
 
-                  {salesReport && salesReport.timeline.length > 0 ? (
+                  {salesLoading && !salesReport ? (
+                    <div className="mf-chart-skeleton" role="status" aria-label="Loading sales chart">
+                      {Array.from({ length: 7 }, (_, index) => (
+                        <MiniAppSkeleton className={`mf-skeleton-chart-bar bar-${index + 1}`} key={index} />
+                      ))}
+                    </div>
+                  ) : salesReport && salesReport.timeline.length > 0 ? (
                     <div className="mf-timeline-bar-chart">
                       {salesReport.timeline.map((point) => (
                         <div className="mf-chart-col" key={point.label}>
@@ -3247,7 +3296,16 @@ export default function MilanoMiniAppPage() {
                     <span className="mf-tag-pill">{salesPeriod.toUpperCase()}</span>
                   </div>
 
-                  {salesReport && salesReport.products.length > 0 ? (
+                  {salesLoading && !salesReport ? (
+                    <div className="mf-top-prod-list" role="status" aria-label="Loading top products">
+                      {[0, 1, 2, 3].map((index) => (
+                        <div className="mf-top-product-skeleton" key={index} aria-hidden="true">
+                          <MiniAppSkeleton className="mf-skeleton-rank" />
+                          <span><MiniAppSkeleton className="mf-skeleton-product-title" /><MiniAppSkeleton className="mf-skeleton-product-meta" /></span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : salesReport && salesReport.products.length > 0 ? (
                     <div className="mf-top-prod-list">
                       {salesReport.products.slice(0, 6).map((prod, idx) => {
                         const pct = maxProductUnits > 0 ? Math.round((prod.units / maxProductUnits) * 100) : 0;

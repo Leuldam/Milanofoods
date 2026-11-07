@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Factory, CheckCircle2, RefreshCw, X, AlertTriangle, Layers } from "lucide-react";
+import { Plus, Factory, CheckCircle2, X, AlertTriangle, Layers } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type {
   AdminBatchMaterial,
@@ -10,6 +10,7 @@ import type {
   AdminProduct,
   AdminRecipe,
 } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminProductionPage() {
   const [batches, setBatches] = useState<AdminProductionBatch[]>([]);
@@ -301,12 +302,7 @@ export default function AdminProductionPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                    <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                    Loading production records...
-                  </td>
-                </tr>
+                <AdminTableLoading colSpan={7} label="Loading production records..." />
               ) : batches.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, RefreshCw, FileText, Shield } from "lucide-react";
 import type { AdminAuditLog } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminAuditPage() {
   const [logs, setLogs] = useState<AdminAuditLog[]>([]);
@@ -93,12 +94,7 @@ export default function AdminAuditPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={4} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading audit logs...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={4} label="Loading audit logs..." />
             ) : filteredLogs.length === 0 ? (
               <tr>
                 <td colSpan={4} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>

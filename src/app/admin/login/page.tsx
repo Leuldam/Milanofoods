@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import { useRouter } from "next/navigation";
-import { Lock, Phone, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
+import { Lock, Phone, ArrowRight, ShieldCheck, AlertCircle, LoaderCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -30,7 +30,22 @@ export default function AdminLoginPage() {
         throw new Error(data.error || "Authentication failed.");
       }
 
-      router.push("/admin");
+      const permissions: string[] = Array.isArray(data.user?.permissions) ? data.user.permissions : [];
+      const landingPage = data.user?.isOwner || permissions.includes("dashboard_view")
+        ? "/admin"
+        : [
+            ["orders_view", "/admin/orders"],
+            ["products_view", "/admin/products"],
+            ["inventory_view", "/admin/inventory"],
+            ["production_view", "/admin/production"],
+            ["customers_view", "/admin/customers"],
+            ["payments_view", "/admin/payments"],
+            ["reports_view", "/admin/reports"],
+            ["staff_manage", "/admin/staff"],
+            ["settings_manage", "/admin/settings"],
+            ["audit_view", "/admin/audit"],
+          ].find(([permission]) => permissions.includes(permission))?.[1] || "/admin";
+      router.push(landingPage);
       router.refresh();
     } catch (err) {
       setError(getAdminErrorMessage(err, "Invalid credentials."));
@@ -113,7 +128,7 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+        <form onSubmit={handleSubmit} aria-busy={loading} style={{ display: "grid", gap: "18px" }}>
           <div>
             <label style={{
               display: "block",
@@ -206,7 +221,8 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !phone.trim() || !password}
+            aria-live="polite"
             style={{
               display: "flex",
               alignItems: "center",
@@ -216,20 +232,31 @@ export default function AdminLoginPage() {
               marginTop: "8px",
               border: "none",
               borderRadius: "6px",
-              background: loading ? "#777C75" : "#073D2E",
+              background: loading ? "#466B5B" : "#073D2E",
               color: "#FFFFFF",
               fontSize: "14px",
               fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
+              cursor: loading || !phone.trim() || !password ? "not-allowed" : "pointer",
+              opacity: !loading && (!phone.trim() || !password) ? 0.72 : 1,
               transition: "background 0.2s",
             }}
           >
-            {loading ? "Authenticating..." : (
+            {loading ? (
+              <>
+                <LoaderCircle size={17} className="admin-login-spinner" />
+                Checking your sign-in…
+              </>
+            ) : (
               <>
                 Sign in to Admin <ArrowRight size={16} />
               </>
             )}
           </button>
+          {loading && (
+            <p className="admin-login-progress" role="status">
+              Securely verifying your account and permissions
+            </p>
+          )}
         </form>
 
         <div style={{

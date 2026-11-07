@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, SlidersHorizontal, RefreshCw, AlertTriangle, ArrowDownRight, ArrowUpRight, History, X } from "lucide-react";
+import { Plus, SlidersHorizontal, AlertTriangle, ArrowDownRight, ArrowUpRight, History, X } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminInventoryItem } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminInventoryPage() {
   const [activeTab, setActiveTab] = useState<string>("RAW_MATERIAL"); // RAW_MATERIAL, PACKAGING, FINISHED_GOOD
@@ -160,12 +161,7 @@ export default function AdminInventoryPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading inventory items...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={6} label="Loading inventory items..." />
             ) : data.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>

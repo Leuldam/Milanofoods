@@ -35,11 +35,29 @@ export async function GET(req: NextRequest) {
             id: true,
             orderNumber: true,
             total: true,
+            paidAmount: true,
             status: true,
             paymentStatus: true,
             createdAt: true,
+            items: {
+              select: {
+                id: true,
+                productName: true,
+                quantity: true,
+                lineTotal: true,
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
+        },
+        creditTransactions: {
+          orderBy: { createdAt: "desc" },
+          take: 100,
+          include: {
+            items: {
+              orderBy: { productName: "asc" },
+            },
+          },
         },
       },
     });
@@ -50,8 +68,13 @@ export async function GET(req: NextRequest) {
         .reduce((sum, o) => sum + Number(o.total), 0);
 
       const unpaidBalance = c.orders
-        .filter((o) => o.status !== "CANCELLED" && o.paymentStatus !== "PAID")
-        .reduce((sum, o) => sum + Number(o.total), 0);
+        .filter((o) => o.status !== "CANCELLED")
+        .reduce((sum, o) => sum + (o.paymentStatus === "PAID" ? 0 : Math.max(0, Number(o.total) - Number(o.paidAmount))), 0);
+
+      const creditBalance = Math.max(0, c.creditTransactions.reduce(
+        (sum, transaction) => sum + (transaction.type === "CREDIT" ? Number(transaction.amount) : -Number(transaction.amount)),
+        0,
+      ));
 
       return {
         id: c.id,
@@ -67,7 +90,9 @@ export async function GET(req: NextRequest) {
         totalOrders: c.orders.length,
         totalPurchases,
         unpaidBalance,
+        creditBalance,
         orders: c.orders,
+        creditTransactions: c.creditTransactions,
       };
     });
 

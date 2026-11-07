@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Edit, RefreshCw, X, Layers } from "lucide-react";
+import { Plus, Edit, X, Layers } from "lucide-react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 import type { AdminCategory } from "@/lib/admin-types";
 
 export default function AdminCategoriesPage() {
@@ -140,12 +141,7 @@ export default function AdminCategoriesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={5} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading categories...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={5} label="Loading categories..." />
             ) : categories.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>

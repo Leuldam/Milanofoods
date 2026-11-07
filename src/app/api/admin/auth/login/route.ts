@@ -12,6 +12,7 @@ import {
   isAdminLoginThrottled,
   recordAdminLoginFailure,
 } from "@/lib/admin-login-throttle";
+import { getAdminPhoneCandidates } from "@/lib/admin-phone";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,15 +53,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Find admin user by phone
-    const user = await prisma.adminUser.findFirst({
-      where: {
-        OR: [
-          { phone: cleanPhone },
-          { phone: cleanPhone.replace(/\s+/g, "") },
-          { phone: cleanPhone.startsWith("0") ? `+251${cleanPhone.slice(1)}` : cleanPhone },
-        ],
-      },
+    const users = await prisma.adminUser.findMany({
+      where: { phone: { in: getAdminPhoneCandidates(cleanPhone) } },
+      include: { permissions: { select: { permissionKey: true } } },
+      take: 2,
     });
+    const user = users.length === 1 ? users[0] : null;
 
     if (!user) {
       await recordAdminLoginFailure(req, cleanPhone);
@@ -96,6 +94,7 @@ export async function POST(req: NextRequest) {
         phone: user.phone,
         name: user.name,
         isOwner: user.isOwner,
+        permissions: user.permissions.map(({ permissionKey }) => permissionKey),
       },
     });
 

@@ -5,6 +5,7 @@ import { PermissionKey } from "@/generated/prisma/client";
 import { ALL_PERMISSION_KEYS } from "@/lib/admin-seed";
 import { Prisma } from "@/generated/prisma/client";
 import { isUniqueConstraintError } from "@/lib/admin-error";
+import { normalizeAdminPhone } from "@/lib/admin-phone";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,11 +53,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { phone, name, password, permissions } = body;
 
-    if (!phone || !password) {
+    if (typeof phone !== "string" || !phone.trim() || typeof password !== "string" || !password) {
       return NextResponse.json({ error: "Phone number and password are required." }, { status: 400 });
     }
 
-    const cleanPhone = phone.trim();
+    const cleanPhone = normalizeAdminPhone(phone);
+    if (!cleanPhone) {
+      return NextResponse.json({ error: "A valid phone number is required." }, { status: 400 });
+    }
     const passwordHash = await hashPassword(password);
 
     const newStaff = await prisma.$transaction(async (tx) => {
@@ -110,6 +114,9 @@ export async function PUT(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: "Staff ID is required." }, { status: 400 });
     }
+    if (phone !== undefined && (typeof phone !== "string" || !phone.trim())) {
+      return NextResponse.json({ error: "Phone number cannot be empty." }, { status: 400 });
+    }
 
     const targetStaff = await prisma.adminUser.findUnique({ where: { id } });
     if (!targetStaff) {
@@ -124,7 +131,7 @@ export async function PUT(req: NextRequest) {
     await prisma.$transaction(async (tx) => {
       const dataToUpdate: Prisma.AdminUserUpdateInput = {};
       if (name !== undefined) dataToUpdate.name = name ? name.trim() : null;
-      if (phone) dataToUpdate.phone = phone.trim();
+      if (phone) dataToUpdate.phone = normalizeAdminPhone(phone);
       if (password) dataToUpdate.passwordHash = await hashPassword(password);
 
       if (Object.keys(dataToUpdate).length > 0) {

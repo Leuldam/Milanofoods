@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Search, RefreshCw, X, Users, Phone, Building, History, ArrowUpRight } from "lucide-react";
+import { Plus, Search, X, Users, Phone, Building, History, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminCustomer } from "@/lib/admin-types";
+import { AdminTableLoading } from "@/components/admin/admin-loading";
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
@@ -12,6 +13,7 @@ export default function AdminCustomersPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<AdminCustomer | null>(null);
+  const [historyCustomer, setHistoryCustomer] = useState<AdminCustomer | null>(null);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -183,12 +185,7 @@ export default function AdminCustomersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                  Loading customer directory...
-                </td>
-              </tr>
+              <AdminTableLoading colSpan={7} label="Loading customer directory..." />
             ) : filteredCustomers.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
@@ -199,7 +196,14 @@ export default function AdminCustomersPage() {
               filteredCustomers.map((c) => (
                 <tr key={c.id} style={{ borderBottom: "1px solid #F0ECE1" }}>
                   <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontWeight: 800, color: "#073D2E" }}>{c.name}</div>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryCustomer(c)}
+                      style={{ padding: 0, border: 0, background: "transparent", color: "#073D2E", fontWeight: 800, cursor: "pointer", textAlign: "left" }}
+                      aria-label={`View history for ${c.name}`}
+                    >
+                      {c.name}
+                    </button>
                     {c.company && (
                       <div style={{ fontSize: "11px", color: "#C99A4A", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
                         <Building size={11} /> {c.company}
@@ -237,6 +241,25 @@ export default function AdminCustomersPage() {
                     </span>
                   </td>
                   <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                    <button
+                      onClick={() => setHistoryCustomer(c)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        padding: "6px 10px",
+                        marginRight: "6px",
+                        background: "#F0F7F1",
+                        border: "1px solid #C9DCCB",
+                        borderRadius: "4px",
+                        color: "#073D2E",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <History size={13} /> History
+                    </button>
                     <button
                       onClick={() => openEditModal(c)}
                       style={{
@@ -369,6 +392,83 @@ export default function AdminCustomersPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {historyCustomer && (
+        <div className="admin-workflow-modal" role="presentation">
+          <button type="button" className="admin-workflow-backdrop" aria-label="Close customer history" onClick={() => setHistoryCustomer(null)} />
+          <section className="admin-workflow-dialog admin-customer-history-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-customer-history-title">
+            <header>
+              <div>
+                <h2 id="admin-customer-history-title">{historyCustomer.name}</h2>
+                <p className="admin-customer-history-contact">
+                  {historyCustomer.phone}{historyCustomer.company ? ` · ${historyCustomer.company}` : ""}
+                </p>
+              </div>
+              <button type="button" aria-label="Close" onClick={() => setHistoryCustomer(null)}><X size={19} /></button>
+            </header>
+
+            <div className="admin-customer-history-summary">
+              <div><span>Orders</span><strong>{historyCustomer.totalOrders}</strong></div>
+              <div><span>Purchases</span><strong>ETB {historyCustomer.totalPurchases.toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+              <div><span>Order balance</span><strong>ETB {historyCustomer.unpaidBalance.toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+              <div><span>Credit Book</span><strong>ETB {historyCustomer.creditBalance.toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+            </div>
+
+            <section className="admin-customer-history-section">
+              <h3>Order History</h3>
+              {historyCustomer.orders.length === 0 ? (
+                <p className="admin-customer-history-empty">No orders recorded for this customer.</p>
+              ) : (
+                <div className="admin-customer-history-list">
+                  {historyCustomer.orders.map((order) => (
+                    <article key={order.id} className="admin-customer-history-entry">
+                      <div className="admin-customer-history-entry-head">
+                        <strong>#{order.orderNumber}</strong>
+                        <b>ETB {Number(order.total).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                      </div>
+                      <div className="admin-customer-history-entry-meta">
+                        <span>{new Date(order.createdAt).toLocaleString()}</span>
+                        <span>{order.status.replaceAll("_", " ")} · {(order.paymentStatus || "UNPAID").replaceAll("_", " ")}</span>
+                      </div>
+                      {order.items.length > 0 && (
+                        <p>{order.items.map((item) => `${item.productName} × ${item.quantity}`).join(", ")}</p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="admin-customer-history-section">
+              <h3>Credit Book History</h3>
+              {historyCustomer.creditTransactions.length === 0 ? (
+                <p className="admin-customer-history-empty">No credit sales or repayments recorded.</p>
+              ) : (
+                <div className="admin-customer-history-list">
+                  {historyCustomer.creditTransactions.map((transaction) => (
+                    <article key={transaction.id} className="admin-customer-history-entry">
+                      <div className="admin-customer-history-entry-head">
+                        <strong>{transaction.type === "CREDIT" ? "Credit sale" : "Repayment"}</strong>
+                        <b className={transaction.type === "CREDIT" ? "admin-credit-balance" : "admin-credit-repayment"}>
+                          {transaction.type === "CREDIT" ? "+" : "−"}ETB {Number(transaction.amount).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </b>
+                      </div>
+                      <div className="admin-customer-history-entry-meta">
+                        <span>{new Date(transaction.createdAt).toLocaleString()}</span>
+                        {transaction.recordedBy && <span>Recorded by {transaction.recordedBy}</span>}
+                      </div>
+                      {transaction.items.length > 0 && (
+                        <p>{transaction.items.map((item) => `${item.productName} × ${item.quantity}`).join(", ")}</p>
+                      )}
+                      {transaction.notes && <p>{transaction.notes}</p>}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </section>
         </div>
       )}
     </div>
