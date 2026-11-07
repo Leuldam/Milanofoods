@@ -91,3 +91,88 @@ export type OrderPaymentProof = Prisma.OrderPaymentProofModel
  * 
  */
 export type OrderItem = Prisma.OrderItemModel
+/**
+ * Model AdminUser
+ *
+ */
+export type AdminUser = Prisma.AdminUserModel
+/**
+ * Model AdminSession
+ *
+ */
+export type AdminSession = Prisma.AdminSessionModel
+/**
+ * Model AdminLoginThrottle
+ *
+ */
+export type AdminLoginThrottle = Prisma.AdminLoginThrottleModel
+/**
+ * Model AdminAuditLog
+ *
+ */
+export type AdminAuditLog = Prisma.AdminAuditLogModel
+/**
+ * Model Permission
+ *
+ */
+export type Permission = Prisma.PermissionModel
+/**
+ * Model StaffPermission
+ *
+ */
+export type StaffPermission = Prisma.StaffPermissionModel
+/**
+ * Model InventoryItem
+ *
+ */
+export type InventoryItem = Prisma.InventoryItemModel
+/**
+ * Model InventoryStockMovement
+ *
+ */
+export type InventoryStockMovement = Prisma.InventoryStockMovementModel
+/**
+ * Model Recipe
+ *
+ */
+export type Recipe = Prisma.RecipeModel
+/**
+ * Model RecipeItem
+ *
+ */
+export type RecipeItem = Prisma.RecipeItemModel
+/**
+ * Model ProductionBatch
+ *
+ */
+export type ProductionBatch = Prisma.ProductionBatchModel
+/**
+ * Model BatchMaterialUsage
+ *
+ */
+export type BatchMaterialUsage = Prisma.BatchMaterialUsageModel
+/**
+ * Model Customer
+ *
+ */
+export type Customer = Prisma.CustomerModel
+/**
+ * Model OrderStatusHistory
+ *
+ */
+export type OrderStatusHistory = Prisma.OrderStatusHistoryModel
+/**
+ * Model Payment
+ *
+ */
+export type Payment = Prisma.PaymentModel
+/**
+ * Model SystemSetting
+ *
+ */
+export type SystemSetting = Prisma.SystemSettingModel
+/**
+ * Model NotificationLog
+ *
+ */
+export type NotificationLog = Prisma.NotificationLogModel

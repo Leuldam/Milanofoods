@@ -331,6 +331,26 @@ export async function POST(req: NextRequest) {
 
       const money = (cents: number) => (cents / 100).toFixed(2);
 
+      const customer = await tx.customer.upsert({
+        where: { phone: phone.trim() },
+        update: {
+          name: name.trim(),
+          email: email || undefined,
+          company: company || undefined,
+          address: deliveryAddress || undefined,
+          city: city || undefined,
+        },
+        create: {
+          phone: phone.trim(),
+          name: name.trim(),
+          email: email || null,
+          company: company || null,
+          address: deliveryAddress || null,
+          city: city || null,
+          customerType: "RETAIL",
+        },
+      });
+
       const order = await tx.order.create({
         data: {
           orderNumber,
@@ -338,6 +358,8 @@ export async function POST(req: NextRequest) {
           customerPhone: phone,
           customerEmail: email || null,
           company: company || null,
+          customerId: customer.id,
+          source: "WEBSITE",
           fulfillment: method === "delivery" ? "DELIVERY" : "PICKUP",
           city: method === "delivery" ? city : null,
           deliveryAddress:
@@ -351,6 +373,13 @@ export async function POST(req: NextRequest) {
           deliveryFee: "0.00",
           total: money(subtotalCents),
           reservationExpiresAt,
+          statusHistory: {
+            create: {
+              status: "PENDING",
+              changedBy: "Customer (Website)",
+              notes: "Order placed on customer website",
+            },
+          },
           ...(paymentProof ? {
             paymentProof: {
               create: {

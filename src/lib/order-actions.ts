@@ -226,10 +226,11 @@ export async function updatePendingOrder(
       include: { items: true },
     });
     if (!order) throw new Error("ORDER_NOT_FOUND");
-    if (order.status !== "PENDING" || order.stockDeductedAt) {
+    if (order.status === "CANCELLED") {
       throw new Error("ORDER_NOT_EDITABLE");
     }
-    if (!order.reservationExpiresAt || order.reservationExpiresAt <= new Date()) {
+    const isPhysicalStockDeducted = Boolean(order.stockDeductedAt);
+    if (!isPhysicalStockDeducted && (!order.reservationExpiresAt || order.reservationExpiresAt <= new Date())) {
       throw new Error("ORDER_RESERVATION_EXPIRED");
     }
 
@@ -288,21 +289,65 @@ export async function updatePendingOrder(
       });
       if (!product) throw new Error("ORDER_PRODUCT_NOT_FOUND");
       const difference = (desiredQuantities.get(productId) ?? 0) - (previousQuantities.get(productId) ?? 0);
-      if (difference > 0) {
-        if (product.stock - product.reservedStock < difference) {
-          throw new Error(`ORDER_INSUFFICIENT_STOCK:${product.name}:${Math.max(0, product.stock - product.reservedStock)}`);
+      if (difference !== 0) {
+        if (isPhysicalStockDeducted) {
+          // Order was already confirmed/in fulfillment: adjust physical stock directly
+          if (difference > 0) {
+            if (product.stock < difference) {
+              throw new Error(`ORDER_INSUFFICIENT_STOCK:${product.name}:${product.stock}`);
+            }
+            await tx.product.update({
+              where: { id: productId },
+              data: { stock: { decrement: difference } },
+            });
+            await tx.productStockMovement.create({
+              data: {
+                productId,
+                change: -difference,
+                previousStock: product.stock,
+                newStock: product.stock - difference,
+                reason: `Order ${order.orderNumber} edited (units increased)`,
+                orderNumber: order.orderNumber,
+                createdBy: "admin",
+              },
+            });
+          } else {
+            const returned = Math.abs(difference);
+            await tx.product.update({
+              where: { id: productId },
+              data: { stock: { increment: returned } },
+            });
+            await tx.productStockMovement.create({
+              data: {
+                productId,
+                change: returned,
+                previousStock: product.stock,
+                newStock: product.stock + returned,
+                reason: `Order ${order.orderNumber} edited (units decreased)`,
+                orderNumber: order.orderNumber,
+                createdBy: "admin",
+              },
+            });
+          }
+        } else {
+          // PENDING order with reservations: adjust reservedStock
+          if (difference > 0) {
+            if (product.stock - product.reservedStock < difference) {
+              throw new Error(`ORDER_INSUFFICIENT_STOCK:${product.name}:${Math.max(0, product.stock - product.reservedStock)}`);
+            }
+            const reserved = await tx.product.updateMany({
+              where: { id: productId, stock: { gte: product.reservedStock + difference }, reservedStock: product.reservedStock },
+              data: { reservedStock: { increment: difference } },
+            });
+            if (reserved.count !== 1) throw new Error(`ORDER_INSUFFICIENT_STOCK:${product.name}:0`);
+          } else {
+            const released = await tx.product.updateMany({
+              where: { id: productId, reservedStock: { gte: -difference } },
+              data: { reservedStock: { decrement: -difference } },
+            });
+            if (released.count !== 1) throw new Error(`ORDER_RESERVATION_MISMATCH:${product.name}`);
+          }
         }
-        const reserved = await tx.product.updateMany({
-          where: { id: productId, stock: { gte: product.reservedStock + difference }, reservedStock: product.reservedStock },
-          data: { reservedStock: { increment: difference } },
-        });
-        if (reserved.count !== 1) throw new Error(`ORDER_INSUFFICIENT_STOCK:${product.name}:0`);
-      } else if (difference < 0) {
-        const released = await tx.product.updateMany({
-          where: { id: productId, reservedStock: { gte: -difference } },
-          data: { reservedStock: { decrement: -difference } },
-        });
-        if (released.count !== 1) throw new Error(`ORDER_RESERVATION_MISMATCH:${product.name}`);
       }
     }
 

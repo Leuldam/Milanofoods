@@ -1,15 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@/generated/prisma/client";
+import { OrderStatus, PermissionKey, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { processOrderAction, processReviewAction, updatePendingOrder } from "@/lib/order-actions";
 import { releaseExpiredReservations } from "@/lib/stock-reservations";
-import { getTelegramMiniAppUser } from "@/lib/telegram-miniapp-auth";
+import { getTelegramMiniAppUser, hasMiniAppPermission } from "@/lib/telegram-miniapp-auth";
 import { sendTelegramNotification } from "@/lib/telegram-notifications";
 import { getCategoryImageUrl, getProductGalleryImageUrls, getProductImageUrl, validateImageDataUrl } from "@/lib/product-images";
 import { parsePackagingConfigurations, percentToBasisPoints } from "@/lib/product-pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const dashboardPermissions: PermissionKey[] = [
+  "dashboard_view",
+  "products_view",
+  "products_manage",
+  "categories_manage",
+  "inventory_view",
+  "orders_view",
+  "customers_view",
+  "payments_view",
+  "settings_manage",
+];
+
+const actionPermissions: Record<string, PermissionKey> = {
+  "category-create": "categories_manage",
+  "category-image-update": "categories_manage",
+  "category-update": "categories_manage",
+  "category-status-update": "categories_manage",
+  "category-delete": "categories_manage",
+  "product-create": "products_manage",
+  "product-update": "products_manage",
+  "product-gallery-update": "products_manage",
+  "product-image-update": "products_manage",
+  "product-publish-update": "products_manage",
+  "product-status-update": "products_manage",
+  "payment-method-update": "settings_manage",
+  "order-confirm": "orders_update",
+  "order-reject": "orders_update",
+  "order-update": "orders_update",
+  "order-status-update": "orders_update",
+  "review-approve": "products_manage",
+  "review-reject": "products_manage",
+  "update-price": "products_manage",
+  restock: "inventory_receive",
+  "set-out-of-stock": "inventory_adjust",
+};
 
 function createCatalogSlug(value: string) {
   return value
@@ -60,9 +96,15 @@ function getGalleryImages(value: unknown) {
 }
 
 export async function GET(request: NextRequest) {
-  const operator = getTelegramMiniAppUser(request);
+  const operator = await getTelegramMiniAppUser(request);
   if (!operator) {
     return NextResponse.json({ error: "Unauthorized Telegram session." }, { status: 401 });
+  }
+  if (!hasMiniAppPermission(operator, dashboardPermissions)) {
+    return NextResponse.json(
+      { error: "Your account does not have permission to access Mini App management." },
+      { status: 403 },
+    );
   }
 
   try {
@@ -283,14 +325,27 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const operator = getTelegramMiniAppUser(request);
+  const operator = await getTelegramMiniAppUser(request);
   if (!operator) {
     return NextResponse.json({ error: "Unauthorized Telegram session." }, { status: 401 });
   }
+  const actorId = operator.authMethod === "telegram"
+    ? String(operator.id)
+    : operator.adminUserId || "admin";
 
   try {
     const body = await request.json();
     const action = typeof body?.action === "string" ? body.action : "restock";
+    const requiredPermission = actionPermissions[action];
+    if (!requiredPermission) {
+      return NextResponse.json({ error: "Unsupported management action." }, { status: 400 });
+    }
+    if (!hasMiniAppPermission(operator, requiredPermission)) {
+      return NextResponse.json(
+        { error: "Your account does not have permission to perform this action." },
+        { status: 403 },
+      );
+    }
 
     if (action === "category-create") {
       const name = typeof body?.name === "string" ? body.name.trim() : "";
@@ -664,7 +719,7 @@ export async function POST(request: NextRequest) {
       const result = await processOrderAction(
         orderNumber,
         action === "order-confirm" ? "confirm" : "reject",
-        operator.authMethod === "telegram" ? String(operator.id) : "admin",
+        actorId,
       );
       if (!result.ok) return NextResponse.json(result, { status: 409 });
 
@@ -695,6 +750,138 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ok: true,
         message: `Order ${orderNumber} updated. Total: ETB ${updated.total.toLocaleString("en-ET")}.`,
+        telegramNotified,
+      });
+    }
+
+    if (action === "order-status-update") {
+      const orderNumber = typeof body?.orderNumber === "string" ? body.orderNumber.trim() : "";
+      const targetStatus = typeof body?.newStatus === "string" ? body.newStatus.trim() : "";
+      const validStatuses = [
+        "PENDING",
+        "CONFIRMED",
+        "PREPARING",
+        "READY_FOR_PICKUP",
+        "OUT_FOR_DELIVERY",
+        "COMPLETED",
+        "CANCELLED",
+      ];
+      if (!orderNumber || !validStatuses.includes(targetStatus)) {
+        return NextResponse.json({ error: "Select a valid order and status." }, { status: 400 });
+      }
+
+      const existing = await prisma.order.findUnique({
+        where: { orderNumber },
+        include: { items: true },
+      });
+      if (!existing) {
+        return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      }
+
+      let resultMsg = `Order ${orderNumber} status changed to ${targetStatus.replaceAll("_", " ")}.`;
+
+      if (existing.status === "PENDING" && targetStatus === "CONFIRMED") {
+        const confirmResult = await processOrderAction(
+          orderNumber,
+          "confirm",
+          actorId,
+        );
+        if (!confirmResult.ok) return NextResponse.json(confirmResult, { status: 409 });
+        resultMsg = confirmResult.message;
+      } else if (existing.status === "PENDING" && targetStatus === "CANCELLED") {
+        const rejectResult = await processOrderAction(
+          orderNumber,
+          "reject",
+          actorId,
+        );
+        if (!rejectResult.ok) return NextResponse.json(rejectResult, { status: 409 });
+        resultMsg = rejectResult.message;
+      } else {
+        await prisma.$transaction(async (tx) => {
+          if (targetStatus === "CANCELLED" && existing.stockDeductedAt) {
+            for (const item of existing.items) {
+              if (item.productId) {
+                const prod = await tx.product.findUnique({ where: { id: item.productId } });
+                if (prod) {
+                  await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { increment: item.quantity } },
+                  });
+                  await tx.productStockMovement.create({
+                    data: {
+                      productId: item.productId,
+                      change: item.quantity,
+                      previousStock: prod.stock,
+                      newStock: prod.stock + item.quantity,
+                      reason: `Order ${orderNumber} cancelled`,
+                      orderNumber,
+                      createdBy: actorId,
+                    },
+                  });
+                }
+              }
+            }
+          }
+
+          if (targetStatus === "COMPLETED" && !existing.stockDeductedAt) {
+            for (const item of existing.items) {
+              if (item.productId) {
+                const prod = await tx.product.findUnique({ where: { id: item.productId } });
+                if (prod) {
+                  const newStock = Math.max(0, prod.stock - item.quantity);
+                  const newReserved = Math.max(0, prod.reservedStock - item.quantity);
+                  await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: newStock, reservedStock: newReserved },
+                  });
+                  await tx.productStockMovement.create({
+                    data: {
+                      productId: item.productId,
+                      change: -item.quantity,
+                      previousStock: prod.stock,
+                      newStock,
+                      reason: `Order ${orderNumber} completed`,
+                      orderNumber,
+                      createdBy: actorId,
+                    },
+                  });
+                }
+              }
+            }
+          }
+
+          await tx.order.update({
+            where: { id: existing.id },
+            data: {
+              status: targetStatus as OrderStatus,
+              stockDeductedAt:
+                targetStatus === "CONFIRMED" || targetStatus === "COMPLETED"
+                  ? existing.stockDeductedAt || new Date()
+                  : existing.stockDeductedAt,
+            },
+          });
+
+          await tx.orderStatusHistory.create({
+            data: {
+              orderId: existing.id,
+              status: targetStatus as OrderStatus,
+              changedBy: operator.first_name || operator.username || "Operator",
+              notes: typeof body?.notes === "string" ? body.notes : `Status updated to ${targetStatus}`,
+            },
+          });
+        });
+      }
+
+      const telegramNotified = await sendTelegramNotification([
+        `MINI APP — ORDER STATUS UPDATED`,
+        `Order: ${orderNumber}`,
+        `New Status: ${targetStatus.replaceAll("_", " ")}`,
+        `By: ${operator.first_name || operator.username || "Admin"}`,
+      ].join("\n"));
+
+      return NextResponse.json({
+        ok: true,
+        message: resultMsg,
         telegramNotified,
       });
     }
@@ -746,7 +933,7 @@ export async function POST(request: NextRequest) {
             productId,
             previousPrice: product.price,
             newPrice: updatedProduct.price,
-            createdBy: operator.authMethod === "telegram" ? String(operator.id) : "admin",
+            createdBy: actorId,
           },
         });
 
@@ -811,7 +998,7 @@ export async function POST(request: NextRequest) {
           previousStock: product.stock,
           newStock: stock,
           reason: action === "set-out-of-stock" ? "SET_OUT_OF_STOCK" : "RESTOCK",
-          createdBy: operator.authMethod === "telegram" ? String(operator.id) : "admin",
+          createdBy: actorId,
         },
       });
 

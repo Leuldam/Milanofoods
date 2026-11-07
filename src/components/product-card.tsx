@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { Product, money } from "@/lib/products";
 import { comparePackageSizes } from "@/lib/product-variants";
 import { calculateUnitPriceCents, decimalToCents } from "@/lib/product-pricing";
@@ -22,6 +22,7 @@ export function ProductCard({
   variants?: StoreProduct[];
 }) {
   const { add } = useStore();
+  const [isAdded, setIsAdded] = useState(false);
   const productVariants = useMemo(
     () => variants?.length ? variants : [product],
     [product, variants],
@@ -79,7 +80,7 @@ export function ProductCard({
           alt={displayName}
           fill
           unoptimized={selectedProduct.image.startsWith("http")}
-          sizes="(max-width:720px) 48vw, (max-width:1000px) 30vw, 23vw"
+          sizes="(max-width:480px) 44vw, (max-width:720px) 44vw, (max-width:1000px) 30vw, 22vw"
           style={{ objectFit: isDessertFamily ? "contain" : undefined }}
         />
 
@@ -88,53 +89,87 @@ export function ProductCard({
         )}
 
         {unavailable && (
-          <span className="product-tag">
+          <span className="product-tag product-tag-unavailable">
             {comingSoon ? "Coming soon" : "Out of stock"}
+          </span>
+        )}
+
+        {selectedProduct.promotionEnabled && selectedProduct.promotionDiscountPercent && (
+          <span className="product-tag product-tag-discount">
+            -{selectedProduct.promotionDiscountPercent}%
           </span>
         )}
       </Link>
 
       <div className="product-info">
-        <Link href={`/products/${selectedProduct.slug}`}>
+        <Link href={`/products/${selectedProduct.slug}`} className="product-title-link">
           <h3>{displayName}</h3>
         </Link>
 
-        <div className="product-category">
-          {selectedProduct.category}{selectedProduct.variantType ? ` · ${selectedProduct.variantType}` : ""} · {selectedProduct.size}
-        </div>
+        <span className="product-subtitle">
+          {selectedProduct.category}{selectedProduct.variantType ? ` · ${selectedProduct.variantType}` : ""}
+        </span>
 
-        {productVariants.length > 1 && (
-          <div className="product-variant-selectors">
-            {types.length > 1 && <label>
-              <span>{selectedProduct.category === "Ice Cream Powders" ? "Style" : "Format"}</span>
-              <select aria-label={`${displayName} ${selectedProduct.category === "Ice Cream Powders" ? "style" : "format"}`} value={selectedType} onChange={(event) => {
-                const nextType = event.target.value;
-                setSelectedType(nextType);
-                const nextVariant = productVariants.find((item) => item.variantType === nextType);
-                if (nextVariant) setSelectedSize(nextVariant.size);
-              }}>
-                {types.map((type) => <option key={type} value={type}>{type}</option>)}
-              </select>
-            </label>}
-            <label>
-              <span>Pack size</span>
-              <select aria-label={`${displayName} pack size`} value={selectedProduct.size} onChange={(event) => setSelectedSize(event.target.value)}>
-                {sizes.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-            </label>
+        {/* Variant pills — types */}
+        {productVariants.length > 1 && types.length > 1 && (
+          <div className="product-pills" role="radiogroup" aria-label={`${displayName} ${selectedProduct.category === "Ice Cream Powders" ? "style" : "format"}`}>
+            {types.map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={`product-pill${selectedType === type ? " is-active" : ""}`}
+                aria-pressed={selectedType === type}
+                onClick={() => {
+                  setSelectedType(type);
+                  const nextVariant = productVariants.find((item) => item.variantType === type);
+                  if (nextVariant) setSelectedSize(nextVariant.size);
+                }}
+              >
+                {type}
+              </button>
+            ))}
           </div>
         )}
 
+        {/* Variant pills — sizes */}
+        {productVariants.length > 1 && sizes.length > 1 && (
+          <div className="product-pills" role="radiogroup" aria-label={`${displayName} pack size`}>
+            {sizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`product-pill${selectedProduct.size === s ? " is-active" : ""}`}
+                aria-pressed={selectedProduct.size === s}
+                onClick={() => setSelectedSize(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Single size (no variants) — show as static badge */}
+        {productVariants.length <= 1 && selectedProduct.size && (
+          <span className="product-size-static">{selectedProduct.size}</span>
+        )}
+
         <div className="product-bottom">
-          <span className="price">
-            {selectedProduct.price > 0 ? money(displayPrice) : "Price coming soon"}
-            {selectedProduct.promotionEnabled && selectedProduct.promotionDiscountPercent && <small className="product-card-promotion"> / unit · {selectedProduct.promotionDiscountPercent}% off</small>}
-          </span>
+          <div className="product-price-block">
+            <span className="price">
+              {selectedProduct.price > 0 ? money(displayPrice) : "TBA"}
+            </span>
+            {selectedProduct.promotionEnabled && selectedProduct.promotionDiscountPercent && (
+              <small className="product-card-promotion">per unit · {selectedProduct.promotionDiscountPercent}% off</small>
+            )}
+          </div>
 
           <button
-            className="add-mini"
+            type="button"
+            className={`product-add-btn add-mini${isAdded ? " is-added" : ""}`}
             disabled={unavailable}
-            onClick={() =>
+            aria-label={unavailable ? (comingSoon ? "Coming soon" : "Out of stock") : `Add ${displayName} to cart`}
+            onClick={() => {
+              if (unavailable) return;
               add({
                 id: selectedProduct.id,
                 sku: selectedProduct.sku,
@@ -151,11 +186,27 @@ export function ProductCard({
                 promotionDiscountPercent: selectedProduct.promotionDiscountPercent,
                 availableStock: selectedProduct.availableStock,
                 inStock: selectedProduct.inStock,
-              }, minimumOrderQuantity)
-            }
+              }, minimumOrderQuantity);
+              setIsAdded(true);
+              setTimeout(() => setIsAdded(false), 1200);
+            }}
           >
-            <Plus size={14} />
-            {comingSoon ? "Coming soon" : unavailable ? "Unavailable" : "Add"}
+            {isAdded ? (
+              <>
+                <Check size={14} className="product-add-icon" strokeWidth={2.8} />
+                <span className="product-add-label">Added!</span>
+              </>
+            ) : comingSoon ? (
+              <span className="product-add-label">Coming soon</span>
+            ) : unavailable ? (
+              <span className="product-add-label">Out of stock</span>
+            ) : (
+              <>
+                <Plus size={14} className="product-add-icon" strokeWidth={2.5} />
+                <span className="product-add-label product-add-label-desktop">Add</span>
+                <span className="product-add-label product-add-label-mobile">Add to cart</span>
+              </>
+            )}
           </button>
         </div>
       </div>

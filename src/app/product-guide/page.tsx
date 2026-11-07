@@ -2,19 +2,19 @@ import type { Metadata } from "next";
 import { ProductFamilyGuide } from "@/components/product-family-guide";
 
 export const metadata: Metadata = {
-  title: "Product Guide: Flavors, Preparation & Uses",
-  description: "Explore Milano Mojito Syrup, Ice Cream Powder, and Milkshake Powder. See current flavors and formats, preparation guidance, and serving ideas.",
+  title: "Milano Product Guide: Compare Our Product Families",
+  description: "Compare Milano Mojito Syrup, Ice Cream Powder, and Milkshake Powder. Explore current flavors, formats, and pack sizes to find the right product for your needs.",
   alternates: { canonical: "/product-guide" },
   openGraph: {
     title: "Milano Foods Product Guide",
-    description: "A practical guide to Milano product flavors, formats, preparation, and serving ideas.",
+    description: "Compare Milano product families, current options, formats, and pack sizes.",
     url: "/product-guide",
   },
 };
 
 export default function ProductGuidePage() {
   return (
-    <main>
+    <main className="product-guide-page">
       <ProductFamilyGuide />
     </main>
   );

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Clock3, Lightbulb } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, ChevronRight, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type FamilyProduct = {
@@ -20,10 +20,9 @@ type ProductFamily = {
   name: string;
   eyebrow: string;
   image: string;
-  intro: string;
-  flavorNote: string;
-  preparation: string[];
-  uses: string[];
+  summary: string;
+  chooseWhen: string;
+  fits: string[];
   accent: "mint" | "cream" | "berry";
 };
 
@@ -31,49 +30,31 @@ const families: ProductFamily[] = [
   {
     slug: "mojito-syrups",
     name: "Mojito Syrup",
-    eyebrow: "Bright, refreshing & made to mix",
+    eyebrow: "For drinks & beverage menus",
     image: "/images/milano-mint-bottle-cutout.png",
-    intro: "Build a refreshing drink around your favorite Milano syrup. Mint is a lively starting point; fruit flavors bring their own colorful character to lemonades and creative coolers.",
-    flavorNote: "Choose a listed flavor to set the direction of your drink. Mix with citrus, fresh fruit, or herbs to create your own combination.",
-    preparation: [
-      "Fill a glass or jug with ice and any fresh citrus or fruit you like.",
-      "Measure the syrup using the serving guidance on its product label.",
-      "Add still or sparkling water, stir gently, then taste and adjust to preference.",
-      "Finish with a simple garnish and serve cold.",
-    ],
-    uses: ["Mojito-style mocktails", "Lemonades & coolers", "Café signature drinks"],
+    summary: "A ready-to-use syrup range for refreshing drinks, café menus, and easy-to-customize beverages.",
+    chooseWhen: "Choose this range when you want a convenient flavor base for cold drinks.",
+    fits: ["Cafés & restaurants", "Home beverage stations", "Cold drink menus"],
     accent: "mint",
   },
   {
     slug: "ice-cream-powders",
     name: "Ice Cream Powder",
-    eyebrow: "A flexible base for frozen treats",
+    eyebrow: "For frozen dessert programs",
     image: "/images/milanoice.png",
-    intro: "Milano Ice Cream Powder is available in product-specific flavors, formats, and pack sizes. Use the instructions for the exact product and equipment you have selected.",
-    flavorNote: "The active catalog shows available flavors and styles. Hard-serve and soft-serve formats may have different preparation requirements.",
-    preparation: [
-      "Choose a flavor and style that matches your menu or equipment.",
-      "Measure the powder and other ingredients using the pack directions.",
-      "Mix thoroughly, then process or freeze as instructed for that product.",
-      "Serve once it reaches the texture recommended on the package.",
-    ],
-    uses: ["Scoops & cones", "Soft-serve menus", "Sundaes & desserts"],
+    summary: "A dessert base available in different flavors, styles, and pack sizes for frozen treat menus.",
+    chooseWhen: "Compare the available style and pack size with your equipment and serving needs.",
+    fits: ["Ice cream shops", "Dessert menus", "Food-service kitchens"],
     accent: "cream",
   },
   {
     slug: "milkshake-powders",
     name: "Milkshake Powder",
-    eyebrow: "Smooth, chilled & easy to personalize",
+    eyebrow: "For shakes & blended drinks",
     image: "/images/milanomilk.png",
-    intro: "Make a creamy shake with the flavor and format currently available in the catalog. Keep the product directions close so each serving is easy to repeat.",
-    flavorNote: "Powder and liquid formats can have different measurements. Follow the directions for the selected format rather than using a one-size-fits-all recipe.",
-    preparation: [
-      "Chill the milk or other liquid specified on the product label.",
-      "Measure the selected Milano product according to its serving directions.",
-      "Blend until smooth; add ice only if it suits the product instructions and texture you want.",
-      "Pour into a chilled glass and add optional toppings.",
-    ],
-    uses: ["Classic milkshakes", "Blended café drinks", "Custom dessert drinks"],
+    summary: "A range of milkshake products designed for creamy drinks at home and in professional kitchens.",
+    chooseWhen: "Check the selected product’s format and serving directions before choosing a pack.",
+    fits: ["Milkshake counters", "Cafés & restaurants", "At-home treats"],
     accent: "berry",
   },
 ];
@@ -122,20 +103,49 @@ export function ProductFamilyGuide() {
       <section className="family-guide-hero">
         <div className="wrap family-guide-hero-inner">
           <div className="family-guide-hero-copy">
-            <div className="breadcrumb"><Link href="/">Home</Link> / Product guide</div>
-            <span className="eyebrow">Find your Milano favorite</span>
-            <h1>Flavor, prep <em>&amp; inspiration.</em></h1>
-            <p>Explore our syrup, ice cream, and milkshake ranges. See what is currently available, how to prepare each family, and where each one can take your menu.</p>
+            <div className="breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><span>Product guide</span></div>
+            <span className="eyebrow">A guide to the Milano range</span>
+            <h1>Find the right product <em>for your menu.</em></h1>
+            <p>
+              Compare our product families, see currently available formats and pack sizes,
+              then open a product for its details. This guide helps you choose; recipes help
+              you decide what to make.
+            </p>
             <div className="family-guide-hero-actions">
-              <Link className="btn" href="/products">Shop all products <ArrowRight size={16} /></Link>
-              <a className="family-guide-text-link" href="#family-guide-list">Explore the guide</a>
+              <a className="btn" href="#family-guide-list">Explore product families <ArrowDown size={16} /></a>
+              <Link className="family-guide-text-link" href="/recipes">Looking for recipes? <ArrowRight size={14} /></Link>
             </div>
           </div>
           <div className="family-guide-hero-art">
             <span className="family-guide-hero-orbit" aria-hidden="true" />
-            <Image src="/images/milano-mint-bottle-cutout.png" alt="Milano Mojito Syrup bottle" fill priority sizes="(max-width: 860px) 80vw, 42vw" />
-            <div className="family-guide-hero-stamp"><span>MAKE IT</span><strong>Milano</strong></div>
+            <Image
+              src="/images/milanoshowcase-guide.webp"
+              alt="Milano Foods milkshake powder, ice cream powder, and mojito syrup"
+              fill
+              priority
+              loading="eager"
+              fetchPriority="high"
+              sizes="(max-width: 860px) 100vw, 48vw"
+            />
+            <div className="family-guide-hero-stamp"><span>THE MILANO</span><strong>Range</strong></div>
           </div>
+        </div>
+      </section>
+
+      <section className="family-guide-purpose" aria-label="What you can do with the product guide">
+        <div className="wrap family-guide-purpose-inner">
+          <article>
+            <span>01</span>
+            <div><strong>Choose a family</strong><p>Start with the type of product you need.</p></div>
+          </article>
+          <article>
+            <span>02</span>
+            <div><strong>Compare options</strong><p>Review live flavors, formats, and pack sizes.</p></div>
+          </article>
+          <article>
+            <span>03</span>
+            <div><strong>Check product details</strong><p>Open an item for its current information.</p></div>
+          </article>
         </div>
       </section>
 
@@ -153,7 +163,7 @@ export function ProductFamilyGuide() {
         {families.map((family, index) => {
           const familyProducts = products.filter((product) => product.categorySlug === family.slug);
           const flavors = [...new Set(familyProducts.map((product) => product.flavor?.trim()).filter((value): value is string => Boolean(value)))];
-          const styles = [...new Set(familyProducts.map((product) => product.variantType?.trim()).filter((value): value is string => Boolean(value)))];
+          const formats = [...new Set(familyProducts.map((product) => product.variantType?.trim()).filter((value): value is string => Boolean(value)))];
           const sizes = [...new Set(familyProducts.map((product) => product.size?.trim()).filter((value): value is string => Boolean(value)))];
           const packagings = [...new Set(familyProducts.flatMap((product) => product.packagingOptions.map((option) => option.label)))];
 
@@ -165,71 +175,68 @@ export function ProductFamilyGuide() {
                   <span className="family-guide-section-kicker">{family.eyebrow}</span>
                   <h2>{family.name}</h2>
                 </div>
-                <div className="family-guide-feature">
+                <div className="family-guide-family-card">
                   <div className="family-guide-visual">
                     <div className="family-guide-image">
-                      <Image src={family.image} alt={family.name} fill sizes="(max-width: 860px) 100vw, 46vw" />
+                      <Image src={family.image} alt={family.name} fill sizes="(max-width: 860px) 100vw, 40vw" />
                     </div>
                     <div className="family-guide-use-card">
-                      <Lightbulb size={17} aria-hidden="true" />
-                      <div><strong>Good for</strong><span>{family.uses.join(" · ")}</span></div>
-                    </div>
-                    <div className="family-guide-flavor-note">
-                      <span>THE FLAVOR NOTE</span>
-                      <p>{family.flavorNote}</p>
+                      <Sparkles size={17} aria-hidden="true" />
+                      <div><strong>Good fit for</strong><span>{family.fits.join(" · ")}</span></div>
                     </div>
                   </div>
 
                   <div className="family-guide-content">
-                    <p className="family-guide-lead">{family.intro}</p>
-                    <div className="family-guide-prep">
-                      <div className="family-guide-subheading">
-                        <span className="family-guide-step-icon"><Clock3 size={16} aria-hidden="true" /></span>
-                        <div><span>From pack to serve</span><h3>How to prepare</h3></div>
-                      </div>
-                      <ol>
-                        {family.preparation.map((step) => (
-                          <li key={step}><span><Check size={14} aria-hidden="true" /></span><p>{step}</p></li>
-                        ))}
-                      </ol>
+                    <p className="family-guide-lead">{family.summary}</p>
+                    <div className="family-guide-choice-note">
+                      <span>CHOOSING THIS FAMILY</span>
+                      <p>{family.chooseWhen}</p>
                     </div>
 
                     <div className="family-guide-catalog">
                       <div className="family-guide-subheading">
-                        <div><span>Current catalog</span><h3>Available options</h3></div>
+                        <div><span>Live product catalog</span><h3>Available options</h3></div>
                         <span className={`family-guide-live-status${loadError ? " is-error" : ""}`}>
                           {loading ? "Loading" : loadError ? "Unavailable" : `${familyProducts.length} products`}
                         </span>
                       </div>
                       {loadError ? (
-                        <p className="family-guide-catalog-message">We couldn&apos;t load the live catalog. Visit the product listing for current options.</p>
+                        <p className="family-guide-catalog-message">
+                          We couldn&apos;t load the live catalog. Browse products to see current options.
+                        </p>
                       ) : familyProducts.length === 0 && !loading ? (
-                        <p className="family-guide-catalog-message">There are no published products in this family right now. Check back soon or browse the full range.</p>
+                        <p className="family-guide-catalog-message">
+                          No products in this family are currently listed. Browse the full range or check back later.
+                        </p>
+                      ) : loading ? (
+                        <p className="family-guide-catalog-message">Checking current product options…</p>
                       ) : (
-                        <>
-                          {loading ? (
-                            <p className="family-guide-catalog-message">Checking current product options…</p>
-                          ) : (
-                            <div className="family-guide-product-list">
-                              {familyProducts.map((product) => (
-                                <Link className="family-guide-product" href={`/products/${product.id}`} key={product.id}>
-                                  <span><strong>{product.name}</strong><small>{[product.size, product.variantType].filter(Boolean).join(" · ")}</small></span>
-                                  <ArrowRight size={16} aria-hidden="true" />
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                          <div className="family-guide-options">
-                            {flavors.length > 0 && <div><span>Flavors</span><p>{flavors.join(" · ")}</p></div>}
-                            {styles.length > 0 && <div><span>Formats &amp; styles</span><p>{styles.join(" · ")}</p></div>}
-                            {sizes.length > 0 && <div><span>Pack sizes</span><p>{sizes.join(" · ")}</p></div>}
-                            {packagings.length > 0 && <div><span>Packaging</span><p>{packagings.join(" · ")}</p></div>}
-                          </div>
-                        </>
+                        <div className="family-guide-product-list">
+                          {familyProducts.slice(0, 4).map((product) => (
+                            <Link className="family-guide-product" href={`/products/${product.id}`} key={product.id}>
+                              <span>
+                                <strong>{product.name}</strong>
+                                <small>{[product.size, product.variantType].filter(Boolean).join(" · ") || "View product details"}</small>
+                              </span>
+                              <ChevronRight size={17} aria-hidden="true" />
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {!loading && !loadError && familyProducts.length > 0 && (
+                        <div className="family-guide-options">
+                          {flavors.length > 0 && <div><span>Flavors</span><p>{flavors.join(" · ")}</p></div>}
+                          {formats.length > 0 && <div><span>Formats &amp; styles</span><p>{formats.join(" · ")}</p></div>}
+                          {sizes.length > 0 && <div><span>Pack sizes</span><p>{sizes.join(" · ")}</p></div>}
+                          {packagings.length > 0 && <div><span>Order units</span><p>{packagings.join(" · ")}</p></div>}
+                        </div>
                       )}
                     </div>
+                    <p className="family-guide-label-note"><Check size={14} aria-hidden="true" /> For exact ingredients and preparation directions, check the selected product&apos;s packaging.</p>
                     <Link className="family-guide-shop-link" href={`/products?category=${family.slug}`}>
-                      Shop {family.name}<ArrowRight size={16} aria-hidden="true" />
+                      <span>{`Browse all ${familyProducts.length} ${familyProducts.length === 1 ? "product" : "products"}`}</span>
+                      <ArrowRight size={16} aria-hidden="true" />
                     </Link>
                   </div>
                 </div>
@@ -239,8 +246,8 @@ export function ProductFamilyGuide() {
         })}
         <section className="family-guide-bottom-cta">
           <div className="wrap">
-            <div><span className="eyebrow">Ready to make something?</span><h2>Bring your next idea to life.</h2><p>Browse Milano products and choose the flavors, formats, and pack sizes that work for you.</p></div>
-            <Link className="btn" href="/products">Browse all products <ArrowRight size={16} /></Link>
+            <div><span className="eyebrow">Got your product? Get inspired.</span><h2>Now, what will you make?</h2><p>Explore drink and dessert recipes with ingredients, serving sizes, and simple preparation steps.</p></div>
+            <Link className="btn" href="/recipes">Explore recipes <ArrowRight size={16} /></Link>
           </div>
         </section>
       </div>

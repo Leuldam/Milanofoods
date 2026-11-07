@@ -63,6 +63,8 @@ model Product {
   stockMovements ProductStockMovement[]
   priceChanges  ProductPriceChange[]
   packagingOptions ProductPackagingOption[]
+  recipes       Recipe[]
+  productionBatches ProductionBatch[]
 
   @@index([categoryId, isPublished])
   @@index([isActive, isPublished, stock])
@@ -154,6 +156,14 @@ model Order {
   subtotal             Decimal           @db.Decimal(12, 2)
   deliveryFee          Decimal           @default(0) @db.Decimal(12, 2)
   total                Decimal           @db.Decimal(12, 2)
+  source               String            @default("WEBSITE")
+  paymentStatus        PaymentStatus     @default(UNPAID)
+  paidAmount           Decimal           @default(0) @db.Decimal(12, 2)
+  assignedStaff        String?
+  customerId           String?
+  customer             Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  statusHistory        OrderStatusHistory[]
+  payments             Payment[]
   items                OrderItem[]
   reviews              ProductReview[]
   paymentProof         OrderPaymentProof?
@@ -196,4 +206,290 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+
+// ---------- Admin & Permission models ----------
+
+enum PermissionKey {
+  dashboard_view
+  products_view
+  products_manage
+  categories_manage
+  inventory_view
+  inventory_receive
+  inventory_adjust
+  production_view
+  production_create
+  production_complete
+  orders_view
+  orders_create
+  orders_update
+  customers_view
+  customers_manage
+  payments_view
+  payments_record
+  reports_view
+  reports_export
+  staff_manage
+  settings_manage
+  audit_view
+}
+
+model AdminUser {
+  id           String          @id @default(cuid())
+  phone        String          @unique
+  passwordHash String
+  name         String?
+  isOwner      Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  sessions     AdminSession[]
+  permissions  StaffPermission[]
+  auditLogs    AdminAuditLog[]
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminLoginThrottle {
+  key             String   @id @db.VarChar(64)
+  attempts        Int      @default(0)
+  windowStartedAt DateTime @default(now())
+  lockedUntil     DateTime?
+  updatedAt       DateTime @updatedAt
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Permission {
+  key         PermissionKey @id
+  description String?
+  staffPermissions StaffPermission[]
+}
+
+model StaffPermission {
+  id           String   @id @default(cuid())
+  userId       String
+  permissionKey PermissionKey
+  user         AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@unique([userId, permissionKey])
+}
+
+
+// ---------- Business & Factory Management Models ----------
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+}
+
+enum InventoryType {
+  RAW_MATERIAL
+  PACKAGING
+  FINISHED_GOOD
+}
+
+enum MovementType {
+  RECEIVE
+  ADJUSTMENT
+  PRODUCTION_CONSUMPTION
+  DAMAGE_WASTAGE
+  RETURN
+}
+
+enum BatchStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model InventoryItem {
+  id           String                   @id @default(cuid())
+  sku          String                   @unique
+  name         String
+  type         InventoryType
+  unit         String                   @default("kg")
+  currentStock Decimal                  @default(0) @db.Decimal(12, 3)
+  reorderLevel Decimal                  @default(0) @db.Decimal(12, 3)
+  unitCost     Decimal?                 @db.Decimal(12, 2)
+  supplier     String?
+  location     String?                  @default("Main Warehouse")
+  isActive     Boolean                  @default(true)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  movements    InventoryStockMovement[]
+  recipeItems  RecipeItem[]
+  batchUsages  BatchMaterialUsage[]
+
+  @@index([type, isActive])
+}
+
+model InventoryStockMovement {
+  id              String        @id @default(cuid())
+  inventoryItemId String
+  change          Decimal       @db.Decimal(12, 3)
+  previousStock   Decimal       @db.Decimal(12, 3)
+  newStock        Decimal       @db.Decimal(12, 3)
+  type            MovementType
+  reason          String
+  reference       String?
+  performedBy     String?
+  createdAt       DateTime      @default(now())
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([inventoryItemId, createdAt])
+}
+
+model Recipe {
+  id                 String            @id @default(cuid())
+  name               String
+  productId          String?
+  expectedOutputQty  Decimal           @default(1) @db.Decimal(12, 2)
+  outputUnit         String            @default("units")
+  notes              String?
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  product            Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  items              RecipeItem[]
+  batches            ProductionBatch[]
+
+  @@index([productId])
+}
+
+model RecipeItem {
+  id              String        @id @default(cuid())
+  recipeId        String
+  inventoryItemId String
+  quantity        Decimal       @db.Decimal(12, 3)
+  unit            String
+  notes           String?
+  recipe          Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, inventoryItemId])
+}
+
+model ProductionBatch {
+  id                String               @id @default(cuid())
+  batchNumber       String               @unique
+  productId         String
+  recipeId          String?
+  plannedQuantity   Int
+  acceptedQuantity  Int                  @default(0)
+  rejectedQuantity  Int                  @default(0)
+  status            BatchStatus          @default(DRAFT)
+  consumptionMethod String               @default("RECIPE")
+  productionDate    DateTime             @default(now())
+  expiryDate        DateTime?
+  notes             String?
+  responsibleStaff  String?
+  completedAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  product           Product              @relation(fields: [productId], references: [id])
+  recipe            Recipe?              @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  materialUsages    BatchMaterialUsage[]
+
+  @@index([productId, status])
+  @@index([productionDate])
+}
+
+model BatchMaterialUsage {
+  id              String          @id @default(cuid())
+  batchId         String
+  inventoryItemId String
+  plannedQuantity Decimal         @default(0) @db.Decimal(12, 3)
+  actualQuantity  Decimal         @db.Decimal(12, 3)
+  wastageQuantity Decimal         @default(0) @db.Decimal(12, 3)
+  unit            String
+  batch           ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem   @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+}
+
+model Customer {
+  id           String    @id @default(cuid())
+  phone        String    @unique
+  name         String
+  email        String?
+  company      String?
+  address      String?
+  city         String?
+  customerType String    @default("RETAIL")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  orders       Order[]
+
+  @@index([phone])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  changedBy String?
+  notes     String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String
+  amount        Decimal  @db.Decimal(12, 2)
+  paymentMethod String   @default("CASH")
+  reference     String?
+  notes         String?
+  recordedBy    String?
+  status        String   @default("CONFIRMED")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model SystemSetting {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  channel   String   @default("TELEGRAM")
+  recipient String
+  event     String
+  message   String
+  status    String   @default("SENT")
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
