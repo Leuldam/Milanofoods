@@ -2,15 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Search, RefreshCw, X, Wheat, PackageCheck, AlertTriangle } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminInventoryItem } from "@/lib/admin-types";
 
 export default function AdminRawMaterialsPage() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<AdminInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("ALL");
   const [modalOpen, setModalOpen] = useState(false);
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AdminInventoryItem | null>(null);
 
   // New Material Form
   const [sku, setSku] = useState("");
@@ -93,14 +95,14 @@ export default function AdminRawMaterialsPage() {
       setSuccess(`Material "${json.name}" created successfully.`);
       setModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to create material.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to create material."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const openAdjust = (item: any) => {
+  const openAdjust = (item: AdminInventoryItem) => {
     setSelectedItem(item);
     setChangeAmount("");
     setReason("");
@@ -112,6 +114,7 @@ export default function AdminRawMaterialsPage() {
 
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedItem) return;
     setSubmitting(true);
     setError("");
 
@@ -135,8 +138,8 @@ export default function AdminRawMaterialsPage() {
       setSuccess(`Stock updated for ${selectedItem.name}.`);
       setAdjustModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to update stock.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to update stock."));
     } finally {
       setSubmitting(false);
     }

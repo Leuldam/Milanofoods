@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission } from "@/lib/admin-auth";
+import { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
       startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     }
 
-    const whereOrder: any = {};
+    const whereOrder: Prisma.OrderWhereInput = {};
     if (startDate) {
       whereOrder.createdAt = { gte: startDate };
     }

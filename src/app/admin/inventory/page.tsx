@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, SlidersHorizontal, RefreshCw, AlertTriangle, ArrowDownRight, ArrowUpRight, History, X } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminInventoryItem } from "@/lib/admin-types";
 
 export default function AdminInventoryPage() {
   const [activeTab, setActiveTab] = useState<string>("RAW_MATERIAL"); // RAW_MATERIAL, PACKAGING, FINISHED_GOOD
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AdminInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AdminInventoryItem | null>(null);
   const [changeAmount, setChangeAmount] = useState<number | string>("");
   const [reason, setReason] = useState("");
   const [movementType, setMovementType] = useState("ADJUSTMENT");
@@ -39,7 +41,7 @@ export default function AdminInventoryPage() {
     loadData(activeTab);
   }, [activeTab]);
 
-  const openAdjust = (item: any, defaultType = "ADJUSTMENT") => {
+  const openAdjust = (item: AdminInventoryItem, defaultType = "ADJUSTMENT") => {
     setSelectedItem(item);
     setChangeAmount("");
     setReason("");
@@ -49,13 +51,14 @@ export default function AdminInventoryPage() {
     setAdjustModalOpen(true);
   };
 
-  const openHistory = (item: any) => {
+  const openHistory = (item: AdminInventoryItem) => {
     setSelectedItem(item);
     setHistoryModalOpen(true);
   };
 
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedItem) return;
     if (!reason.trim()) {
       setError("A mandatory reason must be provided for every stock change.");
       return;
@@ -85,8 +88,8 @@ export default function AdminInventoryPage() {
       setSuccess(`Stock updated successfully for ${selectedItem.name}.`);
       setAdjustModalOpen(false);
       loadData(activeTab);
-    } catch (err: any) {
-      setError(err.message || "Failed to adjust stock.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to adjust stock."));
     } finally {
       setSubmitting(false);
     }
@@ -418,7 +421,7 @@ export default function AdminInventoryPage() {
               </div>
             ) : (
               <div style={{ display: "grid", gap: "8px" }}>
-                {selectedItem.movements.map((m: any) => (
+                {selectedItem.movements.map((m) => (
                   <div key={m.id} style={{ padding: "10px 14px", border: "1px solid #E8E1D5", borderRadius: "6px", background: "#FAFAF8" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
                       <span style={{ fontWeight: 800, color: Number(m.change) >= 0 ? "#166534" : "#991B1B" }}>

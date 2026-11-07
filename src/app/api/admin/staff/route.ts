@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, hashPassword, logAdminAudit } from "@/lib/admin-auth";
 import { PermissionKey } from "@/generated/prisma/client";
 import { ALL_PERMISSION_KEYS } from "@/lib/admin-seed";
+import { Prisma } from "@/generated/prisma/client";
+import { isUniqueConstraintError } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -86,9 +88,9 @@ export async function POST(req: NextRequest) {
     await logAdminAudit(admin.id, `STAFF_CREATE: ${newStaff.phone} (${newStaff.name})`);
 
     return NextResponse.json({ success: true, staff: newStaff });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin staff POST error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "Staff member with this phone number already exists." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to create staff account." }, { status: 500 });
@@ -120,7 +122,7 @@ export async function PUT(req: NextRequest) {
     }
 
     await prisma.$transaction(async (tx) => {
-      const dataToUpdate: any = {};
+      const dataToUpdate: Prisma.AdminUserUpdateInput = {};
       if (name !== undefined) dataToUpdate.name = name ? name.trim() : null;
       if (phone) dataToUpdate.phone = phone.trim();
       if (password) dataToUpdate.passwordHash = await hashPassword(password);
@@ -153,7 +155,7 @@ export async function PUT(req: NextRequest) {
     await logAdminAudit(admin.id, `STAFF_UPDATE: ${targetStaff.phone}`);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin staff PUT error:", error);
     return NextResponse.json({ error: "Failed to update staff member." }, { status: 500 });
   }

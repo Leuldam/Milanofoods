@@ -16,9 +16,11 @@ import {
   RefreshCw,
   Calendar,
 } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminDashboardData } from "@/lib/admin-types";
 
 export default function AdminDashboardPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,8 +35,8 @@ export default function AdminDashboardPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load dashboard.");
       setData(json);
-    } catch (err: any) {
-      setError(err.message || "Failed to connect to dashboard.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to connect to dashboard."));
     } finally {
       setLoading(false);
     }
@@ -281,7 +283,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {lowStockAlerts.map((item: any) => (
+            {lowStockAlerts.map((item) => (
               <span
                 key={item.id}
                 style={{
@@ -319,8 +321,8 @@ export default function AdminDashboardPage() {
           <span style={{ fontSize: "11px", color: "#777C75" }}>Based on live orders</span>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", height: "140px", paddingTop: "20px" }}>
-          {salesTrend.map((day: any, idx: number) => {
-            const max = Math.max(...salesTrend.map((d: any) => d.amount), 100);
+          {salesTrend.map((day, idx) => {
+            const max = Math.max(...salesTrend.map((d) => d.amount), 100);
             const heightPercent = Math.max(10, Math.round((day.amount / max) * 100));
 
             return (
@@ -386,7 +388,7 @@ export default function AdminDashboardPage() {
                 No orders placed yet.
               </div>
             ) : (
-              recentOrders.map((order: any) => (
+              recentOrders.map((order) => (
                 <div
                   key={order.id}
                   style={{
@@ -475,7 +477,7 @@ export default function AdminDashboardPage() {
                 No production batches recorded yet.
               </div>
             ) : (
-              recentBatches.map((batch: any) => (
+              recentBatches.map((batch) => (
                 <div
                   key={batch.id}
                   style={{

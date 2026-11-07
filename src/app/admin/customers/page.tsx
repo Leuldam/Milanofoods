@@ -3,13 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Search, RefreshCw, X, Users, Phone, Building, History, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminCustomer } from "@/lib/admin-types";
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<AdminCustomer | null>(null);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -59,7 +61,7 @@ export default function AdminCustomersPage() {
     setModalOpen(true);
   };
 
-  const openEditModal = (c: any) => {
+  const openEditModal = (c: AdminCustomer) => {
     setEditingCustomer(c);
     setName(c.name);
     setPhone(c.phone);
@@ -101,8 +103,8 @@ export default function AdminCustomersPage() {
       setSuccess(`Customer profile "${json.name}" saved.`);
       setModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to save customer.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to save customer."));
     } finally {
       setSubmitting(false);
     }

@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, RefreshCw, FileText, Shield } from "lucide-react";
+import type { AdminAuditLog } from "@/lib/admin-types";
 
 export default function AdminAuditPage() {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AdminAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 

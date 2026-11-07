@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
 import { Prisma } from "@/generated/prisma/client";
+import { getAdminErrorMessage, isUniqueConstraintError } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.InventoryItemWhereInput = {};
     if (type && type !== "ALL") {
-      where.type = type as any;
+      if (type === "RAW_MATERIAL" || type === "PACKAGING") where.type = type;
     }
 
     const items = await prisma.inventoryItem.findMany({
@@ -146,9 +147,9 @@ export async function POST(req: NextRequest) {
     await logAdminAudit(admin.id, `INVENTORY_ITEM_CREATE: ${item.name} (${item.sku})`);
 
     return NextResponse.json(item);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin inventory POST error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "Material SKU already exists." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to create inventory item." }, { status: 500 });
@@ -256,8 +257,8 @@ export async function PATCH(req: NextRequest) {
       await logAdminAudit(admin.id, `MATERIAL_STOCK_ADJUST: ${result.name} by ${numChange} (${reason})`);
       return NextResponse.json({ success: true, item: result });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin inventory PATCH error:", error);
-    return NextResponse.json({ error: error.message || "Failed to adjust stock." }, { status: 400 });
+    return NextResponse.json({ error: getAdminErrorMessage(error, "Failed to adjust stock.") }, { status: 400 });
   }
 }

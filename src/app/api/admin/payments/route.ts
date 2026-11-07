@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
 import { PaymentStatus } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
+import { getAdminErrorMessage } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const method = searchParams.get("method");
 
-    const where: any = {};
+    const where: Prisma.PaymentWhereInput = {};
     if (method && method !== "ALL") {
       where.paymentMethod = method;
     }
@@ -136,8 +138,8 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin payment POST error:", error);
-    return NextResponse.json({ error: error.message || "Failed to record payment." }, { status: 400 });
+    return NextResponse.json({ error: getAdminErrorMessage(error, "Failed to record payment.") }, { status: 400 });
   }
 }

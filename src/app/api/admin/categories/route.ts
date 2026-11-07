@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
+import { isUniqueConstraintError } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,9 +53,9 @@ export async function POST(req: NextRequest) {
     await logAdminAudit(admin.id, `CATEGORY_CREATE: ${category.name}`);
 
     return NextResponse.json(category);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin categories POST error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "Category name or slug already exists." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to create category." }, { status: 500 });
@@ -88,9 +89,9 @@ export async function PUT(req: NextRequest) {
     await logAdminAudit(admin.id, `CATEGORY_UPDATE: ${category.name}`);
 
     return NextResponse.json(category);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin categories PUT error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "Category name or slug already exists." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to update category." }, { status: 500 });

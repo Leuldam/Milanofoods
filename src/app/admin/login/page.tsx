@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
 import { useRouter } from "next/navigation";
 import { Lock, Phone, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 
@@ -31,8 +32,8 @@ export default function AdminLoginPage() {
 
       router.push("/admin");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Invalid credentials.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Invalid credentials."));
     } finally {
       setLoading(false);
     }

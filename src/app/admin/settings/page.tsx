@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { Sliders, Save, RefreshCw, CheckCircle2, ShieldCheck, Bell } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminSettings } from "@/lib/admin-types";
 
 export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState<any>({
+  const [settings, setSettings] = useState<AdminSettings>({
     factoryName: "Milano Foods Manufacturing & Processing",
     contactPhone1: "+251 980637293",
     contactPhone2: "+251 933330065",
@@ -56,8 +58,8 @@ export default function AdminSettingsPage() {
       if (!res.ok) throw new Error("Failed to save settings.");
 
       setSuccess("Factory settings updated successfully.");
-    } catch (err: any) {
-      setError(err.message || "Failed to update settings.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to update settings."));
     } finally {
       setSubmitting(false);
     }

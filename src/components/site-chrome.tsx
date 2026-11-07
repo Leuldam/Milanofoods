@@ -19,10 +19,10 @@ export function SiteAnnouncement() {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/miniapp")) return null;
-
   const { count } = useStore();
   const [open, setOpen] = useState(false);
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/miniapp")) return null;
+
   const links = [
     ["Home", "/"],
     ["Products", "/products"],

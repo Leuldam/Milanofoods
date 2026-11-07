@@ -2,12 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Factory, CheckCircle2, RefreshCw, X, AlertTriangle, Layers } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type {
+  AdminBatchMaterial,
+  AdminInventoryItem,
+  AdminProductionBatch,
+  AdminProduct,
+  AdminRecipe,
+} from "@/lib/admin-types";
 
 export default function AdminProductionPage() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [materials, setMaterials] = useState<any[]>([]);
+  const [batches, setBatches] = useState<AdminProductionBatch[]>([]);
+  const [recipes, setRecipes] = useState<AdminRecipe[]>([]);
+  const [products, setProducts] = useState<Pick<AdminProduct, "id" | "name" | "sku" | "stock">[]>([]);
+  const [materials, setMaterials] = useState<AdminInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"BATCHES" | "RECIPES">("BATCHES");
 
@@ -17,12 +25,12 @@ export default function AdminProductionPage() {
   const [selectedRecipeId, setSelectedRecipeId] = useState("");
   const [plannedQty, setPlannedQty] = useState<number>(100);
   const [consumptionMethod, setConsumptionMethod] = useState<"RECIPE" | "MANUAL">("RECIPE");
-  const [batchMaterials, setBatchMaterials] = useState<any[]>([]);
+  const [batchMaterials, setBatchMaterials] = useState<AdminBatchMaterial[]>([]);
   const [batchNumber, setBatchNumber] = useState("");
 
   // Complete Batch Modal
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
-  const [activeBatch, setActiveBatch] = useState<any | null>(null);
+  const [activeBatch, setActiveBatch] = useState<AdminProductionBatch | null>(null);
   const [acceptedQty, setAcceptedQty] = useState<number>(0);
   const [rejectedQty, setRejectedQty] = useState<number>(0);
 
@@ -71,7 +79,7 @@ export default function AdminProductionPage() {
 
     if (matchingRecipe && matchingRecipe.items) {
       setBatchMaterials(
-        matchingRecipe.items.map((it: any) => ({
+        matchingRecipe.items.map((it) => ({
           inventoryItemId: it.inventoryItemId,
           name: it.inventoryItem.name,
           unit: it.unit,
@@ -96,7 +104,7 @@ export default function AdminProductionPage() {
       setConsumptionMethod("RECIPE");
       const multiplier = qty / (Number(foundRecipe.expectedOutputQty) || 1);
       setBatchMaterials(
-        foundRecipe.items.map((it: any) => ({
+        foundRecipe.items.map((it) => ({
           inventoryItemId: it.inventoryItemId,
           name: it.inventoryItem.name,
           unit: it.unit,
@@ -151,14 +159,14 @@ export default function AdminProductionPage() {
       setSuccess(`Production batch ${json.batchNumber} created in progress.`);
       setBatchModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to create batch.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to create batch."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const openCompleteModal = (batch: any) => {
+  const openCompleteModal = (batch: AdminProductionBatch) => {
     setActiveBatch(batch);
     setAcceptedQty(batch.plannedQuantity);
     setRejectedQty(0);
@@ -182,7 +190,7 @@ export default function AdminProductionPage() {
           batchId: activeBatch.id,
           acceptedQuantity: acceptedQty,
           rejectedQuantity: rejectedQty,
-          actualUsages: activeBatch.materialUsages.map((u: any) => ({
+          actualUsages: activeBatch.materialUsages.map((u) => ({
             inventoryItemId: u.inventoryItemId,
             actualQuantity: Number(u.actualQuantity),
             wastageQuantity: 0,
@@ -196,8 +204,8 @@ export default function AdminProductionPage() {
       setSuccess(`Batch ${activeBatch.batchNumber} completed! ${acceptedQty} units added to stock.`);
       setCompleteModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to complete batch.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to complete batch."));
     } finally {
       setSubmitting(false);
     }
@@ -393,7 +401,7 @@ export default function AdminProductionPage() {
                     <td style={{ padding: "14px 16px", color: "#17251F" }}>{r.product?.name || "Generic"}</td>
                     <td style={{ padding: "14px 16px" }}>{Number(r.expectedOutputQty)} {r.outputUnit}</td>
                     <td style={{ padding: "14px 16px", fontSize: "12px", color: "#515B54" }}>
-                      {r.items.map((it: any) => `${it.inventoryItem.name} (${Number(it.quantity)} ${it.unit})`).join(", ")}
+                      {r.items.map((it) => `${it.inventoryItem.name} (${Number(it.quantity)} ${it.unit})`).join(", ")}
                     </td>
                   </tr>
                 ))
@@ -480,7 +488,7 @@ export default function AdminProductionPage() {
                   <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#17251F", marginBottom: "4px" }}>Consumption Mode</label>
                   <select
                     value={consumptionMethod}
-                    onChange={(e) => setConsumptionMethod(e.target.value as any)}
+                    onChange={(e) => setConsumptionMethod(e.target.value === "MANUAL" ? "MANUAL" : "RECIPE")}
                     style={{ width: "100%", height: "38px", padding: "0 10px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px" }}
                   >
                     <option value="RECIPE">Recipe-based Automatic Calculation</option>

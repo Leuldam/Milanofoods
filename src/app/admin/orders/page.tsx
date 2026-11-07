@@ -2,10 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Search, Filter, RefreshCw, X, Check, AlertCircle, ShoppingBag, Phone, MapPin, CreditCard } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminOrder, AdminProduct } from "@/lib/admin-types";
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -25,7 +27,7 @@ export default function AdminOrdersPage() {
   const [orderNotes, setOrderNotes] = useState("");
 
   // Status Change Modal
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusNotes, setStatusNotes] = useState("");
@@ -136,14 +138,14 @@ export default function AdminOrdersPage() {
       setSuccess(`Order #${json.orderNumber} created successfully! Reserved stock updated.`);
       setNewOrderModal(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to create order.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to create order."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const openStatusModal = (order: any) => {
+  const openStatusModal = (order: AdminOrder) => {
     setSelectedOrder(order);
     setNewStatus(order.status);
     setStatusNotes("");
@@ -174,8 +176,8 @@ export default function AdminOrdersPage() {
       setSuccess(`Order #${selectedOrder.orderNumber} status changed to ${newStatus}.`);
       setStatusModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to update order status.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to update order status."));
     } finally {
       setSubmitting(false);
     }
@@ -313,7 +315,7 @@ export default function AdminOrdersPage() {
                     {o.deliveryAddress && <div style={{ fontSize: "11px", color: "#777C75" }}>{o.deliveryAddress}</div>}
                   </td>
                   <td style={{ padding: "14px 16px", fontSize: "12px", color: "#515B54", maxWidth: "260px" }}>
-                    {o.items?.map((it: any) => `${it.productName} (${it.quantity})`).join(", ")}
+                    {o.items?.map((it) => `${it.productName} (${it.quantity})`).join(", ")}
                   </td>
                   <td style={{ padding: "14px 16px", fontWeight: 800, color: "#073D2E", fontSize: "14px" }}>
                     ETB {Number(o.total).toLocaleString()}

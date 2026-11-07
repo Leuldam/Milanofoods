@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
+import { isUniqueConstraintError } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -116,9 +117,9 @@ export async function POST(req: NextRequest) {
     await logAdminAudit(admin.id, `PRODUCT_CREATE: ${product.name} (${product.sku})`);
 
     return NextResponse.json(product);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin products POST error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "SKU or Slug already exists. Please use unique values." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to create product." }, { status: 500 });
@@ -217,9 +218,9 @@ export async function PUT(req: NextRequest) {
     await logAdminAudit(admin.id, `PRODUCT_UPDATE: ${updated.name} (${updated.sku})`);
 
     return NextResponse.json(updated);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin products PUT error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "SKU or Slug already exists." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to update product." }, { status: 500 });

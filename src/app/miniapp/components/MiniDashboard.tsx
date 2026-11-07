@@ -1,8 +1,28 @@
 import React from 'react';
 import { LayoutDashboard, BarChart3, ShoppingBag, Boxes } from 'lucide-react';
 
+interface DashboardSummary {
+  productCount: number;
+  totalUnits: number;
+  orderStatusCounts: Record<string, number>;
+}
+
+interface DashboardData {
+  summary: DashboardSummary;
+}
+
+interface SalesReport {
+  totalRevenue: number;
+}
+
 // Minimal dashboard component showing core analytics
-export default function MiniDashboard({dashboard, salesReport}:{dashboard:any, salesReport:any}) {
+export default function MiniDashboard({
+  dashboard,
+  salesReport,
+}: {
+  dashboard: DashboardData | null;
+  salesReport: SalesReport | null;
+}) {
   if (!dashboard) return null;
   const {summary}=dashboard;
   const revenue = salesReport?.totalRevenue ?? 0;

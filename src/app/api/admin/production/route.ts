@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
 import { notifyProductionBatchCompleted } from "@/lib/telegram-notifications";
+import { getAdminErrorMessage } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+type MaterialUsageInput = {
+  inventoryItemId: string;
+  plannedQuantity?: number;
+  actualQuantity?: number;
+  wastageQuantity?: number;
+  quantity?: number;
+  unit?: string;
+};
 
 export async function GET() {
   try {
@@ -87,7 +97,7 @@ export async function POST(req: NextRequest) {
           outputUnit: outputUnit || "units",
           notes: notes || null,
           items: {
-            create: items.map((it: any) => ({
+            create: items.map((it) => ({
               inventoryItemId: it.inventoryItemId,
               quantity: Number(it.quantity),
               unit: it.unit || "kg",
@@ -139,7 +149,7 @@ export async function POST(req: NextRequest) {
           responsibleStaff: admin.name || admin.phone,
           status: "IN_PROGRESS",
           materialUsages: {
-            create: (materialUsages || []).map((mu: any) => ({
+            create: (Array.isArray(materialUsages) ? materialUsages as MaterialUsageInput[] : []).map((mu) => ({
               inventoryItemId: mu.inventoryItemId,
               plannedQuantity: Number(mu.plannedQuantity || mu.quantity || 0),
               actualQuantity: Number(mu.actualQuantity || mu.quantity || 0),
@@ -285,8 +295,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action." }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin production POST error:", error);
-    return NextResponse.json({ error: error.message || "Failed to process production action." }, { status: 400 });
+    return NextResponse.json({ error: getAdminErrorMessage(error, "Failed to process production action.") }, { status: 400 });
   }
 }

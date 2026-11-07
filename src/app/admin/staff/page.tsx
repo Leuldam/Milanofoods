@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Edit, RefreshCw, X, Shield, Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminStaffMember } from "@/lib/admin-types";
 
 export default function AdminStaffPage() {
-  const [staff, setStaff] = useState<any[]>([]);
+  const [staff, setStaff] = useState<AdminStaffMember[]>([]);
   const [allPermissions, setAllPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<any | null>(null);
+  const [editingStaff, setEditingStaff] = useState<AdminStaffMember | null>(null);
 
   // Form
   const [phone, setPhone] = useState("");
@@ -60,7 +62,7 @@ export default function AdminStaffPage() {
     setModalOpen(true);
   };
 
-  const openEditModal = (s: any) => {
+  const openEditModal = (s: AdminStaffMember) => {
     setEditingStaff(s);
     setPhone(s.phone);
     setName(s.name || "");
@@ -86,7 +88,14 @@ export default function AdminStaffPage() {
 
     try {
       const method = editingStaff ? "PUT" : "POST";
-      const payload: any = {
+      const payload: {
+        id?: string;
+        name: string;
+        phone: string;
+        password?: string;
+        permissions: string[];
+        revokeSessions?: boolean;
+      } = {
         name,
         phone,
         permissions: selectedPermissions,
@@ -112,8 +121,8 @@ export default function AdminStaffPage() {
       setSuccess(`Staff account updated successfully.`);
       setModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to save staff member.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to save staff member."));
     } finally {
       setSubmitting(false);
     }

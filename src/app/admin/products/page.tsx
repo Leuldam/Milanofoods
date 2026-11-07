@@ -3,21 +3,23 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Plus, Edit, Eye, EyeOff, Search, RefreshCw, Check, X, AlertCircle } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminCategory, AdminProduct, AdminProductForm } from "@/lib/admin-types";
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   // Form fields
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<AdminProductForm>({
     name: "",
     sku: "",
     slug: "",
@@ -93,7 +95,7 @@ export default function AdminProductsPage() {
     setModalOpen(true);
   };
 
-  const openEditModal = (prod: any) => {
+  const openEditModal = (prod: AdminProduct) => {
     setEditingProduct(prod);
     setFormData({
       id: prod.id,
@@ -102,6 +104,7 @@ export default function AdminProductsPage() {
       slug: prod.slug,
       categoryId: prod.categoryId,
       price: Number(prod.price),
+      stock: prod.stock,
       size: prod.size || "",
       flavor: prod.flavor || "",
       variantType: prod.variantType || "",
@@ -138,8 +141,8 @@ export default function AdminProductsPage() {
       setSuccess(`Product "${json.name}" saved successfully.`);
       setModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to save product.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to save product."));
     } finally {
       setSubmitting(false);
     }
@@ -297,7 +300,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td style={{ padding: "14px 16px", fontSize: "11px", color: "#515B54" }}>
                       {p.packagingOptions && p.packagingOptions.length > 0 ? (
-                        p.packagingOptions.map((o: any) => o.label).join(", ")
+                        p.packagingOptions.map((o) => o.label).join(", ")
                       ) : (
                         "Single units only"
                       )}

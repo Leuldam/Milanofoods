@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
 import { createOrderNumber } from "@/lib/order-number";
-import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
+import { OrderStatus, PaymentStatus, Prisma } from "@/generated/prisma/client";
 import { notifyOrderStatusChanged } from "@/lib/telegram-notifications";
+import { getAdminErrorMessage } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,12 +21,14 @@ export async function GET(req: NextRequest) {
     const source = searchParams.get("source");
     const search = searchParams.get("search");
 
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
     if (status && status !== "ALL") {
       where.status = status as OrderStatus;
     }
     if (source && source !== "ALL") {
-      where.source = source;
+      if (source === "WEBSITE" || source.startsWith("MANUAL_")) {
+        where.source = source;
+      }
     }
     if (search) {
       where.OR = [
@@ -116,7 +119,7 @@ export async function POST(req: NextRequest) {
 
       // 2. Validate items and calculate totals
       let calculatedSubtotal = 0;
-      const orderItemsData: any[] = [];
+      const orderItemsData: Prisma.OrderItemUncheckedCreateWithoutOrderInput[] = [];
 
       for (const item of items) {
         let product = null;
@@ -203,9 +206,9 @@ export async function POST(req: NextRequest) {
     await logAdminAudit(admin.id, `ORDER_CREATE_MANUAL: ${order.orderNumber} (ETB ${order.total})`);
 
     return NextResponse.json(order);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin order POST error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create order." }, { status: 400 });
+    return NextResponse.json({ error: getAdminErrorMessage(error, "Failed to create order.") }, { status: 400 });
   }
 }
 
@@ -340,8 +343,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json(updated);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin order PATCH error:", error);
-    return NextResponse.json({ error: error.message || "Failed to update order." }, { status: 400 });
+    return NextResponse.json({ error: getAdminErrorMessage(error, "Failed to update order.") }, { status: 400 });
   }
 }

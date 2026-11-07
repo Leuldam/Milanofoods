@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, hasPermission, logAdminAudit } from "@/lib/admin-auth";
+import { Prisma } from "@/generated/prisma/client";
+import { isUniqueConstraintError } from "@/lib/admin-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search");
 
-    const where: any = {};
+    const where: Prisma.CustomerWhereInput = {};
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -126,9 +128,9 @@ export async function POST(req: NextRequest) {
       await logAdminAudit(admin.id, `CUSTOMER_CREATE: ${created.name} (${created.phone})`);
       return NextResponse.json(created);
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin customer POST error:", error);
-    if (error.code === "P2002") {
+    if (isUniqueConstraintError(error)) {
       return NextResponse.json({ error: "A customer with this phone number already exists." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to save customer." }, { status: 500 });

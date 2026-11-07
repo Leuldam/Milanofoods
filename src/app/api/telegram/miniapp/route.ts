@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PermissionKey, Prisma } from "@/generated/prisma/client";
+import { OrderStatus, PermissionKey, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { processOrderAction, processReviewAction, updatePendingOrder } from "@/lib/order-actions";
 import { releaseExpiredReservations } from "@/lib/stock-reservations";
@@ -853,7 +853,7 @@ export async function POST(request: NextRequest) {
           await tx.order.update({
             where: { id: existing.id },
             data: {
-              status: targetStatus as any,
+              status: targetStatus as OrderStatus,
               stockDeductedAt:
                 targetStatus === "CONFIRMED" || targetStatus === "COMPLETED"
                   ? existing.stockDeductedAt || new Date()
@@ -864,7 +864,7 @@ export async function POST(request: NextRequest) {
           await tx.orderStatusHistory.create({
             data: {
               orderId: existing.id,
-              status: targetStatus as any,
+              status: targetStatus as OrderStatus,
               changedBy: operator.first_name || operator.username || "Operator",
               notes: typeof body?.notes === "string" ? body.notes : `Status updated to ${targetStatus}`,
             },

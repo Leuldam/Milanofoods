@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Edit, RefreshCw, X, Layers } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminCategory } from "@/lib/admin-types";
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editingCategory, setEditingCategory] = useState<AdminCategory | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -47,7 +49,7 @@ export default function AdminCategoriesPage() {
     setModalOpen(true);
   };
 
-  const openEditModal = (c: any) => {
+  const openEditModal = (c: AdminCategory) => {
     setEditingCategory(c);
     setName(c.name);
     setSlug(c.slug);
@@ -81,8 +83,8 @@ export default function AdminCategoriesPage() {
       setSuccess(`Category "${json.name}" saved successfully.`);
       setModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to save category.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to save category."));
     } finally {
       setSubmitting(false);
     }

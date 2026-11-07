@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { BarChart3, Download, RefreshCw, Calendar, TrendingUp, DollarSign, ShoppingCart, Globe, PhoneCall } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminReportData } from "@/lib/admin-types";
 
 export default function AdminReportsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AdminReportData | null>(null);
   const [range, setRange] = useState("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,8 +22,8 @@ export default function AdminReportsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to generate report.");
       setData(json);
-    } catch (err: any) {
-      setError(err.message || "Failed to load reports.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to load reports."));
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,7 @@ export default function AdminReportsPage() {
     if (!data?.productSales) return;
     const rows = [
       ["Product Name", "Units Sold", "Total Revenue (ETB)"],
-      ...data.productSales.map((p: any) => [p.name, p.quantity, p.revenue]),
+      ...data.productSales.map((p) => [p.name, p.quantity, p.revenue]),
     ];
     const csvContent = "data:text/csv;charset=utf-8," + rows.map((e) => e.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -56,7 +58,7 @@ export default function AdminReportsPage() {
     );
   }
 
-  const { summary, productSales, paymentMethodBreakdown } = data || {};
+  const { summary, productSales = [], paymentMethodBreakdown } = data || {};
 
   return (
     <div>
@@ -192,7 +194,7 @@ export default function AdminReportsPage() {
                     </td>
                   </tr>
                 ) : (
-                  productSales.map((p: any, idx: number) => (
+                  productSales.map((p, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid #F0ECE1" }}>
                       <td style={{ padding: "12px 20px", fontWeight: 700, color: "#073D2E" }}>{p.name}</td>
                       <td style={{ padding: "12px 20px", color: "#17251F" }}>{p.quantity.toLocaleString()} units</td>

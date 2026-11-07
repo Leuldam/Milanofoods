@@ -2,10 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Search, RefreshCw, X, CreditCard, RotateCcw } from "lucide-react";
+import { getAdminErrorMessage } from "@/lib/admin-error";
+import type { AdminOrder, AdminPayment } from "@/lib/admin-types";
 
 export default function AdminPaymentsPage() {
-  const [payments, setPayments] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [payments, setPayments] = useState<AdminPayment[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [methodFilter, setMethodFilter] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -90,8 +92,8 @@ export default function AdminPaymentsPage() {
       setSuccess(`Payment recorded successfully! Order balance updated.`);
       setRecordModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err.message || "Failed to record payment.");
+    } catch (err) {
+      setError(getAdminErrorMessage(err, "Failed to record payment."));
     } finally {
       setSubmitting(false);
     }
