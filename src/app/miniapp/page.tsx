@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-// import Image from "next/image"; // Removed heavy image import for minimal UI
 import {
   Activity,
   Archive,
@@ -46,7 +45,6 @@ import {
   X,
 } from "lucide-react";
 import { groupProductVariants } from "@/lib/product-variants";
-import { formatTotalMeasure } from "@/lib/product-pricing";
 import { PushNotificationButton } from "@/components/admin/push-notification-button";
 import "./miniapp.css";
 import "./miniapp-auth.css";
@@ -74,19 +72,15 @@ type Product = {
   size: string | null;
   flavor: string | null;
   variantType: string | null;
-  price: number;
   stock: number;
   reservedStock: number;
   availableStock: number;
   minimumOrderQuantity: number;
-  promotionEnabled: boolean;
-  promotionDiscountPercent: string | null;
   packagingOptions: { id: string; label: string; unitsPerPackage: number; isEnabled: boolean }[];
   isPublished: boolean;
   isActive: boolean;
   lowStock: boolean;
   stockMovements: StockMovement[];
-  priceChanges: PriceChange[];
 };
 
 type InventoryProductGroup = { key: string; label: string; category: string; products: Product[] };
@@ -100,8 +94,6 @@ type ProductCategory = {
   isActive: boolean;
   productCount: number;
 };
-
-type PriceChange = { id: string; previousPrice: number; newPrice: number; createdAt: string };
 
 type StockMovement = {
   id: string;
@@ -125,15 +117,11 @@ type OrderItem = {
   unitsPerPackage: number;
   packageQuantity: number;
   quantity: number;
-  unitPrice: number;
-  listUnitPrice: number;
-  promotionApplied: boolean;
-  promotionDiscountPercent: string | null;
-  lineTotal: number;
 };
 
 type Order = {
   orderNumber: string;
+  source: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string | null;
@@ -145,8 +133,6 @@ type Order = {
   paymentPreference: string;
   hasPaymentProof: boolean;
   notes: string | null;
-  deliveryFee: number;
-  total: number;
   status: string;
   itemCount: number;
   items: OrderItem[];
@@ -200,7 +186,6 @@ type SalesProduct = {
   size: string | null;
   category: string | null;
   units: number;
-  revenue: number;
   availableStock: number | null;
 };
 
@@ -209,14 +194,9 @@ type SalesReport = {
   start: string;
   end: string;
   totalUnits: number;
-  totalRevenue: number;
   totalOrders: number;
-  averageOrderValue: number;
-  previousRevenue: number;
-  revenueChangePercent: number | null;
   bestSeller: SalesProduct | null;
-  bestRevenueProduct: SalesProduct | null;
-  timeline: { label: string; revenue: number; units: number; orders: number }[];
+  timeline: { label: string; units: number; orders: number }[];
   products: SalesProduct[];
 };
 
@@ -328,11 +308,9 @@ type OrderDraft = {
   pickupLocation: string;
   paymentPreference: string;
   notes: string;
-  deliveryFee: string;
   items: {
     productId: string;
     quantity: string;
-    unitPrice: string;
     packagingLabel: string;
     unitsPerPackage: number;
     packageQuantity: number;
@@ -391,7 +369,7 @@ async function readApiResponse<T>(response: Response): Promise<T> {
 }
 
 async function readProductImage(file: File): Promise<string> {
-  if (!["image/png", "image/jpeg"].includes(file.type)) {
+  if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
     throw new Error("Choose a PNG or JPG image.");
   }
   if (file.size > 2 * 1024 * 1024) {
@@ -460,8 +438,6 @@ export default function MilanoMiniAppPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderDraft, setOrderDraft] = useState<OrderDraft | null>(null);
   const [quantity, setQuantity] = useState("24");
-  const [priceDraft, setPriceDraft] = useState("");
-  const [editingPrice, setEditingPrice] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyAction, setBusyAction] = useState("");
   const [orderActionError, setOrderActionError] = useState("");
@@ -475,8 +451,6 @@ export default function MilanoMiniAppPage() {
   const [savingCatalog, setSavingCatalog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   const [editingProduct, setEditingProduct] = useState(false);
-  const [editingPromo, setEditingPromo] = useState(false);
-  const [promoDraft, setPromoDraft] = useState({ enabled: false, discount: "" });
 
   const initData = useCallback(() => window.Telegram?.WebApp?.initData || "", []);
 
@@ -724,23 +698,16 @@ export default function MilanoMiniAppPage() {
   const avgRating =
     allApprovedReviews.length > 0
       ? (allApprovedReviews.reduce((acc, r) => acc + r.rating, 0) / allApprovedReviews.length).toFixed(1)
-      : "5.0";
+      : "0.0";
 
   const positiveReviewsCount = allApprovedReviews.filter((r) => r.rating >= 4).length;
   const positiveRatio =
     allApprovedReviews.length > 0
       ? `${Math.round((positiveReviewsCount / allApprovedReviews.length) * 100)}%`
-      : "100%";
+      : "0%";
 
-  const maxTimelineRevenue = Math.max(1, ...(salesReport?.timeline.map((point) => point.revenue) || []));
+  const maxTimelineUnits = Math.max(1, ...(salesReport?.timeline.map((point) => point.units) || []));
   const maxProductUnits = Math.max(1, ...(salesReport?.products.slice(0, 5).map((product) => product.units) || []));
-
-  const draftOrderTotal = orderDraft
-    ? orderDraft.items.reduce((total, item) => {
-      const lineTotal = Number(item.quantity) * Number(item.unitPrice);
-      return total + (Number.isFinite(lineTotal) ? lineTotal : 0);
-    }, Number.isFinite(Number(orderDraft.deliveryFee)) ? Number(orderDraft.deliveryFee) : 0)
-    : 0;
 
   const greeting = useMemo(() => {
     if (!hasMounted) return "Welcome";
@@ -760,29 +727,14 @@ export default function MilanoMiniAppPage() {
     const completed = orders.filter((o) => o.status === "COMPLETED");
     const cancelled = orders.filter((o) => o.status === "CANCELLED");
 
-    const pendingRevenue = pending.reduce((sum, o) => sum + o.total, 0);
-    const confirmedRevenue = confirmed.reduce((sum, o) => sum + o.total, 0);
-    const completedRevenue = completed.reduce((sum, o) => sum + o.total, 0);
-
     return {
       pendingCount: pending.length,
-      pendingRevenue,
       confirmedCount: confirmed.length,
-      confirmedRevenue,
       inFulfillmentCount: inFulfillment.length,
       completedCount: completed.length,
-      completedRevenue,
       cancelledCount: cancelled.length,
       totalCount: orders.length,
     };
-  }, [dashboard?.orders]);
-
-  const fulfillmentStats = useMemo(() => {
-    const orders = dashboard?.orders || [];
-    if (!orders.length) return { deliveryRatio: 75, pickupRatio: 25 };
-    const deliveries = orders.filter((o) => o.fulfillment === "DELIVERY").length;
-    const deliveryRatio = Math.round((deliveries / orders.length) * 100);
-    return { deliveryRatio, pickupRatio: 100 - deliveryRatio };
   }, [dashboard?.orders]);
 
   function getInitials(name: string) {
@@ -811,11 +763,9 @@ export default function MilanoMiniAppPage() {
       pickupLocation: order.pickupLocation || "",
       paymentPreference: order.paymentPreference,
       notes: order.notes || "",
-      deliveryFee: String(order.deliveryFee),
       items: order.items.map((item) => ({
         productId: item.productId || "",
         quantity: String(item.quantity),
-        unitPrice: String(item.unitPrice),
         packagingLabel: item.packagingLabel,
         unitsPerPackage: item.unitsPerPackage,
         packageQuantity: item.packageQuantity,
@@ -958,8 +908,6 @@ export default function MilanoMiniAppPage() {
           galleryData,
           packagingOptions: values.get("packagingOptions"),
           minimumOrderQuantity: values.get("minimumOrderQuantity"),
-          promotionEnabled: values.get("promotionEnabled") === "on",
-          promotionDiscountPercent: values.get("promotionDiscountPercent"),
         },
         "Product added as hidden.",
       );
@@ -1030,8 +978,6 @@ export default function MilanoMiniAppPage() {
         description: values.get("description"),
         packagingOptions: values.get("packagingOptions"),
         minimumOrderQuantity: values.get("minimumOrderQuantity"),
-        promotionEnabled: values.get("promotionEnabled") === "on",
-        promotionDiscountPercent: values.get("promotionDiscountPercent"),
       },
       "Product details updated.",
     );
@@ -1064,13 +1010,6 @@ export default function MilanoMiniAppPage() {
 
   function openProductDetails(product: Product, startEditing = false) {
     setProductDetails(product);
-    setPriceDraft(String(product.price));
-    setPromoDraft({
-      enabled: product.promotionEnabled,
-      discount: product.promotionDiscountPercent || "",
-    });
-    setEditingPrice(false);
-    setEditingPromo(false);
     setEditingProduct(startEditing);
     triggerHaptic("light");
   }
@@ -1095,7 +1034,7 @@ export default function MilanoMiniAppPage() {
         <div className="mf-login-wrap">
           <div className="mf-login-box">
             <div className="mf-login-logo">
-              <Leaf size={38} color="#073d2e" style={{ margin: "0 auto" }} />
+              <div className="mf-login-mark" aria-hidden="true">M</div>
               <h1>Milano Foods</h1>
               <span>Business Management</span>
               <p>Sign in with your administrator phone and passcode</p>
@@ -1358,38 +1297,29 @@ export default function MilanoMiniAppPage() {
 
               {/* 4 Analytical KPI Cards */}
               <div className="mf-kpi-grid" aria-busy={loading && !dashboard}>
-                {/* 1. Revenue */}
+                {/* 1. Product catalog */}
                 <div
                   className="mf-kpi-card"
                   onClick={() => {
                     triggerHaptic("light");
-                    setActiveSection("sales");
+                    setActiveSection("inventory");
                   }}
                   style={{ cursor: "pointer" }}
                 >
                   <div className="mf-kpi-head">
-                    <span className="mf-kpi-title">Monthly Revenue</span>
+                    <span className="mf-kpi-title">Products in Catalog</span>
                     <div className="mf-kpi-icon is-purple">
-                      <BarChart3 size={15} />
+                      <Boxes size={15} />
                     </div>
                   </div>
                   <div className="mf-kpi-value">
                     {loading && !dashboard
                       ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
-                      : `ETB ${(salesReport?.totalRevenue ?? orderStats.completedRevenue).toLocaleString("en-ET", {
-                        maximumFractionDigits: 0,
-                      })}`}
+                      : (dashboard?.summary.productCount ?? 0).toLocaleString("en-ET")}
                   </div>
                   <div className="mf-kpi-sub">
-                    {salesReport?.revenueChangePercent !== null && salesReport?.revenueChangePercent !== undefined ? (
-                      <span className={`mf-trend-badge ${salesReport.revenueChangePercent >= 0 ? "is-up" : "is-down"}`}>
-                        {salesReport.revenueChangePercent >= 0 ? "↑ +" : "↓ "}
-                        {Math.abs(salesReport.revenueChangePercent).toFixed(1)}%
-                      </span>
-                    ) : (
-                      <span className="mf-trend-badge is-up">● Live</span>
-                    )}
-                    <span>vs last period</span>
+                    <span className="mf-trend-badge is-up">Live</span>
+                    <span>active products</span>
                   </div>
                 </div>
 
@@ -1486,12 +1416,12 @@ export default function MilanoMiniAppPage() {
                 </div>
               </div>
 
-              {/* Interactive Revenue & Orders Trend Chart (Overview Widget) */}
+              {/* Interactive Units & Orders Trend Chart (Overview Widget) */}
               <div className="mf-chart-card">
                 <div className="mf-chart-header">
                   <div className="mf-chart-title">
-                    <h2>Demand &amp; Revenue Overview</h2>
-                    <span>Daily Sales Trajectory</span>
+                    <h2>Demand Overview</h2>
+                    <span>Units sold in the selected period</span>
                   </div>
                   <button
                     type="button"
@@ -1509,11 +1439,11 @@ export default function MilanoMiniAppPage() {
                   <div className="mf-bar-chart">
                     {salesReport.timeline.map((point) => (
                       <div className="mf-chart-col" key={point.label}>
-                        <div className="mf-chart-bar-bg" title={`${point.label}: ETB ${point.revenue.toLocaleString()} (${point.orders} orders)`}>
+                        <div className="mf-chart-bar-bg" title={`${point.label}: ${point.units} units, ${point.orders} orders`}>
                           <div
                             className="mf-chart-bar-fill"
                             style={{
-                              height: `${Math.max(8, (point.revenue / maxTimelineRevenue) * 100)}%`,
+                              height: `${Math.max(8, (point.units / maxTimelineUnits) * 100)}%`,
                             }}
                           />
                         </div>
@@ -1529,18 +1459,20 @@ export default function MilanoMiniAppPage() {
 
                 <div className="mf-chart-insights">
                   <div className="mf-insight-item">
-                    <strong>
-                      ETB {(salesReport?.averageOrderValue ?? 0).toLocaleString("en-ET", { maximumFractionDigits: 0 })}
-                    </strong>
-                    <small>Average Order Value</small>
+                    <strong>{salesReport?.totalOrders ?? 0}</strong>
+                    <small>Orders in period</small>
                   </div>
                   <div className="mf-insight-item">
                     <strong>{salesReport?.totalUnits ?? 0} units</strong>
                     <small>Total Units Sold</small>
                   </div>
                   <div className="mf-insight-item">
-                    <strong>{fulfillmentStats.deliveryRatio}% Delivery</strong>
-                    <small>{fulfillmentStats.pickupRatio}% Pickup ratio</small>
+                    <strong>
+                      {salesReport?.totalOrders
+                        ? (salesReport.totalUnits / salesReport.totalOrders).toFixed(1)
+                        : "0"}
+                    </strong>
+                    <small>Average units per order</small>
                   </div>
                 </div>
               </div>
@@ -1567,16 +1499,6 @@ export default function MilanoMiniAppPage() {
                   }}
                 >
                   <ArrowDownToLine size={15} /> Quick Restock
-                </button>
-                <button
-                  type="button"
-                  className="mf-quick-btn"
-                  onClick={() => {
-                    triggerHaptic("medium");
-                    setActiveSection("inventory");
-                  }}
-                >
-                  <Pencil size={15} /> Adjust Prices
                 </button>
                 <button
                   type="button"
@@ -1711,9 +1633,6 @@ export default function MilanoMiniAppPage() {
                             <div style={{ fontSize: "12px", fontWeight: 800, color: "var(--mf-forest)" }}>
                               {prod.units} units
                             </div>
-                            <small style={{ fontSize: "10px", color: "var(--mf-text-muted)" }}>
-                              ETB {prod.revenue.toLocaleString("en-ET")}
-                            </small>
                           </div>
                         </div>
                       ))}
@@ -1771,6 +1690,8 @@ export default function MilanoMiniAppPage() {
                           <div className="mf-customer-meta">
                             <span className="mf-customer-name">{order.customerName}</span>
                             <div className="mf-order-num-time">
+                              <span>{order.source === "WEBSITE" ? "Website order" : "Staff order"}</span>
+                              <span>·</span>
                               <span>#{order.orderNumber.slice(-8)}</span>
                               <span>·</span>
                               <span>{formatOrderDate(order.createdAt)}</span>
@@ -1792,9 +1713,6 @@ export default function MilanoMiniAppPage() {
                           <span style={{ fontSize: "10.5px", color: "var(--mf-text-muted)" }}>
                             Via {order.paymentPreference}
                           </span>
-                        </div>
-                        <div className="mf-order-total-block">
-                          <strong>ETB {order.total.toLocaleString("en-ET")}</strong>
                         </div>
                       </div>
 
@@ -1872,7 +1790,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-pip-meta">
                     <strong>{orderStats.pendingCount}</strong>
-                    <span>Pending (ETB {orderStats.pendingRevenue.toLocaleString()})</span>
+                    <span>Pending Orders</span>
                   </div>
                 </div>
 
@@ -1921,7 +1839,7 @@ export default function MilanoMiniAppPage() {
                   </div>
                   <div className="mf-pip-meta">
                     <strong>{orderStats.completedCount}</strong>
-                    <span>Completed (ETB {orderStats.completedRevenue.toLocaleString()})</span>
+                    <span>Completed Orders</span>
                   </div>
                 </div>
               </div>
@@ -1991,6 +1909,8 @@ export default function MilanoMiniAppPage() {
                         <div className="mf-customer-meta">
                           <span className="mf-customer-name">{order.customerName}</span>
                           <div className="mf-order-num-time">
+                            <span>{order.source === "WEBSITE" ? "Website order" : "Staff order"}</span>
+                            <span>·</span>
                             <span>#{order.orderNumber.slice(-8)}</span>
                             <span>·</span>
                             <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -2014,9 +1934,6 @@ export default function MilanoMiniAppPage() {
                         </span>
                       </div>
 
-                      <div className="mf-order-total-block">
-                        <strong>ETB {order.total.toLocaleString("en-ET")}</strong>
-                      </div>
                     </div>
 
                     <div className="mf-order-actions-row">
@@ -2495,26 +2412,6 @@ export default function MilanoMiniAppPage() {
                         <input className="mf-input" name="size" placeholder="e.g. 1 L or 5 kg" />
                       </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      <div className="mf-input-group">
-                        <label>Promotion Discount (%)</label>
-                        <input
-                          className="mf-input"
-                          name="promotionDiscountPercent"
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          max="99.99"
-                          placeholder="e.g. 15 for 15% OFF"
-                        />
-                      </div>
-                      <div className="mf-input-group" style={{ display: "flex", alignItems: "center", paddingTop: "20px" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", cursor: "pointer" }}>
-                          <input type="checkbox" name="promotionEnabled" />
-                          Enable Storefront Promotion
-                        </label>
-                      </div>
-                    </div>
                     <div className="mf-input-group">
                       <label>Product Photos (PNG/JPG up to 2MB)</label>
                       <input className="mf-input" name="images" type="file" accept="image/*" multiple />
@@ -2615,7 +2512,6 @@ export default function MilanoMiniAppPage() {
                         <MiniAppSkeleton className="mf-skeleton-product-title" />
                         <MiniAppSkeleton className="mf-skeleton-product-meta" />
                         <MiniAppSkeleton className="mf-skeleton-product-meta short" />
-                        <MiniAppSkeleton className="mf-skeleton-product-price" />
                       </span>
                     </div>
                   ))}
@@ -2671,14 +2567,6 @@ export default function MilanoMiniAppPage() {
                                 <strong>{product.stock}</strong>
                                 <small>Total</small>
                               </div>
-                              <span className="mf-product-price-tag">
-                                ETB {product.price.toLocaleString("en-ET")}
-                                {product.promotionEnabled && product.promotionDiscountPercent && (
-                                  <span style={{ marginLeft: "5px", fontSize: "10px", background: "#fef3c7", color: "#b45309", padding: "1px 5px", borderRadius: "4px", fontWeight: 700 }}>
-                                    🏷️ {product.promotionDiscountPercent}% OFF
-                                  </span>
-                                )}
-                              </span>
                             </div>
 
                             <div className="mf-product-card-actions">
@@ -2754,9 +2642,6 @@ export default function MilanoMiniAppPage() {
                       return typeProducts[0] || products[0];
                     })();
 
-                    const minPrice = Math.min(...products.map((p) => p.price));
-                    const maxPrice = Math.max(...products.map((p) => p.price));
-
                     return (
                       <div className="mf-family-card" key={group.key}>
                         {/* Family Head */}
@@ -2786,9 +2671,6 @@ export default function MilanoMiniAppPage() {
                                   {lowCount} low stock
                                 </span>
                               )}
-                              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--mf-forest)", marginLeft: "auto" }}>
-                                {minPrice === maxPrice ? `ETB ${minPrice}` : `ETB ${minPrice} - ${maxPrice}`}
-                              </span>
                             </div>
                           </div>
                         </div>
@@ -2861,14 +2743,6 @@ export default function MilanoMiniAppPage() {
                               </div>
                             </div>
 
-                            <div className="mf-sel-variant-price">
-                              ETB {selectedVariant.price.toLocaleString("en-ET")}
-                              {selectedVariant.promotionEnabled && selectedVariant.promotionDiscountPercent && (
-                                <span style={{ display: "block", fontSize: "10.5px", background: "#fef3c7", color: "#b45309", padding: "1px 6px", borderRadius: "4px", fontWeight: 700, marginTop: "2px" }}>
-                                  🏷️ {selectedVariant.promotionDiscountPercent}% OFF
-                                </span>
-                              )}
-                            </div>
                           </div>
 
                           <div className="mf-sel-actions-row">
@@ -2937,7 +2811,6 @@ export default function MilanoMiniAppPage() {
                                 </span>
                                 <div className="mf-cvariant-nums">
                                   <span>{variant.availableStock} avail</span>
-                                  <b>ETB {variant.price.toLocaleString()}</b>
                                 </div>
                                 <div style={{ display: "flex", gap: "4px" }}>
                                   {variant.isActive && (
@@ -3003,14 +2876,13 @@ export default function MilanoMiniAppPage() {
                         <th>Category</th>
                         <th>Variant / Size</th>
                         <th>Stock Status</th>
-                        <th>Unit Price</th>
                         <th style={{ textAlign: "right" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody aria-busy={loading && !dashboard}>
                       {loading && !dashboard && Array.from({ length: 4 }, (_, index) => (
                         <tr key={`inventory-skeleton-${index}`} aria-hidden="true">
-                          {[0, 1, 2, 3, 4, 5].map((cell) => (
+                          {[0, 1, 2, 3, 4].map((cell) => (
                             <td key={cell}><MiniAppSkeleton className="mf-skeleton-table-cell" /></td>
                           ))}
                         </tr>
@@ -3038,14 +2910,6 @@ export default function MilanoMiniAppPage() {
                               </span>
                               <b>{prod.availableStock}</b> / {prod.stock}
                             </div>
-                          </td>
-                          <td>
-                            <strong style={{ color: "var(--mf-forest)" }}>ETB {prod.price.toLocaleString("en-ET")}</strong>
-                            {prod.promotionEnabled && prod.promotionDiscountPercent && (
-                              <div style={{ fontSize: "10px", color: "#b45309", fontWeight: 700 }}>
-                                🏷️ {prod.promotionDiscountPercent}% OFF
-                              </div>
-                            )}
                           </td>
                           <td style={{ textAlign: "right" }}>
                             <div style={{ display: "inline-flex", gap: "6px" }}>
@@ -3109,7 +2973,7 @@ export default function MilanoMiniAppPage() {
               {/* Professional Analytics Header */}
               <div className="mf-analytics-header">
                 <div className="mf-analytics-title-col">
-                  <h2>Sales Analytics &amp; Revenue</h2>
+                  <h2>Sales &amp; Volume Analytics</h2>
                 </div>
 
                 {/* Integrated Segmented Period Switcher */}
@@ -3142,34 +3006,23 @@ export default function MilanoMiniAppPage() {
                 </div>
               )}
 
-              {/* 4 Clean Analytical KPI Cards */}
+              {/* 4 Operational KPI Cards */}
               <div className="mf-analytics-kpi-grid" aria-busy={salesLoading && !salesReport}>
-                {/* 1. Revenue */}
                 <div className="mf-kpi-card">
                   <div className="mf-kpi-head">
-                    <span className="mf-kpi-title">{salesPeriod.toUpperCase()} Revenue</span>
+                    <span className="mf-kpi-title">Units Sold</span>
                     <div className="mf-kpi-icon is-green">
-                      <Banknote size={15} />
+                      <Boxes size={15} />
                     </div>
                   </div>
                   <div className="mf-kpi-value">
                     {salesLoading && !salesReport
                       ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
-                      : `ETB ${(salesReport?.totalRevenue ?? 0).toLocaleString("en-ET", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}`}
+                      : (salesReport?.totalUnits ?? 0).toLocaleString("en-ET")}
                   </div>
                   <div className="mf-kpi-sub">
-                    {salesReport?.revenueChangePercent !== null && salesReport?.revenueChangePercent !== undefined ? (
-                      <span className={`mf-trend-badge ${salesReport.revenueChangePercent >= 0 ? "is-up" : "is-down"}`}>
-                        {salesReport.revenueChangePercent >= 0 ? "↑ +" : "↓ "}
-                        {Math.abs(salesReport.revenueChangePercent).toFixed(1)}%
-                      </span>
-                    ) : (
-                      <span className="mf-trend-badge is-up">● Live</span>
-                    )}
-                    <span>vs previous period</span>
+                    <span className="mf-trend-badge is-up">Live</span>
+                    <span>in selected period</span>
                   </div>
                 </div>
 
@@ -3190,29 +3043,9 @@ export default function MilanoMiniAppPage() {
                   </div>
                 </div>
 
-                {/* 3. Units Dispatched */}
                 <div className="mf-kpi-card">
                   <div className="mf-kpi-head">
-                    <span className="mf-kpi-title">Volume Sold</span>
-                    <div className="mf-kpi-icon is-purple">
-                      <Boxes size={15} />
-                    </div>
-                  </div>
-                  <div className="mf-kpi-value">
-                    {salesLoading && !salesReport
-                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
-                      : `${(salesReport?.totalUnits ?? 0).toLocaleString()} units`}
-                  </div>
-                  <div className="mf-kpi-sub">
-                    <span className="mf-trend-badge is-up">📦 Factory stock</span>
-                    <span>dispatched</span>
-                  </div>
-                </div>
-
-                {/* 4. Average Order Value */}
-                <div className="mf-kpi-card">
-                  <div className="mf-kpi-head">
-                    <span className="mf-kpi-title">Avg Order Value</span>
+                    <span className="mf-kpi-title">Average Units / Order</span>
                     <div className="mf-kpi-icon is-amber">
                       <Activity size={15} />
                     </div>
@@ -3220,24 +3053,42 @@ export default function MilanoMiniAppPage() {
                   <div className="mf-kpi-value">
                     {salesLoading && !salesReport
                       ? <MiniAppSkeleton className="mf-skeleton-kpi-value" />
-                      : `ETB ${(salesReport?.averageOrderValue ?? 0).toLocaleString("en-ET", {
-                        maximumFractionDigits: 0,
-                      })}`}
+                      : salesReport?.totalOrders
+                        ? (salesReport.totalUnits / salesReport.totalOrders).toFixed(1)
+                        : "0"}
                   </div>
                   <div className="mf-kpi-sub">
-                    <span className="mf-trend-badge is-up">Per ticket</span>
-                    <span>basket average</span>
+                    <span className="mf-trend-badge is-up">Average</span>
+                    <span>per recorded order</span>
+                  </div>
+                </div>
+
+                <div className="mf-kpi-card">
+                  <div className="mf-kpi-head">
+                    <span className="mf-kpi-title">Products Sold</span>
+                    <div className="mf-kpi-icon is-purple">
+                      <ShoppingBag size={15} />
+                    </div>
+                  </div>
+                  <div className="mf-kpi-value">
+                    {salesLoading && !salesReport
+                      ? <MiniAppSkeleton className="mf-skeleton-kpi-value short" />
+                      : salesReport?.products.length ?? 0}
+                  </div>
+                  <div className="mf-kpi-sub">
+                    <span className="mf-trend-badge is-up">Items</span>
+                    <span>with sales in this period</span>
                   </div>
                 </div>
               </div>
 
-              {/* 2-Column Split: Revenue Trend Chart & Top Products Leaderboard */}
+              {/* 2-Column Split: Volume Trend Chart & Top Products Leaderboard */}
               <div className="mf-analytics-split-grid">
-                {/* Left: Revenue Trend Chart */}
+                {/* Left: Volume Trend Chart */}
                 <div className="mf-chart-card" style={{ marginBottom: 0 }}>
                   <div className="mf-chart-header">
                     <div className="mf-chart-title">
-                      <h2>Revenue Trajectory</h2>
+                      <h2>Units Sold Over Time</h2>
                       <span>
                         {salesPeriod === "daily"
                           ? "Today's Timeline"
@@ -3246,7 +3097,6 @@ export default function MilanoMiniAppPage() {
                             : "Historical Breakdown"}
                       </span>
                     </div>
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--mf-forest)" }}>ETB</span>
                   </div>
 
                   {salesLoading && !salesReport ? (
@@ -3261,12 +3111,12 @@ export default function MilanoMiniAppPage() {
                         <div className="mf-chart-col" key={point.label}>
                           <div
                             className="mf-chart-bar-bg"
-                            title={`${point.label}: ETB ${point.revenue.toLocaleString()} (${point.orders} orders)`}
+                            title={`${point.label}: ${point.units} units (${point.orders} orders)`}
                           >
                             <div
                               className="mf-chart-bar-fill"
                               style={{
-                                height: `${Math.max(10, (point.revenue / maxTimelineRevenue) * 100)}%`,
+                                height: `${Math.max(10, (point.units / maxTimelineUnits) * 100)}%`,
                               }}
                             />
                           </div>
@@ -3290,8 +3140,12 @@ export default function MilanoMiniAppPage() {
                       <small>Dispatched</small>
                     </div>
                     <div className="mf-insight-item">
-                      <strong>ETB {(salesReport?.averageOrderValue ?? 0).toLocaleString("en-ET", { maximumFractionDigits: 0 })}</strong>
-                      <small>Avg Ticket</small>
+                      <strong>
+                        {salesReport?.totalOrders
+                          ? (salesReport.totalUnits / salesReport.totalOrders).toFixed(1)
+                          : "0"}
+                      </strong>
+                      <small>Average units per order</small>
                     </div>
                   </div>
                 </div>
@@ -3330,7 +3184,6 @@ export default function MilanoMiniAppPage() {
                                 <div className="mf-prod-bar-fill" style={{ width: `${Math.max(8, pct)}%` }} />
                               </div>
                               <div className="mf-top-prod-meta">
-                                <small>ETB {prod.revenue.toLocaleString("en-ET")}</small>
                                 <small>{pct}% of peak volume</small>
                               </div>
                             </div>
@@ -4029,7 +3882,6 @@ export default function MilanoMiniAppPage() {
                         items: orderDraft.items.map((item) => ({
                           ...item,
                           quantity: Number(item.quantity),
-                          unitPrice: Number(item.unitPrice),
                         })),
                       },
                       "Order updated.",
@@ -4089,18 +3941,6 @@ export default function MilanoMiniAppPage() {
                       </div>
                     </>
                   )}
-                  <div className="mf-input-group">
-                    <label>Delivery Fee (ETB)</label>
-                    <input
-                      className="mf-input"
-                      type="number"
-                      step="0.01"
-                      value={orderDraft.deliveryFee}
-                      onChange={(e) => setOrderDraft({ ...orderDraft, deliveryFee: e.target.value })}
-                      required
-                    />
-                  </div>
-
                   <div style={{ marginTop: "14px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                       <strong>Order Items</strong>
@@ -4115,7 +3955,6 @@ export default function MilanoMiniAppPage() {
                               {
                                 productId: "",
                                 quantity: "1",
-                                unitPrice: "0",
                                 packagingLabel: "Single unit",
                                 unitsPerPackage: 1,
                                 packageQuantity: 1,
@@ -4142,12 +3981,10 @@ export default function MilanoMiniAppPage() {
                           className="mf-select"
                           value={item.productId}
                           onChange={(e) => {
-                            const found = dashboard?.products.find((p) => p.id === e.target.value);
                             const copy = [...orderDraft.items];
                             copy[idx] = {
                               ...copy[idx],
                               productId: e.target.value,
-                              unitPrice: found ? String(found.price) : copy[idx].unitPrice,
                             };
                             setOrderDraft({ ...orderDraft, items: copy });
                           }}
@@ -4160,7 +3997,7 @@ export default function MilanoMiniAppPage() {
                             </option>
                           ))}
                         </select>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px", marginTop: "6px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "8px", marginTop: "6px" }}>
                           <input
                             className="mf-input"
                             type="number"
@@ -4172,19 +4009,6 @@ export default function MilanoMiniAppPage() {
                               setOrderDraft({ ...orderDraft, items: copy });
                             }}
                             placeholder="Qty"
-                            required
-                          />
-                          <input
-                            className="mf-input"
-                            type="number"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={(e) => {
-                              const copy = [...orderDraft.items];
-                              copy[idx] = { ...copy[idx], unitPrice: e.target.value };
-                              setOrderDraft({ ...orderDraft, items: copy });
-                            }}
-                            placeholder="Price"
                             required
                           />
                           <button
@@ -4203,20 +4027,6 @@ export default function MilanoMiniAppPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      padding: "12px",
-                      background: "var(--mf-forest-subtle)",
-                      borderRadius: "8px",
-                      marginTop: "12px",
-                    }}
-                  >
-                    <span>Estimated Total:</span>
-                    <strong style={{ color: "var(--mf-forest)" }}>ETB {draftOrderTotal.toLocaleString("en-ET")}</strong>
                   </div>
 
                   <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
@@ -4254,11 +4064,11 @@ export default function MilanoMiniAppPage() {
                     <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--mf-muted)", marginBottom: "4px" }}>
                       CUSTOMER CONTACT
                     </div>
-                    <strong style={{ fontSize: "14px", display: "block" }}>{selectedOrder.customerName}</strong>
-                    {selectedOrder.company && (
-                      <span style={{ fontSize: "12px", color: "var(--mf-muted)" }}>{selectedOrder.company}</span>
-                    )}
-                    <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                    <div className="mf-order-contact-row">
+                      <div className="mf-order-contact-info">
+                        <strong>{selectedOrder.customerName}</strong>
+                        {selectedOrder.company && <span>{selectedOrder.company}</span>}
+                      </div>
                       <a
                         href={`tel:${selectedOrder.customerPhone}`}
                         className="mf-btn-primary"
@@ -4363,25 +4173,9 @@ export default function MilanoMiniAppPage() {
                               {item.packageQuantity} × {item.packagingLabel} ({item.quantity} individual units)
                               {item.size ? ` · ${item.size}` : ""}
                             </div>
-                            <div style={{ fontSize: "11px", color: "var(--mf-forest)" }}>
-                              ETB {item.unitPrice.toLocaleString("en-ET")} / unit
-                            </div>
                           </div>
-                          <strong className="mf-order-item-total" style={{ fontSize: "13px" }}>ETB {item.lineTotal.toLocaleString("en-ET")}</strong>
                         </div>
                       ))}
-                    </div>
-                  </div>
-
-                  {/* Totals */}
-                  <div className="mf-order-totals" style={{ borderTop: "1px solid var(--mf-line)", paddingTop: "10px", marginBottom: "16px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--mf-muted)" }}>
-                      <span>Delivery Fee:</span>
-                      <span>ETB {selectedOrder.deliveryFee.toLocaleString("en-ET")}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: 800, marginTop: "6px" }}>
-                      <span>Order Total:</span>
-                      <span style={{ color: "var(--mf-forest)" }}>ETB {selectedOrder.total.toLocaleString("en-ET")}</span>
                     </div>
                   </div>
 
@@ -4632,159 +4426,6 @@ export default function MilanoMiniAppPage() {
                   </button>
                 )}
               </div>
-
-              {/* Price Panel */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  background: "var(--mf-forest-subtle)",
-                  padding: "12px",
-                  borderRadius: "var(--mf-radius-md)",
-                  marginBottom: "12px",
-                }}
-              >
-                <div>
-                  <span style={{ fontSize: "11px", color: "var(--mf-muted)" }}>Retail Price</span>
-                  <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--mf-forest)" }}>
-                    ETB {productDetails.price.toLocaleString("en-ET")}
-                  </div>
-                </div>
-                {productDetails.isActive && (
-                  <button
-                    className="mf-btn-secondary"
-                    style={{ minHeight: "34px", padding: "0 10px", fontSize: "11px" }}
-                    onClick={() => {
-                      setPriceDraft(String(productDetails.price));
-                      setEditingPrice(!editingPrice);
-                    }}
-                  >
-                    {editingPrice ? "Cancel" : "Change Price"}
-                  </button>
-                )}
-              </div>
-
-              {/* Promotion Configuration */}
-              <div
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid var(--mf-border)",
-                  borderRadius: "var(--mf-radius-md)",
-                  padding: "12px",
-                  marginBottom: "12px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <strong style={{ fontSize: "13px", color: "var(--mf-forest-deep)", display: "block" }}>
-                      🏷️ Storefront Promotion
-                    </strong>
-                    <span style={{ fontSize: "11px", color: "var(--mf-text-muted)" }}>
-                      {productDetails.promotionEnabled && productDetails.promotionDiscountPercent
-                        ? `Active: ${productDetails.promotionDiscountPercent}% OFF (Promo Price: ETB ${((productDetails.price * (100 - Number(productDetails.promotionDiscountPercent))) / 100).toLocaleString("en-ET")})`
-                        : "No promotional discount configured."}
-                    </span>
-                  </div>
-                  {productDetails.isActive && (
-                    <button
-                      type="button"
-                      className="mf-btn-secondary"
-                      style={{ height: "28px", fontSize: "11px", padding: "0 8px" }}
-                      onClick={() => setEditingPromo(!editingPromo)}
-                    >
-                      {editingPromo ? "Cancel" : "Configure Promo"}
-                    </button>
-                  )}
-                </div>
-
-                {editingPromo && (
-                  <form
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      marginTop: "10px",
-                      paddingTop: "10px",
-                      borderTop: "1px dashed var(--mf-border)",
-                    }}
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      triggerHaptic("medium");
-                      void manageAction(
-                        {
-                          action: "product-update",
-                          productId: productDetails.id,
-                          name: productDetails.name,
-                          categoryId: productDetails.categoryId,
-                          flavor: productDetails.flavor || "",
-                          variantType: productDetails.variantType || "",
-                          size: productDetails.size || "",
-                          description: productDetails.description || "",
-                          minimumOrderQuantity: productDetails.minimumOrderQuantity,
-                          promotionEnabled: promoDraft.enabled,
-                          promotionDiscountPercent: promoDraft.discount || null,
-                        },
-                        "Promotion settings updated.",
-                      );
-                      setEditingPromo(false);
-                    }}
-                  >
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
-                      <input
-                        type="checkbox"
-                        checked={promoDraft.enabled}
-                        onChange={(e) => setPromoDraft((p) => ({ ...p, enabled: e.target.checked }))}
-                      />
-                      Enable Promotional Discount on Storefront
-                    </label>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <input
-                        className="mf-input"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        max="99.99"
-                        value={promoDraft.discount}
-                        onChange={(e) => setPromoDraft((p) => ({ ...p, discount: e.target.value }))}
-                        placeholder="Discount % (e.g. 15)"
-                        style={{ flex: 1 }}
-                      />
-                      <button type="submit" className="mf-btn-primary" style={{ height: "38px", padding: "0 14px", fontSize: "12px" }}>
-                        Save Promo
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-
-              {editingPrice && (
-                <form
-                  style={{ display: "flex", gap: "8px", marginBottom: "14px" }}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    triggerHaptic("medium");
-                    void manageAction(
-                      { action: "update-price", productId: productDetails.id, price: priceDraft },
-                      "Price updated.",
-                    );
-                    setEditingPrice(false);
-                  }}
-                >
-                  <input
-                    className="mf-input"
-                    type="number"
-                    step="0.01"
-                    value={priceDraft}
-                    onChange={(e) => setPriceDraft(e.target.value)}
-                    placeholder="New price in ETB"
-                    required
-                  />
-                  <button type="submit" className="mf-btn-primary" style={{ whiteSpace: "nowrap" }}>
-                    Save Price
-                  </button>
-                </form>
-              )}
 
               {/* Stock Numbers */}
               <div

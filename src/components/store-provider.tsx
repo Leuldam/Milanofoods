@@ -48,14 +48,11 @@ type DatabaseProduct = {
   sku: string;
   slug: string;
   name: string;
-  price: number;
   image: string;
   size: string;
   flavor: string | null;
   variantType: string | null;
   minimumOrderQuantity: number;
-  promotionEnabled: boolean;
-  promotionDiscountPercent: string | null;
   availableStock: number;
   inStock: boolean;
   packagingOptions: PackagingOption[];
@@ -158,7 +155,7 @@ export function StoreProvider({
             slug: product.slug,
             sku: product.sku,
             name: product.name,
-            price: product.price,
+            price: 0,
             image: product.image,
             size: product.size,
             flavor: product.flavor,
@@ -167,8 +164,8 @@ export function StoreProvider({
             packagingLabel,
             packagingOptions: product.packagingOptions,
             minimumOrderQuantity: product.minimumOrderQuantity,
-            promotionEnabled: product.promotionEnabled,
-            promotionDiscountPercent: product.promotionDiscountPercent,
+            promotionEnabled: false,
+            promotionDiscountPercent: null,
             availableStock: product.availableStock,
             inStock: productStillAvailable(product, unitsPerPackage, item.qty) && packageStillAvailable,
           };
@@ -214,7 +211,7 @@ export function StoreProvider({
         slug: product?.slug || input.slug,
         sku: product?.sku || input.sku,
         name: product?.name || input.name,
-        price: product?.price ?? input.price,
+        price: 0,
         image: product?.image || input.image,
         size: product?.size ?? input.size,
         flavor: product?.flavor ?? input.flavor,
@@ -224,8 +221,8 @@ export function StoreProvider({
         unitsPerPackage,
         packagingOptions: product?.packagingOptions ?? input.packagingOptions,
         minimumOrderQuantity,
-        promotionEnabled: product?.promotionEnabled ?? input.promotionEnabled,
-        promotionDiscountPercent: product?.promotionDiscountPercent ?? input.promotionDiscountPercent,
+        promotionEnabled: false,
+        promotionDiscountPercent: null,
         availableStock,
         inStock: true,
       };

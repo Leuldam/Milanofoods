@@ -1,21 +1,54 @@
-export type Product = { id:string; sku?:string; slug:string; name:string; category:string; price:number; image:string; description:string; badge?:string; size:string; flavor?:string | null; variantType?:string | null; isPublished?:boolean; minimumOrderQuantity?:number; promotionEnabled?:boolean; promotionDiscountPercent?:string | number | null; packagingOptions?:{id:string;label:string;unitsPerPackage:number}[]; galleryImageUrls?:string[]; };
-const mojitoSyrupImage = "/images/milano-mint-bottle-cutout.png";
+export type Product = { id:string; sku?:string; slug:string; name:string; category:string; price?:number; image:string; description:string; badge?:string; size:string; flavor?:string | null; variantType?:string | null; isPublished?:boolean; minimumOrderQuantity?:number; promotionEnabled?:boolean; promotionDiscountPercent?:string | number | null; packagingOptions?:{id:string;label:string;unitsPerPackage:number}[]; galleryImageUrls?:string[]; };
+const mojitoSyrupImageMatches = [
+ ["milanospecial", "/product/milanospecial.png"],
+ ["tropicalorange", "/product/tropicalorange.png"],
+ ["tropicalblue", "/product/tropicalblue.png"],
+ ["passionfruit", "/product/passionfruit.png"],
+ ["watermelon", "/product/watermelon.png"],
+ ["strawberry", "/product/strawberry.png"],
+ ["pineapple", "/product/pineapple.png"],
+ ["cinnamon", "/product/cinnamon.png"],
+ ["coconut", "/product/coconut.png"],
+ ["lemon", "/product/lemon.png"],
+ ["peach", "/product/peach.png"],
+ ["mango", "/product/mango.png"],
+ ["apple", "/product/apple.png"],
+ ["kiwi", "/product/kiwi.png"],
+ ["orange", "/product/tropicalorange.png"],
+ ["special", "/product/milanospecial.png"],
+ ["tropical", "/product/tropicalblue.png"],
+ ["mint", "/product/mint.png"],
+] as const;
+
+export function getMojitoSyrupImage(
+ flavor?: string | null,
+ name?: string | null,
+ slug?: string | null,
+): string | undefined {
+ const productText = `${flavor ?? ""} ${name ?? ""} ${slug ?? ""}`
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g, "");
+ return mojitoSyrupImageMatches.find(([match]) => productText.includes(match))?.[1];
+}
+
+const mojitoSyrupImage = (flavor: string) =>
+ getMojitoSyrupImage(flavor) ?? "/images/mojitol.png";
 export const products: Product[] = [
- {id:"mint",slug:"mint-mojito-syrup",name:"Mint Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A refreshing mint-forward syrup for bright, cooling beverage creations.",badge:"Bestseller",size:"750 ml"},
- {id:"strawberry",slug:"strawberry-mojito-syrup",name:"Strawberry Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A vibrant strawberry flavor for colorful mocktails and fruit drinks.",size:"750 ml"},
- {id:"pineapple",slug:"pineapple-mojito-syrup",name:"Pineapple Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A tropical pineapple flavor for refreshing beverage recipes.",size:"750 ml"},
- {id:"mango",slug:"mango-mojito-syrup",name:"Mango Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A sunny mango flavor for tropical drinks and creative mocktails.",size:"750 ml"},
- {id:"lemon",slug:"lemon-mojito-syrup",name:"Lemon Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A bright citrus-style syrup for fresh and lively drinks.",size:"750 ml"},
- {id:"tropical",slug:"tropical-mojito-syrup",name:"Tropical Mojito Syrup",category:"Mojito Syrups",price:480,image:mojitoSyrupImage,description:"A tropical-inspired flavor for colorful signature beverages.",size:"750 ml"},
- {id:"peach",slug:"peach-mojito-syrup",name:"Peach Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A soft, fruity peach flavor for refreshing drinks.",size:"750 ml"},
- {id:"orange",slug:"orange-mojito-syrup",name:"Orange Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A lively orange flavor for colorful beverage menus.",size:"750 ml"},
- {id:"coconut",slug:"coconut-mojito-syrup",name:"Coconut Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage,description:"A tropical coconut-inspired syrup for creative drinks.",size:"750 ml"},
- {id:"special",slug:"milano-special-syrup",name:"Milano Special Syrup",category:"Mojito Syrups",price:520,image:mojitoSyrupImage,description:"A signature flavor concept from the Milano range. Confirm formulation and product details before launch.",badge:"Signature",size:"750 ml"}
+ {id:"mint",slug:"mint-mojito-syrup",name:"Mint Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Mint"),description:"A refreshing mint-forward syrup for bright, cooling beverage creations.",badge:"Bestseller",size:"750 ml"},
+ {id:"strawberry",slug:"strawberry-mojito-syrup",name:"Strawberry Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Strawberry"),description:"A vibrant strawberry flavor for colorful mocktails and fruit drinks.",size:"750 ml"},
+ {id:"pineapple",slug:"pineapple-mojito-syrup",name:"Pineapple Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Pineapple"),description:"A tropical pineapple flavor for refreshing beverage recipes.",size:"750 ml"},
+ {id:"mango",slug:"mango-mojito-syrup",name:"Mango Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Mango"),description:"A sunny mango flavor for tropical drinks and creative mocktails.",size:"750 ml"},
+ {id:"lemon",slug:"lemon-mojito-syrup",name:"Lemon Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Lemon"),description:"A bright citrus-style syrup for fresh and lively drinks.",size:"750 ml"},
+ {id:"tropical",slug:"tropical-mojito-syrup",name:"Tropical Mojito Syrup",category:"Mojito Syrups",price:480,image:mojitoSyrupImage("Tropical"),description:"A tropical-inspired flavor for colorful signature beverages.",size:"750 ml"},
+ {id:"peach",slug:"peach-mojito-syrup",name:"Peach Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Peach"),description:"A soft, fruity peach flavor for refreshing drinks.",size:"750 ml"},
+ {id:"orange",slug:"orange-mojito-syrup",name:"Orange Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Orange"),description:"A lively orange flavor for colorful beverage menus.",size:"750 ml"},
+ {id:"coconut",slug:"coconut-mojito-syrup",name:"Coconut Mojito Syrup",category:"Mojito Syrups",price:450,image:mojitoSyrupImage("Coconut"),description:"A tropical coconut-inspired syrup for creative drinks.",size:"750 ml"},
+ {id:"special",slug:"milano-special-syrup",name:"Milano Special Syrup",category:"Mojito Syrups",price:520,image:mojitoSyrupImage("Milano Special"),description:"A signature flavor concept from the Milano range. Confirm formulation and product details before launch.",badge:"Signature",size:"750 ml"}
 ];
 export const categories = [
- {name:"Mojito Syrup",category:"Mojito Syrups",slug:"mojito-syrups",description:"Choose from refreshing, fruit-inspired syrup flavors.",image:mojitoSyrupImage},
- {name:"Ice Cream Powder",category:"Ice Cream Powders",slug:"ice-cream-powders",description:"Strawberry, chocolate, mango, and vanilla in hard or soft powder.",image:"/images/milanoice.png"},
- {name:"Milkshake Powder",category:"Milkshake Powders",slug:"milkshake-powders",description:"Four flavors in 5 kg powder and 5 L liquid options.",image:"/images/milanomilk.png"}
+ {name:"Mojito Syrup",category:"Mojito Syrups",slug:"mojito-syrups",description:"Choose refreshing, fruit-inspired syrup flavors in 750 ml bottles.",image:"/images/mojitol.png"},
+ {name:"Ice Cream Powder",category:"Ice Cream Powders",slug:"ice-cream-powders",description:"Strawberry, chocolate, mango, and vanilla in hard or soft styles.",image:"/images/milanoice.png"},
+ {name:"Milkshake Powder",category:"Milkshake Powders",slug:"milkshake-powders",description:"Four flavors available in powder and liquid formats.",image:"/images/milanomilk.png"}
 ];
 export const recipes = [
  {
@@ -52,4 +85,3 @@ export const recipes = [
   steps:["Pour the cold milk into a blender.","Add one serving of Milano milkshake powder using the measurement on its package.","Blend until smooth and creamy. Add ice if you prefer a colder, thicker shake.","Pour into a chilled glass, garnish as desired, and serve immediately."]
  }
 ];
-export const money = (n:number) => `ETB ${n.toLocaleString("en-ET")}`;

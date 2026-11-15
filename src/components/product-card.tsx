@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Check } from "lucide-react";
-import { Product, money } from "@/lib/products";
-import { comparePackageSizes } from "@/lib/product-variants";
-import { calculateUnitPriceCents, decimalToCents } from "@/lib/product-pricing";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Check, X } from "lucide-react";
+import { Product } from "@/lib/products";
+import { getPreferredProductVariant } from "@/lib/product-variants";
 import { useStore } from "./store-provider";
 
 type StoreProduct = Product & {
@@ -23,69 +22,108 @@ export function ProductCard({
 }) {
   const { add } = useStore();
   const [isAdded, setIsAdded] = useState(false);
+  const [isChoiceOpen, setIsChoiceOpen] = useState(false);
+  const choiceDialogRef = useRef<HTMLDialogElement>(null);
   const productVariants = useMemo(
     () => variants?.length ? variants : [product],
     [product, variants],
   );
-  const [selectedType, setSelectedType] = useState(product.variantType || "");
-  const [selectedSize, setSelectedSize] = useState(product.size);
   const types = useMemo(
     () => Array.from(new Set(productVariants.map((item) => item.variantType).filter((value): value is string => Boolean(value)))),
     [productVariants],
   );
-  const selectedProduct =
-    productVariants.find((item) => item.variantType === selectedType && item.size === selectedSize) ||
-    productVariants[0];
-  const sizes = productVariants
-    .filter((item) => !selectedType || item.variantType === selectedType)
-    .map((item) => item.size)
-    .filter((value, index, list) => list.indexOf(value) === index)
-    .sort(comparePackageSizes);
+  const defaultProduct =
+    getPreferredProductVariant(productVariants, product.variantType) ||
+    productVariants[0] ||
+    product;
+  const getProductForType = (type: string) =>
+    getPreferredProductVariant(productVariants, type) || productVariants[0];
 
   useEffect(() => {
-    if (!productVariants.some((item) => item.variantType === selectedType && item.size === selectedSize)) {
-      setSelectedType(productVariants[0]?.variantType || "");
-      setSelectedSize(productVariants[0]?.size || "");
-    }
-  }, [productVariants, selectedSize, selectedType]);
+    const dialog = choiceDialogRef.current;
+    if (!dialog) return;
+    if (isChoiceOpen && !dialog.open) dialog.showModal();
+    else if (!isChoiceOpen && dialog.open) dialog.close();
+  }, [isChoiceOpen]);
 
-  const comingSoon = selectedProduct.isPublished === false || selectedProduct.price <= 0;
-  const minimumOrderQuantity = selectedProduct.minimumOrderQuantity || 1;
-  const unavailable =
-    comingSoon || selectedProduct.inStock === false || (selectedProduct.availableStock ?? 0) < minimumOrderQuantity;
-  const displayPrice = calculateUnitPriceCents(
-    decimalToCents(selectedProduct.price),
-    selectedProduct.promotionEnabled === true,
-    selectedProduct.promotionDiscountPercent ?? null,
-  ) / 100;
   const isDessertFamily =
-    selectedProduct.category === "Ice Cream Powders" ||
-    selectedProduct.category === "Milkshake Powders";
-  const displayName = productVariants.length > 1 && product.flavor
-    ? `${product.flavor} ${product.category === "Ice Cream Powders" ? "Ice Cream Powder" : "Milkshake"}`
-    : selectedProduct.name;
+    defaultProduct.category === "Ice Cream Powders" ||
+    defaultProduct.category === "Milkshake Powders";
+  const requiresTypeChoice = isDessertFamily && types.length > 0;
+  const displayName = isDessertFamily && product.flavor
+    ? `${product.flavor} ${defaultProduct.category === "Ice Cream Powders" ? "Ice Cream Powder" : "Milkshake"}`
+    : defaultProduct.name;
+  const isUnavailable = (candidate: StoreProduct) =>
+    candidate.isPublished === false ||
+    candidate.inStock === false ||
+    (candidate.availableStock ?? 0) < (candidate.minimumOrderQuantity || 1);
+  const typeProducts = types.map((type) => getProductForType(type));
+  const unavailable = requiresTypeChoice
+    ? typeProducts.every((candidate) => !candidate || isUnavailable(candidate))
+    : isUnavailable(defaultProduct);
+  const comingSoon = requiresTypeChoice
+    ? typeProducts.every((candidate) => candidate?.isPublished === false)
+    : defaultProduct.isPublished === false;
+  const availableAmount = requiresTypeChoice
+    ? typeProducts
+        .map((candidate, index) =>
+          candidate?.availableStock === undefined
+            ? null
+            : `${types[index]}: ${candidate.availableStock} units`,
+        )
+        .filter((amount): amount is string => amount !== null)
+        .join(" · ")
+    : defaultProduct.availableStock === undefined
+      ? ""
+      : `${defaultProduct.availableStock} individual ${
+          defaultProduct.availableStock === 1 ? "unit" : "units"
+        }`;
+
+  function addProductToCart(candidate: StoreProduct) {
+    if (isUnavailable(candidate)) return;
+    const minimumOrderQuantity = candidate.minimumOrderQuantity || 1;
+    add({
+      id: candidate.id,
+      sku: candidate.sku,
+      name: candidate.name,
+      slug: candidate.slug,
+      price: candidate.price || 0,
+      image: candidate.image,
+      size: candidate.size,
+      flavor: candidate.flavor,
+      variantType: candidate.variantType,
+      minimumOrderQuantity,
+      packagingOptions: candidate.packagingOptions,
+      promotionEnabled: candidate.promotionEnabled,
+      promotionDiscountPercent: candidate.promotionDiscountPercent,
+      availableStock: candidate.availableStock,
+      inStock: candidate.inStock,
+    }, minimumOrderQuantity);
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 1200);
+  }
 
   return (
     <article className="product-card">
       <Link
-        href={`/products/${selectedProduct.slug}`}
+        href={`/products/${defaultProduct.slug}`}
         className={`product-photo${
-          selectedProduct.category === "Mojito Syrups"
+          defaultProduct.category === "Mojito Syrups"
             ? " product-photo-bottle"
             : isDessertFamily ? " product-photo-package" : ""
         }`}
       >
         <Image
-          src={selectedProduct.image}
+          src={defaultProduct.image}
           alt={displayName}
           fill
-          unoptimized={selectedProduct.image.startsWith("http")}
+          unoptimized={defaultProduct.image.startsWith("http")}
           sizes="(max-width:480px) 44vw, (max-width:720px) 44vw, (max-width:1000px) 30vw, 22vw"
           style={{ objectFit: isDessertFamily ? "contain" : undefined }}
         />
 
-        {selectedProduct.badge && (
-          <span className="product-tag">{selectedProduct.badge}</span>
+        {defaultProduct.badge && (
+          <span className="product-tag">{defaultProduct.badge}</span>
         )}
 
         {unavailable && (
@@ -94,107 +132,38 @@ export function ProductCard({
           </span>
         )}
 
-        {selectedProduct.promotionEnabled && selectedProduct.promotionDiscountPercent && (
+        {defaultProduct.promotionEnabled && defaultProduct.promotionDiscountPercent && (
           <span className="product-tag product-tag-discount">
-            -{selectedProduct.promotionDiscountPercent}%
+            -{defaultProduct.promotionDiscountPercent}%
           </span>
         )}
       </Link>
 
       <div className="product-info">
-        <Link href={`/products/${selectedProduct.slug}`} className="product-title-link">
+        <Link href={`/products/${defaultProduct.slug}`} className="product-title-link">
           <h3>{displayName}</h3>
         </Link>
-
-        <span className="product-subtitle">
-          {selectedProduct.category}{selectedProduct.variantType ? ` · ${selectedProduct.variantType}` : ""}
-        </span>
-
-        {/* Variant pills — types */}
-        {productVariants.length > 1 && types.length > 1 && (
-          <div className="product-pills" role="radiogroup" aria-label={`${displayName} ${selectedProduct.category === "Ice Cream Powders" ? "style" : "format"}`}>
-            {types.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`product-pill${selectedType === type ? " is-active" : ""}`}
-                aria-pressed={selectedType === type}
-                onClick={() => {
-                  setSelectedType(type);
-                  const nextVariant = productVariants.find((item) => item.variantType === type);
-                  if (nextVariant) setSelectedSize(nextVariant.size);
-                }}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Variant pills — sizes */}
-        {productVariants.length > 1 && sizes.length > 1 && (
-          <div className="product-pills" role="radiogroup" aria-label={`${displayName} pack size`}>
-            {sizes.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`product-pill${selectedProduct.size === s ? " is-active" : ""}`}
-                aria-pressed={selectedProduct.size === s}
-                onClick={() => setSelectedSize(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Single size (no variants) — show as static badge */}
-        {productVariants.length <= 1 && selectedProduct.size && (
-          <span className="product-size-static">{selectedProduct.size}</span>
+        {availableAmount && (
+          <p className="product-card-units">
+            <span>Available:</span> {availableAmount}
+          </p>
         )}
 
         <div className="product-bottom">
-          <div className="product-price-block">
-            <span className="price">
-              {selectedProduct.price > 0 ? money(displayPrice) : "TBA"}
-            </span>
-            {selectedProduct.promotionEnabled && selectedProduct.promotionDiscountPercent && (
-              <small className="product-card-promotion">per unit · {selectedProduct.promotionDiscountPercent}% off</small>
-            )}
-          </div>
-
           <button
             type="button"
             className={`product-add-btn add-mini${isAdded ? " is-added" : ""}`}
             disabled={unavailable}
-            aria-label={unavailable ? (comingSoon ? "Coming soon" : "Out of stock") : `Add ${displayName} to cart`}
+            aria-label={unavailable ? (comingSoon ? "Coming soon" : "Out of stock") : requiresTypeChoice ? `Choose an option for ${displayName}` : `Add ${displayName} to cart`}
             onClick={() => {
-              if (unavailable) return;
-              add({
-                id: selectedProduct.id,
-                sku: selectedProduct.sku,
-                name: selectedProduct.name,
-                slug: selectedProduct.slug,
-                price: selectedProduct.price,
-                image: selectedProduct.image,
-                size: selectedProduct.size,
-                flavor: selectedProduct.flavor,
-                variantType: selectedProduct.variantType,
-                minimumOrderQuantity,
-                packagingOptions: selectedProduct.packagingOptions,
-                promotionEnabled: selectedProduct.promotionEnabled,
-                promotionDiscountPercent: selectedProduct.promotionDiscountPercent,
-                availableStock: selectedProduct.availableStock,
-                inStock: selectedProduct.inStock,
-              }, minimumOrderQuantity);
-              setIsAdded(true);
-              setTimeout(() => setIsAdded(false), 1200);
+              if (requiresTypeChoice) setIsChoiceOpen(true);
+              else addProductToCart(defaultProduct);
             }}
           >
             {isAdded ? (
               <>
                 <Check size={14} className="product-add-icon" strokeWidth={2.8} />
-                <span className="product-add-label">Added!</span>
+                <span className="product-add-label">Added</span>
               </>
             ) : comingSoon ? (
               <span className="product-add-label">Coming soon</span>
@@ -203,13 +172,57 @@ export function ProductCard({
             ) : (
               <>
                 <Plus size={14} className="product-add-icon" strokeWidth={2.5} />
-                <span className="product-add-label product-add-label-desktop">Add</span>
-                <span className="product-add-label product-add-label-mobile">Add to cart</span>
+                <span className="product-add-label">Add</span>
               </>
             )}
           </button>
         </div>
       </div>
+      {requiresTypeChoice && (
+        <dialog
+          ref={choiceDialogRef}
+          className="product-choice-dialog"
+          aria-labelledby={`product-choice-title-${defaultProduct.slug}`}
+          onClose={() => setIsChoiceOpen(false)}
+          onCancel={() => setIsChoiceOpen(false)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setIsChoiceOpen(false);
+          }}
+        >
+          <header className="product-choice-dialog-header">
+            <div>
+              <span className="eyebrow">
+                {defaultProduct.category === "Ice Cream Powders" ? "Choose style" : "Choose format"}
+              </span>
+              <h2 id={`product-choice-title-${defaultProduct.slug}`}>{displayName}</h2>
+            </div>
+            <button type="button" aria-label="Close" onClick={() => setIsChoiceOpen(false)}>
+              <X size={18} />
+            </button>
+          </header>
+          <div className="product-choice-options">
+            {types.map((type) => {
+              const candidate = getProductForType(type);
+              const optionUnavailable = !candidate || isUnavailable(candidate);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className="product-choice-option"
+                  disabled={optionUnavailable}
+                  onClick={() => {
+                    if (!candidate) return;
+                    setIsChoiceOpen(false);
+                    addProductToCart(candidate);
+                  }}
+                >
+                  {type}
+                </button>
+              );
+            })}
+          </div>
+        </dialog>
+      )}
     </article>
   );
 }

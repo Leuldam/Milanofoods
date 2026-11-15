@@ -290,7 +290,7 @@ export async function POST(req: NextRequest) {
             currentProduct.promotionEnabled,
             currentProduct.promotionDiscountPercent?.toString() || null,
           );
-          if (listUnitPriceCents <= 0 || unitPriceCents <= 0) {
+          if (listUnitPriceCents < 0 || unitPriceCents < 0) {
             throw new Error("INVALID_PRODUCT_PRICE");
           }
         } catch {
@@ -336,6 +336,7 @@ export async function POST(req: NextRequest) {
         where: { phone: phone.trim() },
         update: {
           name: name.trim(),
+          customerType: company ? "BUSINESS" : undefined,
           email: email || undefined,
           company: company || undefined,
           address: deliveryAddress || undefined,
@@ -348,7 +349,7 @@ export async function POST(req: NextRequest) {
           company: company || null,
           address: deliveryAddress || null,
           city: city || null,
-          customerType: "RETAIL",
+          customerType: company ? "BUSINESS" : "RETAIL",
         },
       });
 
@@ -431,6 +432,7 @@ export async function POST(req: NextRequest) {
         `Order: ${orderNumber}`,
         "",
         `Customer: ${name}`,
+        company ? `Café / restaurant / business: ${company}` : "",
         `Phone: ${phone}`,
         email ? `Email: ${email}` : "",
         `Fulfillment: ${method.toUpperCase()}`,
@@ -445,12 +447,8 @@ export async function POST(req: NextRequest) {
         "ITEMS",
         ...result.normalized.map(
           (item) =>
-              `• ${item.name} [${item.sku}]${item.size ? ` · ${item.size}` : ""}${item.flavor ? ` · ${item.flavor}` : ""} — ${item.packageQuantity} × ${item.packagingLabel} (${item.quantity} individual units) — ETB ${(
-              item.lineTotal / 100
-            ).toLocaleString("en-ET")}`
+              `• ${item.name} [${item.sku}]${item.size ? ` · ${item.size}` : ""}${item.flavor ? ` · ${item.flavor}` : ""} — ${item.packageQuantity} × ${item.packagingLabel} (${item.quantity} individual units)`
         ),
-        "",
-        `Subtotal: ETB ${result.subtotal.toLocaleString("en-ET")}`,
         "Status: PENDING CONFIRMATION",
         `Stock reserved for ${RESERVATION_MINUTES} minutes.`,
         `Notes: ${notes || "None"}`,
@@ -519,17 +517,7 @@ export async function POST(req: NextRequest) {
           unitsPerPackage: item.unitsPerPackage,
           packageQuantity: item.packageQuantity,
           quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
-          listUnitPrice: Number(item.listUnitPrice ?? item.unitPrice),
-          promotionApplied: item.promotionApplied,
-          promotionDiscountPercent: item.promotionDiscountPercent?.toString() || null,
-          lineTotal: Number(item.lineTotal),
         })),
-        subtotal: Number(result.order.subtotal),
-        deliveryFee: Number(result.order.deliveryFee),
-        total: Number(result.order.total),
-        paymentAccountName: paymentConfig?.accountName || "",
-        paymentAccountNumber: paymentConfig?.accountNumber || "",
         telegramSent,
         pushSent,
         status: "PENDING",

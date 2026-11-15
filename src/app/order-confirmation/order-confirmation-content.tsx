@@ -12,23 +12,15 @@ import {
 } from "lucide-react";
 import { gsap } from "gsap";
 import { useEffect, useRef, useState } from "react";
-import { getCartLinePrice, getCartLineTotal, getCartLineUnits, type CartLine } from "@/components/store-provider";
+import { type CartLine } from "@/components/store-provider";
 import { ProductReviewForm } from "@/components/product-review-form";
-import { money } from "@/lib/products";
 import "./order-confirmation.css";
 
 type SavedOrder = {
   orderNumber: string;
   createdAt?: string;
   cart: CartLine[];
-  subtotal: number;
-  deliveryFee?: number;
-  total?: number;
   method: "delivery" | "pickup";
-  payment: string;
-  paymentAccountName?: string;
-  paymentAccountNumber?: string;
-  paymentProofUploaded?: boolean;
   customer?: {
     name?: string;
     phone?: string;
@@ -49,9 +41,7 @@ function isSavedOrder(value: unknown): value is SavedOrder {
   return (
     typeof order.orderNumber === "string" &&
     Array.isArray(order.cart) &&
-    typeof order.subtotal === "number" &&
     (order.method === "delivery" || order.method === "pickup") &&
-    typeof order.payment === "string" &&
     (order.customer === undefined ||
       (typeof order.customer === "object" &&
         order.customer !== null &&
@@ -134,10 +124,6 @@ export function OrderConfirmationContent() {
 
   const rawOrderNumber = params.get("order") || order?.orderNumber || "";
   const receiptOrder = (order?.orderNumber === rawOrderNumber || (order?.orderNumber && rawOrderNumber && order.orderNumber.startsWith(rawOrderNumber))) ? order : null;
-  const total = receiptOrder?.total ?? receiptOrder?.subtotal ?? 0;
-  const deliveryFee = receiptOrder?.deliveryFee ?? 0;
-  const paymentAccountNumber = receiptOrder?.paymentAccountNumber || "";
-
   // Exactly 6 characters only for the order number display
   const displayOrderNumber = rawOrderNumber
     .replace(/^ORDER\s*#?/i, "")
@@ -156,7 +142,7 @@ export function OrderConfirmationContent() {
           <h1>Your order is in good hands.</h1>
           <p>
             Milano Foods has received your order request. Our team will contact
-            you to confirm availability and delivery.
+            you to confirm availability, pricing, and fulfillment details.
           </p>
           {displayOrderNumber && <div className="order-number">{displayOrderNumber}</div>}
         </div>
@@ -170,14 +156,14 @@ export function OrderConfirmationContent() {
             <div className="receipt-printer-head" aria-hidden="true">
               <div className="receipt-printer-brand">
                 <span className="receipt-printer-light" />
-                <span>MILANO FOODS <small>POINT OF SALE</small></span>
+                <span>MILANO FOODS <small>ORDER REQUEST</small></span>
                 <Printer size={16} />
               </div>
               <div className="receipt-printer-slot"><span /></div>
             </div>
             <article
               className="receipt-paper receipt-protected"
-              aria-label="Order receipt"
+              aria-label="Order request summary"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
               onDragStart={(e) => e.preventDefault()}
@@ -186,7 +172,7 @@ export function OrderConfirmationContent() {
               <header className="receipt-header">
                 <div>
                   <span className="receipt-kicker">MILANO FOODS · ETHIOPIA</span>
-                  <h2>ORDER RECEIPT</h2>
+                  <h2>ORDER REQUEST</h2>
                 </div>
                 <div className="receipt-brand-block">
                   <strong>MILANO</strong>
@@ -228,13 +214,7 @@ export function OrderConfirmationContent() {
                       {receiptOrder.fulfillment?.address && <span>{receiptOrder.fulfillment.address}</span>}
                     </>
                   )}
-                  <span>Payment: {receiptOrder.payment}</span>
-                  {receiptOrder.paymentAccountName && <span>A/C: {receiptOrder.paymentAccountName}</span>}
-                  {paymentAccountNumber && (
-                    <div className="receipt-account-info">
-                      <span>A/C No: <strong>{paymentAccountNumber}</strong></span>
-                    </div>
-                  )}
+                  <span>Pricing and availability will be confirmed by Milano</span>
                 </section>
               </div>
 
@@ -243,8 +223,6 @@ export function OrderConfirmationContent() {
                   <tr>
                     <th className="receipt-col-desc">Item</th>
                     <th className="receipt-col-qty">Qty</th>
-                    <th className="receipt-col-price">Price</th>
-                    <th className="receipt-col-amount">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -262,32 +240,10 @@ export function OrderConfirmationContent() {
                         <td className="receipt-col-qty">
                           <span>{item.qty} × {item.unitsPerPackage || 1}</span>
                         </td>
-                        <td className="receipt-col-price">
-                          <span>{money(getCartLinePrice(item))}</span>
-                        </td>
-                        <td className="receipt-col-amount">
-                          <strong>{money(getCartLineTotal(item))}</strong>
-                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={3}>Subtotal</td>
-                    <td className="receipt-col-amount">{money(receiptOrder.subtotal)}</td>
-                  </tr>
-                  <tr>
-                    <td colSpan={3}>Delivery fee</td>
-                    <td className="receipt-col-amount">{deliveryFee ? money(deliveryFee) : "TBD"}</td>
-                  </tr>
-                  <tr className="receipt-grand-total">
-                    <td colSpan={3}>TOTAL</td>
-                    <td className="receipt-col-amount">
-                      <strong>{money(total)}</strong>
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
 
               <footer className="receipt-footer">
@@ -308,7 +264,7 @@ export function OrderConfirmationContent() {
           </div>
         ) : (
           <div className="summary-card confirmation-summary">
-            <h3>Order receipt unavailable</h3>
+            <h3>Order summary unavailable</h3>
             <p>This browser session does not have the saved order details. Keep your order number and contact Milano Foods if you need a copy.</p>
           </div>
         )}
@@ -317,7 +273,7 @@ export function OrderConfirmationContent() {
           <div className="confirmation-actions">
             {receiptOrder && (
               <button type="button" className="btn receipt-download" onClick={() => window.print()}>
-                <Download size={15}/> Download receipt
+                <Download size={15}/> Download order summary
               </button>
             )}
             <Link href="/products" className="btn btn-outline">
@@ -328,7 +284,7 @@ export function OrderConfirmationContent() {
             </Link>
           </div>
           <p className="confirmation-reference">
-            Choose “Save as PDF” in the print dialog to download a copy of your receipt.
+            Choose “Save as PDF” in the print dialog to download a copy of your order summary.
           </p>
         </div>
       </section>

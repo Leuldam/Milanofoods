@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
       packagingOptions,
     } = data;
 
-    if (!name || !sku || !slug || !categoryId || price === undefined) {
+    if (!name || !sku || !slug || !categoryId) {
       return NextResponse.json(
-        { error: "Name, SKU, Slug, Category, and Price are required." },
+        { error: "Name, SKU, Slug, and Category are required." },
         { status: 400 }
       );
     }
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
           sku: sku.trim().toUpperCase(),
           slug: slug.trim().toLowerCase(),
           categoryId,
-          price,
+          price: price ?? 0,
           description: description || null,
           imageUrl: imageUrl || null,
           size: size || null,

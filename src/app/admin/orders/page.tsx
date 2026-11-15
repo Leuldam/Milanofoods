@@ -23,7 +23,7 @@ export default function AdminOrdersPage() {
   const [city, setCity] = useState("Addis Ababa");
   const [fulfillment, setFulfillment] = useState("DELIVERY");
   const [orderSource, setOrderSource] = useState("MANUAL_PHONE");
-  const [orderItems, setOrderItems] = useState<{ productId: string; quantity: number; unitPrice: number; packagingLabel: string }[]>([]);
+  const [orderItems, setOrderItems] = useState<{ productId: string; quantity: number; packagingLabel: string }[]>([]);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [orderNotes, setOrderNotes] = useState("");
 
@@ -85,7 +85,6 @@ export default function AdminOrdersPage() {
       setOrderItems([{
         productId: products[0].id,
         quantity: 1,
-        unitPrice: Number(products[0].price),
         packagingLabel: products[0].packagingOptions?.[0]?.label || "Single unit",
       }]);
     } else {
@@ -104,7 +103,6 @@ export default function AdminOrdersPage() {
       {
         productId: p.id,
         quantity: 1,
-        unitPrice: Number(p.price),
         packagingLabel: p.packagingOptions?.[0]?.label || "Single unit",
       },
     ]);
@@ -303,7 +301,6 @@ export default function AdminOrdersPage() {
               <th style={{ padding: "14px 16px" }}>Order</th>
               <th style={{ padding: "14px 16px" }}>Customer</th>
               <th style={{ padding: "14px 16px" }}>Items &amp; Details</th>
-              <th style={{ padding: "14px 16px" }}>Total (ETB)</th>
               <th style={{ padding: "14px 16px" }}>Payment</th>
               <th style={{ padding: "14px 16px" }}>Status</th>
               <th style={{ padding: "14px 16px", textAlign: "right" }}>Actions</th>
@@ -311,10 +308,10 @@ export default function AdminOrdersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <AdminTableLoading colSpan={7} label="Loading orders..." />
+              <AdminTableLoading colSpan={6} label="Loading orders..." />
             ) : filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
+                <td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
                   No orders found.
                 </td>
               </tr>
@@ -334,9 +331,6 @@ export default function AdminOrdersPage() {
                   </td>
                   <td style={{ padding: "14px 16px", fontSize: "12px", color: "#515B54", maxWidth: "260px" }}>
                     {o.items?.map((it) => `${it.productName} (${it.quantity})`).join(", ")}
-                  </td>
-                  <td style={{ padding: "14px 16px", fontWeight: 800, color: "#073D2E", fontSize: "14px" }}>
-                    ETB {Number(o.total).toLocaleString()}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
                     <span style={{
@@ -402,7 +396,6 @@ export default function AdminOrdersPage() {
             </div>
             <p className="admin-order-mobile-items">{order.items?.map((item) => `${item.productName} × ${item.quantity}`).join(", ") || "No item details"}</p>
             <div className="admin-order-mobile-footer">
-              <span>ETB {Number(order.total).toLocaleString()}</span>
               <span className={`admin-order-payment payment-${(order.paymentStatus || "UNPAID").toLowerCase()}`}>{(order.paymentStatus || "UNPAID").replace("_", " ")}</span>
             </div>
             <button type="button" className="admin-workflow-button admin-order-mobile-update" onClick={() => openStatusModal(order)}>
@@ -528,13 +521,13 @@ export default function AdminOrdersPage() {
                           const p = products.find((prod) => prod.id === e.target.value);
                           const updated = [...orderItems];
                           updated[idx].productId = e.target.value;
-                          updated[idx].unitPrice = p ? Number(p.price) : 0;
+                          updated[idx].packagingLabel = p?.packagingOptions?.[0]?.label || "Single unit";
                           setOrderItems(updated);
                         }}
                         style={{ flex: 3, height: "36px", padding: "0 8px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "12px" }}
                       >
                         {products.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name} (ETB {Number(p.price)})</option>
+                          <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                       </select>
                       <input
@@ -548,9 +541,6 @@ export default function AdminOrdersPage() {
                         }}
                         style={{ width: "80px", height: "36px", padding: "0 8px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "12px" }}
                       />
-                      <span style={{ fontSize: "12px", fontWeight: 700, width: "100px", textAlign: "right", color: "#073D2E" }}>
-                        ETB {(item.unitPrice * item.quantity).toLocaleString()}
-                      </span>
                     </div>
                   ))}
                 </div>

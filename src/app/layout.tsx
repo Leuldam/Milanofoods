@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { StoreProvider } from "@/components/store-provider";
 import { LocalizationProvider } from "@/components/localization-provider";
-import { SiteHeader, SiteFooter, SiteAnnouncement } from "@/components/site-chrome";
+import { SiteHeader, SiteFooter, SiteWhatsApp } from "@/components/site-chrome";
 
 export const metadata: Metadata = {
   title: { default: "Milano Foods Ethiopia | Syrups, Ice Cream & Milkshake Products", template: "%s | Milano Foods Ethiopia" },
@@ -77,5 +77,5 @@ const structuredData = [
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning><body><LocalizationProvider><StoreProvider><SiteAnnouncement /><SiteHeader />{children}<SiteFooter /></StoreProvider></LocalizationProvider>{structuredData.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />)}</body></html>;
+  return <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning><body><LocalizationProvider><StoreProvider><SiteHeader />{children}<SiteFooter /><SiteWhatsApp /></StoreProvider></LocalizationProvider>{structuredData.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />)}</body></html>;
 }

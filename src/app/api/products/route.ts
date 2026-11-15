@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { releaseExpiredReservations } from "@/lib/stock-reservations";
 import { getProductGalleryImageUrls, getProductImageUrl } from "@/lib/product-images";
+import { getMojitoSyrupImage } from "@/lib/products";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,10 +29,20 @@ export async function GET() {
         0,
         product.stock - product.reservedStock
       );
-      const price = Number(product.price);
       const minimumOrderQuantity = product.minimumOrderQuantity;
-      const promotionDiscountPercent = product.promotionDiscountPercent?.toString() || null;
-      const galleryImageUrls = getProductGalleryImageUrls(
+      const mojitoImage = product.category.slug === "mojito-syrups"
+        ? getMojitoSyrupImage(product.flavor, product.name, product.slug)
+        : undefined;
+      const storedImage = getProductImageUrl(
+        product.imageUrl,
+        product.id,
+        product.updatedAt,
+        product.category.imageUrl,
+        product.category.id,
+        product.category.slug,
+        product.category.updatedAt,
+      );
+      const databaseGalleryImageUrls = getProductGalleryImageUrls(
         product.imageUrl,
         product.galleryImageUrls,
         product.id,
@@ -41,6 +52,10 @@ export async function GET() {
         product.category.slug,
         product.category.updatedAt,
       );
+      const image = mojitoImage || storedImage || "/images/milano-mint-bottle-cutout.png";
+      const galleryImageUrls = mojitoImage
+        ? [mojitoImage, ...databaseGalleryImageUrls.filter((galleryImage) => galleryImage !== storedImage)]
+        : databaseGalleryImageUrls;
 
       return {
         id: product.slug,
@@ -50,38 +65,15 @@ export async function GET() {
         name: product.name,
         category: product.category.name,
         categorySlug: product.category.slug,
-        price,
         minimumOrderQuantity,
-        promotionEnabled: product.promotionEnabled,
-        promotionDiscountPercent,
         packagingOptions: product.packagingOptions.map((option) => ({
           id: option.id,
           label: option.label,
           unitsPerPackage: option.unitsPerPackage,
         })),
         galleryImageUrls,
-        image:
-          getProductImageUrl(
-            product.imageUrl,
-            product.id,
-            product.updatedAt,
-            product.category.imageUrl,
-            product.category.id,
-            product.category.slug,
-            product.category.updatedAt,
-          ) ||
-          "/images/milano-mint-bottle-cutout.png",
-        imageUrl:
-          getProductImageUrl(
-            product.imageUrl,
-            product.id,
-            product.updatedAt,
-            product.category.imageUrl,
-            product.category.id,
-            product.category.slug,
-            product.category.updatedAt,
-          ) ||
-          "/images/milano-mint-bottle-cutout.png",
+        image,
+        imageUrl: image,
         description: product.description || "",
         badge: product.badge || undefined,
         size: product.size || "",
@@ -91,7 +83,7 @@ export async function GET() {
         reservedStock: product.reservedStock,
         availableStock,
         isPublished: product.isPublished,
-        inStock: product.isPublished && price > 0 && availableStock >= minimumOrderQuantity,
+        inStock: product.isPublished && availableStock >= minimumOrderQuantity,
       };
     });
 

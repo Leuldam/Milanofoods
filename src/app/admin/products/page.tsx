@@ -29,17 +29,17 @@ export default function AdminProductsPage() {
     sku: "",
     slug: "",
     categoryId: "",
-    price: "",
     size: "",
     flavor: "",
     variantType: "",
     badge: "",
     minimumOrderQuantity: 1,
     stock: 0,
-    isPublished: true,
+    isPublished: false,
     isActive: true,
     description: "",
     packagingOptions: [
+      { label: "Carton (12 units)", unitsPerPackage: 12, isEnabled: true },
       { label: "Carton (6 units)", unitsPerPackage: 6, isEnabled: true },
       { label: "Carton (3 units)", unitsPerPackage: 3, isEnabled: true },
     ],
@@ -81,17 +81,17 @@ export default function AdminProductsPage() {
       sku: "",
       slug: "",
       categoryId: categories[0]?.id || "",
-      price: "",
       size: "750 ml",
       flavor: "",
       variantType: "",
       badge: "Signature",
       minimumOrderQuantity: 1,
       stock: 0,
-      isPublished: true,
+      isPublished: false,
       isActive: true,
       description: "",
       packagingOptions: [
+        { label: "Carton (12 units)", unitsPerPackage: 12, isEnabled: true },
         { label: "Carton (6 units)", unitsPerPackage: 6, isEnabled: true },
         { label: "Carton (3 units)", unitsPerPackage: 3, isEnabled: true },
       ],
@@ -108,7 +108,6 @@ export default function AdminProductsPage() {
       sku: prod.sku,
       slug: prod.slug,
       categoryId: prod.categoryId,
-      price: Number(prod.price),
       stock: prod.stock,
       size: prod.size || "",
       flavor: prod.flavor || "",
@@ -119,6 +118,7 @@ export default function AdminProductsPage() {
       isActive: prod.isActive,
       description: prod.description || "",
       packagingOptions: prod.packagingOptions?.length > 0 ? prod.packagingOptions : [
+        { label: "Carton (12 units)", unitsPerPackage: 12, isEnabled: true },
         { label: "Carton (6 units)", unitsPerPackage: 6, isEnabled: true },
       ],
     });
@@ -284,7 +284,6 @@ export default function AdminProductsPage() {
             <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E1D5", color: "#777C75", fontWeight: 700, fontSize: "11px", textTransform: "uppercase" }}>
               <th style={{ padding: "14px 16px" }}>Product</th>
               <th style={{ padding: "14px 16px" }}>Category</th>
-              <th style={{ padding: "14px 16px" }}>Retail Price</th>
               <th style={{ padding: "14px 16px" }}>Stock (Available)</th>
               <th style={{ padding: "14px 16px" }}>Packaging</th>
               <th style={{ padding: "14px 16px" }}>Status</th>
@@ -293,10 +292,10 @@ export default function AdminProductsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <AdminTableLoading colSpan={7} label="Loading products..." />
+              <AdminTableLoading colSpan={6} label="Loading products..." />
             ) : filteredProducts.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
+                <td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#777C75" }}>
                   No products found.
                 </td>
               </tr>
@@ -313,9 +312,6 @@ export default function AdminProductsPage() {
                     </td>
                     <td style={{ padding: "14px 16px", color: "#515B54" }}>
                       {p.category?.name || "Uncategorized"}
-                    </td>
-                    <td style={{ padding: "14px 16px", fontWeight: 800, color: "#17251F" }}>
-                      ETB {Number(p.price).toLocaleString()}
                     </td>
                     <td style={{ padding: "14px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -411,7 +407,6 @@ export default function AdminProductsPage() {
               </div>
               <div className="admin-product-mobile-meta">
                 <span>{product.category?.name || "Uncategorized"}</span>
-                <strong>ETB {Number(product.price).toLocaleString()}</strong>
                 <span>{available} available{product.reservedStock > 0 ? ` · ${product.reservedStock} reserved` : ""}</span>
               </div>
               <div className="admin-product-mobile-actions">
@@ -495,29 +490,15 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#17251F", marginBottom: "4px" }}>Retail Price (ETB) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="520.00"
-                    style={{ width: "100%", height: "40px", padding: "0 12px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#17251F", marginBottom: "4px" }}>Size / Unit</label>
-                  <input
-                    type="text"
-                    value={formData.size}
-                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                    placeholder="e.g. 750 ml or 1 kg"
-                    style={{ width: "100%", height: "40px", padding: "0 12px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px" }}
-                  />
-                </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#17251F", marginBottom: "4px" }}>Size / Unit</label>
+                <input
+                  type="text"
+                  value={formData.size}
+                  onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                  placeholder="e.g. 750 ml or 1 kg"
+                  style={{ width: "100%", height: "40px", padding: "0 12px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px" }}
+                />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>

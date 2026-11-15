@@ -77,14 +77,6 @@ export default async function ProductLayout({
       product.category.slug,
       product.category.updatedAt,
     ) || "/images/milanoshowcase.png";
-  const stockAvailable =
-    product.price.toNumber() > 0 &&
-    product.stock - product.reservedStock >= product.minimumOrderQuantity;
-  const discount = product.promotionDiscountPercent?.toNumber() ?? 0;
-  const price =
-    product.promotionEnabled && discount > 0 && discount < 100
-      ? product.price.toNumber() * (1 - discount / 100)
-      : product.price.toNumber();
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -96,19 +88,6 @@ export default async function ProductLayout({
     category: product.category.name,
     image: [new URL(image, siteUrl).toString()],
     brand: { "@type": "Brand", name: "Milano Foods" },
-    offers: {
-      "@type": "Offer",
-      url: new URL(`/products/${product.slug}`, siteUrl).toString(),
-      priceCurrency: "ETB",
-      price: price.toFixed(2),
-      availability: `https://schema.org/${stockAvailable ? "InStock" : "OutOfStock"}`,
-      itemCondition: "https://schema.org/NewCondition",
-      seller: {
-        "@type": "Organization",
-        name: "Milano Foods",
-        url: siteUrl,
-      },
-    },
   };
 
   return (

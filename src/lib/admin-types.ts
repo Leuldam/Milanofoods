@@ -240,7 +240,6 @@ export interface AdminProductForm {
   sku: string;
   slug: string;
   categoryId: string;
-  price: string | number;
   size: string;
   flavor: string;
   variantType: string;

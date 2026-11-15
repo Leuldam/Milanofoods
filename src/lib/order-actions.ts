@@ -157,8 +157,6 @@ export async function updatePendingOrder(
   const pickupLocation = typeof data.pickupLocation === "string" ? data.pickupLocation.trim() : "";
   const paymentPreference = typeof data.paymentPreference === "string" ? data.paymentPreference.trim() : "";
   const notes = typeof data.notes === "string" ? data.notes.trim() : "";
-  const deliveryFeeValue = Number(data.deliveryFee);
-  const deliveryFeeCents = Math.round(deliveryFeeValue * 100);
   const rawItems = data.items;
 
   if (
@@ -171,9 +169,6 @@ export async function updatePendingOrder(
     (fulfillment === "PICKUP" && (!pickupLocation || pickupLocation.length > 250)) ||
     !paymentPreference || paymentPreference.length > 80 ||
     notes.length > 500 ||
-    !Number.isFinite(deliveryFeeValue) || deliveryFeeValue < 0 ||
-    deliveryFeeValue > 1_000_000_000 ||
-    Math.abs(deliveryFeeCents / 100 - deliveryFeeValue) > 0.000001 ||
     !Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50
   ) {
     throw new Error("INVALID_ORDER_EDIT");
@@ -187,34 +182,21 @@ export async function updatePendingOrder(
     const unitsPerPackage = Number(item.unitsPerPackage ?? 1);
     const packageQuantity = Number(item.packageQuantity ?? quantity);
     const packagingLabel = typeof item.packagingLabel === "string" ? item.packagingLabel.trim() : "Single unit";
-    const unitPriceValue = Number(item.unitPrice);
-    const unitPriceCents = Math.round(unitPriceValue * 100);
     if (
       !productId || productId.length > 150 ||
       !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000 ||
       !Number.isSafeInteger(unitsPerPackage) || unitsPerPackage < 1 || unitsPerPackage > 1000 ||
       !Number.isSafeInteger(packageQuantity) || packageQuantity < 1 || packageQuantity > 100_000 ||
       packageQuantity * unitsPerPackage !== quantity ||
-      !packagingLabel || packagingLabel.length > 80 ||
-      !Number.isFinite(unitPriceValue) || unitPriceValue <= 0 ||
-      unitPriceValue > 1_000_000_000 ||
-      Math.abs(unitPriceCents / 100 - unitPriceValue) > 0.000001
+      !packagingLabel || packagingLabel.length > 80
     ) {
       throw new Error("INVALID_ORDER_EDIT");
     }
-    return { productId, quantity, unitsPerPackage, packageQuantity, packagingLabel, unitPriceCents };
+    return { productId, quantity, unitsPerPackage, packageQuantity, packagingLabel };
   });
 
   if (new Set(items.map((item) => item.productId)).size !== items.length) {
     throw new Error("DUPLICATE_ORDER_PRODUCT");
-  }
-
-  const subtotalCents = items.reduce(
-    (total, item) => total + item.quantity * item.unitPriceCents,
-    0,
-  );
-  if (subtotalCents + deliveryFeeCents > 999_999_999_999) {
-    throw new Error("ORDER_TOTAL_TOO_LARGE");
   }
 
   return prisma.$transaction(async (tx) => {
@@ -233,6 +215,9 @@ export async function updatePendingOrder(
     if (!isPhysicalStockDeducted && (!order.reservationExpiresAt || order.reservationExpiresAt <= new Date())) {
       throw new Error("ORDER_RESERVATION_EXPIRED");
     }
+    const deliveryFeeCents = fulfillment === "PICKUP"
+      ? 0
+      : Math.round(Number(order.deliveryFee) * 100);
 
     const previousQuantities = new Map<string, number>();
     for (const item of order.items) {
@@ -253,12 +238,18 @@ export async function updatePendingOrder(
 
     const products = await tx.product.findMany({
       where: { id: { in: items.map((item) => item.productId) } },
-      select: { id: true, sku: true, name: true, size: true, flavor: true, variantType: true, stock: true, reservedStock: true, isActive: true, isPublished: true },
+      select: { id: true, sku: true, name: true, size: true, flavor: true, variantType: true, price: true, stock: true, reservedStock: true, isActive: true, isPublished: true },
     });
     const productsById = new Map(products.map((product) => [product.id, product]));
     const normalizedItems = items.map((item) => {
       const product = productsById.get(item.productId);
       if (!product) throw new Error("ORDER_PRODUCT_NOT_FOUND");
+      const previousItem = order.items.find((existing) => existing.productId === item.productId);
+      const unitPrice = Number(previousItem?.unitPrice ?? product.price);
+      const listUnitPrice = Number(previousItem?.listUnitPrice ?? unitPrice);
+      if (!Number.isFinite(unitPrice) || unitPrice < 0 || !Number.isFinite(listUnitPrice) || listUnitPrice < 0) {
+        throw new Error("INVALID_ORDER_EDIT");
+      }
       const previousQuantity = previousQuantities.get(product.id) ?? 0;
       if ((!product.isActive || !product.isPublished) && item.quantity > previousQuantity) {
         throw new Error(`ORDER_PRODUCT_UNAVAILABLE:${product.name}`);
@@ -274,13 +265,19 @@ export async function updatePendingOrder(
         unitsPerPackage: item.unitsPerPackage,
         packageQuantity: item.packageQuantity,
         quantity: item.quantity,
-        unitPrice: (item.unitPriceCents / 100).toFixed(2),
-        listUnitPrice: (item.unitPriceCents / 100).toFixed(2),
-        promotionApplied: false,
-        promotionDiscountPercent: null,
-        lineTotal: ((item.quantity * item.unitPriceCents) / 100).toFixed(2),
+        unitPrice: unitPrice.toFixed(2),
+        listUnitPrice: listUnitPrice.toFixed(2),
+        promotionApplied: previousItem?.promotionApplied ?? false,
+        promotionDiscountPercent: previousItem?.promotionDiscountPercent ?? null,
+        lineTotal: (item.quantity * unitPrice).toFixed(2),
       };
     });
+    const subtotalCents = Math.round(
+      normalizedItems.reduce((sum, item) => sum + Number(item.lineTotal) * 100, 0),
+    );
+    if (subtotalCents + deliveryFeeCents > 999_999_999_999) {
+      throw new Error("ORDER_TOTAL_TOO_LARGE");
+    }
 
     for (const productId of productIds) {
       const product = productsById.get(productId) ?? await tx.product.findUnique({
@@ -377,8 +374,6 @@ export async function updatePendingOrder(
     });
 
     return {
-      previousTotal: Number(order.total),
-      total: Number(total),
       itemCount: items.reduce((count, item) => count + item.quantity, 0),
       products: normalizedItems.map((item) => `${item.productName} × ${item.quantity}`),
     };

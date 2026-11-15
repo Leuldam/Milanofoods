@@ -3,11 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Play, Leaf, Sparkles, HeartHandshake } from "lucide-react";
-import { recipes } from "@/lib/products";
+import { ArrowRight } from "lucide-react";
 import { FeaturedProductsCarousel } from "./featured-products-carousel";
 
 type StoreCategory = { id: string; name: string; slug: string; description: string; imageUrl: string | null };
+
+const familyDescriptions: Record<string, string> = {
+  "ice-cream-powders": "Choose strawberry, chocolate, mango, or vanilla in hard or soft powder and 1 kg, 2 kg, 3 kg, or 5 kg packs.",
+  "milkshake-powders": "Choose strawberry, chocolate, vanilla, or mango milkshake powder (5 kg) or liquid (5 L).",
+  "mojito-syrups": "Bright, fruit-inspired flavors for refreshing drinks.",
+};
+
+const recipeProducts = [
+  { name: "Mojito Syrup", image: "/images/mojitol.png", href: "/products?category=mojito-syrups" },
+  { name: "Ice Cream Powder", image: "/images/milanoice.png", href: "/products?category=ice-cream-powders" },
+  { name: "Milkshake Powder", image: "/images/milanomilk.png", href: "/products?category=milkshake-powders" },
+];
 
 export function CategorySection() {
   const [items, setItems] = useState<StoreCategory[]>([]);
@@ -28,22 +39,119 @@ export function CategorySection() {
     return () => { active = false; };
   }, []);
 
-  return <section className="section family-section"><div className="wrap"><div className="section-head"><div><span className="eyebrow">The Milano collection</span><h2>Product families</h2><p>Choose a product family to explore its flavors, styles, and pack sizes.</p></div><Link href="/products" className="text-link">View all products <ArrowRight size={15}/></Link></div><div className="category-grid">{items.map((category) => {
-    const name = category.slug === "mojito-syrups"
-      ? "Mojito Syrup"
-      : category.slug === "ice-cream-powders"
-        ? "Ice Cream Powder"
-        : category.slug === "milkshake-powders"
-          ? "Milkshake Powder"
-          : category.name;
-    return <Link className={`category-card family-category-card${category.slug === "mojito-syrups" ? " category-card-bottle" : ""}`} href={`/products?category=${encodeURIComponent(category.name)}`} key={category.id}>
-      <span className="family-category-image"><Image src={category.imageUrl || "/images/milano-mint-bottle-cutout.png"} alt="" fill sizes="(max-width:720px) 92px, 33vw"/></span>
-      <span className="family-category-name">{name}</span>
-      <div className="category-overlay"><h3>{name}</h3><p>{category.description}</p><span className="text-link">Explore collection <ArrowRight size={14}/></span></div>
-    </Link>;
-  })}</div></div></section>;
+  return (
+    <section className="section family-section">
+      <div className="wrap">
+        <div className="section-head home-catalog-head">
+          <div><h2>Product families</h2></div>
+          <Link href="/products" className="text-link" aria-label="View all products" title="View all products"><ArrowRight size={16} aria-hidden="true" /></Link>
+        </div>
+        <div className="family-range-grid">
+          {items.map((category) => {
+            const name = category.slug === "mojito-syrups"
+              ? "Mojito Syrup"
+              : category.slug === "ice-cream-powders"
+                ? "Ice Cream Powder"
+                : category.slug === "milkshake-powders"
+                  ? "Milkshake Powder"
+                  : category.name;
+            const description = familyDescriptions[category.slug] || category.description;
+
+            return (
+              <Link
+                className="family-range-card"
+                href={`/products?category=${encodeURIComponent(category.name)}`}
+                key={category.id}
+              >
+                <span className="family-range-image">
+                  <Image
+                    src={category.imageUrl || "/images/milano-mint-bottle-cutout.png"}
+                    alt=""
+                    fill
+                    sizes="(max-width: 720px) 82vw, (max-width: 1000px) 45vw, 33vw"
+                  />
+                </span>
+                <span className="family-range-copy">
+                  <span className="family-range-name">{name}</span>
+                  <span className="family-range-description">{description}</span>
+                  <span className="family-range-action">Explore collection <ArrowRight size={15} aria-hidden="true" /></span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 }
-export function FeaturedProducts(){return <section className="section" style={{background:"#fffdf9"}}><div className="wrap"><div className="section-head"><div><span className="eyebrow">Customer favorites</span><h2>Popular products</h2><p>Explore the flavors customers reach for when creating their signature drinks and desserts.</p></div><Link href="/products" className="text-link">Shop the collection <ArrowRight size={15}/></Link></div><FeaturedProductsCarousel /></div></section>}
-export function RecipeFeature(){const r=recipes[0];return <section className="section"><div className="wrap"><div className="recipe-feature"><div className="recipe-feature-image" style={{backgroundImage:`url(${r.image})`}}><span className="play-button"><Play fill="currentColor" size={20}/></span></div><div className="recipe-feature-copy"><span className="eyebrow">From the Milano kitchen</span><h2>Create something delicious.</h2><p>Find fresh inspiration for drinks and desserts, with simple preparation ideas and recipe videos featuring the Milano range.</p><Link href="/recipes" className="btn">Explore recipes <ArrowRight size={16}/></Link></div></div></div></section>}
-export function AboutPreview(){return <section className="section-sm"><div className="wrap"><div className="section-head"><div><span className="eyebrow">A little about Milano</span><h2>Flavor brings us together.</h2><p>Milano Foods brings together a versatile range of syrups and dessert powders designed to inspire delicious moments at home and in professional kitchens.</p></div><Link href="/about" className="btn btn-outline">Our story <ArrowRight size={15}/></Link></div><div className="value-row"><div className="value"><Leaf color="#c99a4a"/><h3>Made for creativity</h3><p>Explore a range of flavors and discover new ways to create memorable drinks and desserts.</p></div><div className="value"><Sparkles color="#c99a4a"/><h3>A range of possibilities</h3><p>From fruit-forward drinks to creamy frozen treats, find inspiration for different occasions.</p></div><div className="value"><HeartHandshake color="#c99a4a"/><h3>For every kind of kitchen</h3><p>Discover products for home use, cafés, restaurants, and food-service businesses.</p></div></div></div></section>}
-export function BusinessBanner(){return <section className="section-sm"><div className="wrap"><div className="business-banner"><div className="business-copy"><span className="eyebrow">For cafés, restaurants & more</span><h2>Better flavors for your business.</h2><p>Join the loyal cafés and restaurants choosing Milano for their menus. We serve customers in Addis Ababa and send products across Ethiopia.</p><Link href="/contact" className="btn btn-gold">Business inquiries <ArrowRight size={15}/></Link></div><div className="business-image"><Image src="/images/milanoshowcase.png" alt="Milano Foods syrups and dessert products" fill sizes="(max-width: 860px) 100vw, 50vw"/></div></div></div></section>}
+export function FeaturedProducts(){return <section className="section" style={{background:"#fffdf9"}}><div className="wrap"><div className="section-head home-catalog-head"><div><h2>Popular products</h2></div><Link href="/products" className="text-link" aria-label="Shop the collection" title="Shop the collection"><ArrowRight size={16} aria-hidden="true"/></Link></div><FeaturedProductsCarousel /></div></section>}
+export function RecipeFeature() {
+  return (
+    <section className="section">
+      <div className="wrap">
+        <article className="recipe-feature">
+          <div className="recipe-feature-image" role="group" aria-label="Milano products featured in recipes">
+            {recipeProducts.map((product) => (
+              <Link className="recipe-feature-product" href={product.href} key={product.name}>
+                <span className="recipe-feature-product-image">
+                  <Image src={product.image} alt="" fill sizes="(max-width: 720px) 28vw, 20vw" loading="eager" />
+                </span>
+                <span className="recipe-feature-product-name">{product.name}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="recipe-feature-copy">
+            <span className="eyebrow">Make something memorable</span>
+            <h2>Create something delicious.</h2>
+            <p>Simple drink and dessert recipes featuring Milano products.</p>
+            <Link href="/recipes" className="btn">
+              Explore recipes <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+export function AboutPreview() {
+  return (
+    <section className="section-sm about-preview-section">
+      <div className="wrap">
+        <div className="about-preview-head">
+          <div>
+            <h2>Made for your menu.</h2>
+            <p>Milano syrups and dessert mixes for home kitchens, cafés, and restaurants.</p>
+          </div>
+          <Link href="/products" className="btn btn-outline">
+            Explore flavors <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="about-preview-grid">
+          <article className="about-preview-card">
+            <span className="about-preview-label">Drinks</span>
+            <div>
+              <h3>Mix a better drink</h3>
+              <p>Mojito syrups for mocktails, lemonades, and café menus.</p>
+            </div>
+          </article>
+          <article className="about-preview-card">
+            <span className="about-preview-label">Desserts</span>
+            <div>
+              <h3>Build your dessert menu</h3>
+              <p>Hard and soft ice-cream powders, plus milkshake mixes.</p>
+            </div>
+          </article>
+          <article className="about-preview-card">
+            <span className="about-preview-label">Business</span>
+            <div>
+              <h3>Order by the carton</h3>
+              <p>Business orders are packed in 12 units per flavour.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
+}
+export function BusinessBanner(){return <section className="section-sm"><div className="wrap"><div className="business-banner"><div className="business-copy"><h2>Better flavors for your business.</h2><p>Milano supplies cafés and restaurants in Addis Ababa and across Ethiopia.</p><Link href="/contact" className="btn btn-gold">Business inquiries <ArrowRight size={15}/></Link></div><div className="business-image"><Image src="/images/milanoshowcase.png" alt="Milano Foods syrups and dessert products" fill sizes="(max-width: 860px) 100vw, 50vw"/></div></div></div></section>}

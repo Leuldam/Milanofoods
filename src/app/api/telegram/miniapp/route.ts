@@ -42,7 +42,6 @@ const actionPermissions: Record<string, PermissionKey> = {
   "order-status-update": "orders_update",
   "review-approve": "products_manage",
   "review-reject": "products_manage",
-  "update-price": "products_manage",
   restock: "inventory_receive",
   "set-out-of-stock": "inventory_adjust",
 };
@@ -119,7 +118,6 @@ export async function GET(request: NextRequest) {
             category: true,
             packagingOptions: { orderBy: { unitsPerPackage: "asc" } },
             stockMovements: { orderBy: { createdAt: "desc" }, take: 20 },
-            priceChanges: { orderBy: { createdAt: "desc" }, take: 20 },
           },
           orderBy: { name: "asc" },
         }),
@@ -209,21 +207,12 @@ export async function GET(request: NextRequest) {
         size: product.size,
         flavor: product.flavor,
         variantType: product.variantType,
-        price: Number(product.price),
         minimumOrderQuantity: product.minimumOrderQuantity,
-        promotionEnabled: product.promotionEnabled,
-        promotionDiscountPercent: product.promotionDiscountPercent?.toString() || null,
         packagingOptions: product.packagingOptions.map((option) => ({
           id: option.id,
           label: option.label,
           unitsPerPackage: option.unitsPerPackage,
           isEnabled: option.isEnabled,
-        })),
-        priceChanges: product.priceChanges.map((change) => ({
-          id: change.id,
-          previousPrice: Number(change.previousPrice),
-          newPrice: Number(change.newPrice),
-          createdAt: change.createdAt.toISOString(),
         })),
         stock: product.stock,
         reservedStock: product.reservedStock,
@@ -257,6 +246,7 @@ export async function GET(request: NextRequest) {
       })),
       orders: orders.map((order) => ({
         orderNumber: order.orderNumber,
+        source: order.source,
         customerName: order.customerName,
         customerPhone: order.customerPhone,
         customerEmail: order.customerEmail,
@@ -268,15 +258,11 @@ export async function GET(request: NextRequest) {
         paymentPreference: order.paymentPreference,
         hasPaymentProof: Boolean(order.paymentProof),
         notes: order.notes,
-        deliveryFee: Number(order.deliveryFee),
-        total: Number(order.total),
         status: order.status,
         items: order.items.map((item) => ({
           id: item.id,
           productId: item.productId,
           sku: item.productSku || "",
-          promotionApplied: item.promotionApplied,
-          promotionDiscountPercent: item.promotionDiscountPercent?.toString() || null,
           name: item.productName,
           size: item.productSize,
           flavor: item.productFlavor,
@@ -285,9 +271,6 @@ export async function GET(request: NextRequest) {
           unitsPerPackage: item.unitsPerPackage,
           packageQuantity: item.packageQuantity,
           quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
-          listUnitPrice: item.listUnitPrice === null ? Number(item.unitPrice) : Number(item.listUnitPrice),
-          lineTotal: Number(item.lineTotal),
         })),
         itemCount: order.items.reduce((count, item) => count + item.quantity, 0),
         createdAt: order.createdAt.toISOString(),
@@ -519,7 +502,7 @@ export async function POST(request: NextRequest) {
       ].join("\n"));
       return NextResponse.json({
         ok: true,
-        message: `${product.name} added as hidden. Set its price and stock, then publish when ready.`,
+        message: `${product.name} added as hidden. Add stock, then publish when ready.`,
         telegramNotified,
       });
     }
@@ -549,7 +532,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Select an active category before moving this product." }, { status: 400 });
       }
 
-      const configuration = getProductConfiguration(body);
+      const configuration = getProductConfiguration({
+        ...body,
+        promotionEnabled: body.promotionEnabled ?? product.promotionEnabled,
+        promotionDiscountPercent: body.promotionDiscountPercent ?? product.promotionDiscountPercent?.toString(),
+      });
       const slug = createCatalogSlug([category.slug, name, flavor, variantType, size].filter(Boolean).join(" ")) || "product";
       const sku = typeof body.sku === "string" && body.sku.trim()
         ? body.sku.trim().toUpperCase()
@@ -670,7 +657,6 @@ export async function POST(request: NextRequest) {
           include: { category: { select: { isActive: true } } },
         });
         if (!product || !product.isActive) throw new Error("PRODUCT_NOT_FOUND");
-        if (isPublished && Number(product.price) <= 0) throw new Error("PRODUCT_PRICE_REQUIRED");
         if (isPublished && product.stock <= product.reservedStock) throw new Error("PRODUCT_STOCK_REQUIRED");
         if (isPublished && !product.category.isActive) throw new Error("CATEGORY_INACTIVE");
 
@@ -743,13 +729,12 @@ export async function POST(request: NextRequest) {
       const telegramNotified = await sendTelegramNotification([
         "MINI APP — PENDING ORDER EDITED",
         `Order: ${orderNumber}`,
-        `Total: ETB ${updated.previousTotal.toLocaleString("en-ET")} → ETB ${updated.total.toLocaleString("en-ET")}`,
         `Items: ${updated.products.join(", ")}`,
         `By: ${operator.first_name || operator.username || "Admin"}`,
       ].join("\n"));
       return NextResponse.json({
         ok: true,
-        message: `Order ${orderNumber} updated. Total: ETB ${updated.total.toLocaleString("en-ET")}.`,
+        message: `Order ${orderNumber} updated.`,
         telegramNotified,
       });
     }
@@ -909,55 +894,6 @@ export async function POST(request: NextRequest) {
     }
 
     const productId = typeof body?.productId === "string" ? body.productId : "";
-    if (action === "update-price") {
-      const priceValue = typeof body?.price === "string" || typeof body?.price === "number"
-        ? Number(body.price)
-        : Number.NaN;
-      const priceInCents = Math.round(priceValue * 100);
-      if (!productId || !Number.isFinite(priceValue) || priceValue <= 0 || priceValue > 1_000_000_000 || Math.abs(priceInCents / 100 - priceValue) > 0.000001) {
-        return NextResponse.json({ error: "Enter a valid product price with up to two decimal places." }, { status: 400 });
-      }
-
-      const updated = await prisma.$transaction(async (tx) => {
-        await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Product" WHERE "id" = ${productId} FOR UPDATE`);
-        const product = await tx.product.findUnique({ where: { id: productId } });
-        if (!product || !product.isActive) throw new Error("PRODUCT_NOT_FOUND");
-        if (Number(product.price) === priceInCents / 100) throw new Error("PRICE_UNCHANGED");
-
-        const updatedProduct = await tx.product.update({
-          where: { id: productId },
-          data: { price: (priceInCents / 100).toFixed(2) },
-        });
-        await tx.productPriceChange.create({
-          data: {
-            productId,
-            previousPrice: product.price,
-            newPrice: updatedProduct.price,
-            createdBy: actorId,
-          },
-        });
-
-        return {
-          name: updatedProduct.name,
-          previousPrice: Number(product.price),
-          price: Number(updatedProduct.price),
-        };
-      }, { maxWait: 10_000, timeout: 30_000 });
-
-      const telegramNotified = await sendTelegramNotification([
-        "MINI APP — PRODUCT PRICE UPDATED",
-        `Product: ${updated.name}`,
-        `Price: ETB ${updated.previousPrice.toLocaleString("en-ET")} → ETB ${updated.price.toLocaleString("en-ET")}`,
-        `By: ${operator.first_name || operator.username || "Admin"}`,
-      ].join("\n"));
-      return NextResponse.json({
-        ok: true,
-        message: `${updated.name} price updated to ETB ${updated.price.toLocaleString("en-ET")}.`,
-        price: updated.price,
-        telegramNotified,
-      });
-    }
-
     const quantity = Number(body?.quantity);
 
     if (
@@ -1049,9 +985,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message === "PRODUCT_NOT_FOUND") {
       return NextResponse.json({ error: "Product not found or inactive." }, { status: 404 });
     }
-    if (error instanceof Error && error.message === "PRODUCT_PRICE_REQUIRED") {
-      return NextResponse.json({ error: "Set a price greater than zero before publishing this product." }, { status: 400 });
-    }
     if (error instanceof Error && error.message === "PRODUCT_STOCK_REQUIRED") {
       return NextResponse.json({ error: "Add available stock before publishing this product." }, { status: 400 });
     }
@@ -1068,7 +1001,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "This order's stock reservation has expired. Refresh orders before editing." }, { status: 409 });
     }
     if (error instanceof Error && error.message === "INVALID_ORDER_EDIT") {
-      return NextResponse.json({ error: "Check the customer details, fulfillment, prices, and order items." }, { status: 400 });
+      return NextResponse.json({ error: "Check the customer details, fulfillment, and order items." }, { status: 400 });
     }
     if (error instanceof Error && error.message === "DUPLICATE_ORDER_PRODUCT") {
       return NextResponse.json({ error: "Each product can appear only once. Combine its quantity into one line." }, { status: 400 });

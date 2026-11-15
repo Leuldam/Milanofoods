@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import { useRouter } from "next/navigation";
-import { Lock, Phone, ArrowRight, ShieldCheck, AlertCircle, LoaderCircle } from "lucide-react";
+import { Lock, Phone, ArrowRight, AlertCircle, LoaderCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -87,7 +87,7 @@ export default function AdminLoginPage() {
             marginBottom: "16px",
             boxShadow: "0 4px 12px rgba(7, 61, 46, 0.2)",
           }}>
-            <ShieldCheck size={28} />
+            <span style={{ fontWeight: 800, fontSize: "24px", lineHeight: 1 }}>M</span>
           </div>
           <h1 style={{
             margin: "0 0 6px",
