@@ -80,8 +80,9 @@ jobs:
           set -euo pipefail
           APP_PATH="$1"
           ARCHIVE="$2"
-          RELEASE_DIR="$HOME/deployments/milano-$${ARCHIVE#milano-foods-production-}"
-          RELEASE_DIR="${RELEASE_DIR%.tar.gz}"
+          RELEASE_NAME="${ARCHIVE#milano-foods-production-}"
+          RELEASE_NAME="${RELEASE_NAME%.tar.gz}"
+          RELEASE_DIR="$HOME/deployments/milano-$RELEASE_NAME"
 
           case "$APP_PATH" in
             "$HOME"/*) ;;
