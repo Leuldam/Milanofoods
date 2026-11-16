@@ -286,12 +286,31 @@ model AdminUser {
   passwordHash      String
   name              String?
   isOwner           Boolean            @default(false)
+  mustChangePassword Boolean            @default(false)
+  telegramChatId    String?            @unique
+  authVersion       Int                @default(0)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   sessions          AdminSession[]
   permissions       StaffPermission[]
   auditLogs         AdminAuditLog[]
   pushSubscriptions PushSubscription[]
+}
+
+model AdminVerificationCode {
+  id             String    @id @default(cuid())
+  phone          String
+  telegramChatId String
+  purpose        String
+  codeHash       String
+  requesterIp    String?
+  attempts       Int       @default(0)
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([phone, purpose, createdAt])
+  @@index([requesterIp, createdAt])
 }
 
 model PushSubscription {

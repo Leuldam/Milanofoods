@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
+import { PasswordInput } from "@/components/PasswordInput";
 import {
   Activity,
   Archive,
@@ -22,7 +24,6 @@ import {
   EyeOff,
   KeyRound,
   LayoutDashboard,
-  Leaf,
   LogOut,
   MessageSquare,
   Package,
@@ -46,6 +47,7 @@ import {
 } from "lucide-react";
 import { groupProductVariants } from "@/lib/product-variants";
 import { PushNotificationButton } from "@/components/admin/push-notification-button";
+import { AuthOptions } from "@/components/admin/AuthOptions";
 import "./miniapp.css";
 import "./miniapp-auth.css";
 import "./miniapp-management.css";
@@ -317,6 +319,10 @@ type OrderDraft = {
   }[];
 };
 
+function isOutOfStock(product: Pick<Product, "availableStock" | "minimumOrderQuantity">) {
+  return product.availableStock < Math.max(1, product.minimumOrderQuantity);
+}
+
 // ── Telegram WebApp SDK helpers ──────────────────────────────────────────────
 declare global {
   interface Window {
@@ -404,6 +410,11 @@ export default function MilanoMiniAppPage() {
   const [phone, setPhone] = useState("");
   const [passcode, setPasscode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordChangeError, setPasswordChangeError] = useState("");
+  const [passwordChangeBusy, setPasswordChangeBusy] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
   const [passwordAuthenticated, setPasswordAuthenticated] = useState(false);
@@ -536,7 +547,17 @@ export default function MilanoMiniAppPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, passcode }),
       });
-      const payload = await readApiResponse<{ ok?: boolean; name?: string; error?: string }>(response);
+      const payload = await readApiResponse<{
+        ok?: boolean;
+        name?: string;
+        error?: string;
+        mustChangePassword?: boolean;
+      }>(response);
+      if (payload.mustChangePassword) {
+        setMustChangePassword(true);
+        setPasswordChangeError("");
+        return;
+      }
       if (!response.ok) throw new Error(payload.error || "Unable to sign in.");
       setPasswordAuthenticated(true);
       setLoginRequired(false);
@@ -548,6 +569,47 @@ export default function MilanoMiniAppPage() {
       setLoginError(err instanceof Error ? err.message : "Unable to sign in.");
     } finally {
       setLoginBusy(false);
+    }
+  }
+
+  async function changeInitialPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordChangeError("");
+    if (newPassword.length < 12 || newPassword.length > 200) {
+      setPasswordChangeError("Choose a password between 12 and 200 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordChangeError("The new passwords do not match.");
+      return;
+    }
+
+    setPasswordChangeBusy(true);
+    try {
+      const response = await fetch("/api/admin/auth/change-initial-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          app: "miniapp",
+          phone,
+          currentPassword: passcode,
+          newPassword,
+        }),
+      });
+      const payload = await readApiResponse<{ ok?: boolean; error?: string }>(response);
+      if (!response.ok) throw new Error(payload.error || "Could not change your password.");
+      setMustChangePassword(false);
+      setPasswordAuthenticated(true);
+      setLoginRequired(false);
+      setPasscode("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      triggerHaptic("success");
+      await loadDashboard();
+    } catch (err) {
+      setPasswordChangeError(err instanceof Error ? err.message : "Could not change your password.");
+    } finally {
+      setPasswordChangeBusy(false);
     }
   }
 
@@ -616,7 +678,7 @@ export default function MilanoMiniAppPage() {
     return {
       all: activeProducts.length,
       low: activeProducts.filter((product) => product.lowStock).length,
-      out: activeProducts.filter((product) => product.stock === 0).length,
+      out: activeProducts.filter(isOutOfStock).length,
       archived: products.length - activeProducts.length,
     };
   }, [dashboard]);
@@ -640,7 +702,7 @@ export default function MilanoMiniAppPage() {
           : product.isActive &&
           (inventoryFilter === "ALL" ||
             (inventoryFilter === "LOW" && product.lowStock) ||
-            (inventoryFilter === "OUT" && product.stock === 0))) &&
+            (inventoryFilter === "OUT" && isOutOfStock(product)))) &&
         (inventoryCategory === "ALL" || product.category === inventoryCategory) &&
         (!term ||
           product.name.toLowerCase().includes(term) ||
@@ -1034,7 +1096,14 @@ export default function MilanoMiniAppPage() {
         <div className="mf-login-wrap">
           <div className="mf-login-box">
             <div className="mf-login-logo">
-              <div className="mf-login-mark" aria-hidden="true">M</div>
+              <Image
+                src="/images/milanologo.png"
+                alt="Milano Foods"
+                width={80}
+                height={80}
+                priority
+                style={{ objectFit: "contain" }}
+              />
               <h1>Milano Foods</h1>
               <span>Business Management</span>
               <p>Sign in with your administrator phone and passcode</p>
@@ -1076,6 +1145,8 @@ export default function MilanoMiniAppPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                     style={{
                       position: "absolute",
                       right: "12px",
@@ -1108,6 +1179,85 @@ export default function MilanoMiniAppPage() {
               </button>
             </form>
 
+            {mustChangePassword && (
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="miniapp-initial-password-title"
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 1000,
+                  display: "grid",
+                  placeItems: "center",
+                  padding: "16px",
+                  background: "rgba(10, 25, 18, 0.62)",
+                }}
+              >
+                <form
+                  onSubmit={changeInitialPassword}
+                  style={{
+                    display: "grid",
+                    gap: "14px",
+                    width: "100%",
+                    maxWidth: "420px",
+                    padding: "24px",
+                    border: "1px solid #E8E1D5",
+                    borderRadius: "14px",
+                    background: "#FFFFFF",
+                    color: "#17251F",
+                    boxShadow: "0 18px 50px rgba(0, 0, 0, 0.2)",
+                  }}
+                >
+                  <div>
+                    <h2 id="miniapp-initial-password-title" style={{ margin: "0 0 8px", color: "#073D2E", fontSize: "18px" }}>
+                      Set your new password
+                    </h2>
+                    <p role="status" style={{ margin: 0, color: "#66736B", fontSize: "13px", lineHeight: 1.5 }}>
+                      For your security, change the temporary password before continuing.
+                    </p>
+                  </div>
+                  <div className="mf-input-group">
+                    <label htmlFor="miniapp-initial-new-password">New password (at least 12 characters)</label>
+                    <PasswordInput
+                      id="miniapp-initial-new-password"
+                      className="mf-input"
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
+                      autoComplete="new-password"
+                      minLength={12}
+                      maxLength={200}
+                      required
+                    />
+                  </div>
+                  <div className="mf-input-group">
+                    <label htmlFor="miniapp-initial-confirm-password">Confirm new password</label>
+                    <PasswordInput
+                      id="miniapp-initial-confirm-password"
+                      className="mf-input"
+                      value={confirmNewPassword}
+                      onChange={(event) => setConfirmNewPassword(event.target.value)}
+                      autoComplete="new-password"
+                      minLength={12}
+                      maxLength={200}
+                      required
+                    />
+                  </div>
+                  {passwordChangeError && <p role="alert" className="mf-error">{passwordChangeError}</p>}
+                  <button
+                    type="submit"
+                    className="mf-btn-primary"
+                    disabled={passwordChangeBusy}
+                    style={{ width: "100%", minHeight: "46px", fontSize: "14px" }}
+                  >
+                    {passwordChangeBusy ? "Changing password…" : "Change password and continue"}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            <AuthOptions app="miniapp" />
+
             <div style={{ textAlign: "center", marginTop: "20px", color: "#8e9b92", fontSize: "11px" }}>
               Milano Food Processing PLC · Addis Ababa, Ethiopia
             </div>
@@ -1123,7 +1273,13 @@ export default function MilanoMiniAppPage() {
       {/* ── Top Header Bar ── */}
       <header className="mf-topbar">
         <div className="mf-topbar-brand">
-          <Leaf className="mf-brand-mark" size={22} aria-hidden="true" />
+          <Image
+            src="/images/milanologo.png"
+            alt=""
+            width={34}
+            height={34}
+            className="mf-brand-mark"
+          />
           <div className="mf-brand-text">
             <div className="mf-brand">
               MILANO
@@ -2532,7 +2688,7 @@ export default function MilanoMiniAppPage() {
                             <span
                               className={`mf-stock-pill-tag${!product.isActive
                                 ? " is-archived"
-                                : product.stock === 0
+                                : isOutOfStock(product)
                                   ? " is-out"
                                   : product.lowStock
                                     ? " is-low"
@@ -2541,7 +2697,7 @@ export default function MilanoMiniAppPage() {
                             >
                               {!product.isActive
                                 ? "Archived"
-                                : product.stock === 0
+                                : isOutOfStock(product)
                                   ? "Out"
                                   : product.lowStock
                                     ? "Low"
@@ -2616,8 +2772,8 @@ export default function MilanoMiniAppPage() {
                     const firstProduct = products[0];
                     const totalStock = products.reduce((acc, p) => acc + p.stock, 0);
                     const availableStock = products.reduce((acc, p) => acc + p.availableStock, 0);
-                    const lowCount = products.filter((p) => p.lowStock && p.stock > 0).length;
-                    const outCount = products.filter((p) => p.stock === 0).length;
+                    const lowCount = products.filter((p) => p.lowStock && !isOutOfStock(p)).length;
+                    const outCount = products.filter(isOutOfStock).length;
                     const isExpanded = Boolean(expandedGroupMap[group.key]);
 
                     // Determine variant types (e.g. Hard, Soft)
@@ -2710,7 +2866,7 @@ export default function MilanoMiniAppPage() {
                             return (
                               <div
                                 key={variant.id}
-                                className={`mf-variant-chip${isSelected ? " is-active" : ""}${variant.stock === 0 ? " is-out" : variant.lowStock ? " is-low" : ""
+                                className={`mf-variant-chip${isSelected ? " is-active" : ""}${isOutOfStock(variant) ? " is-out" : variant.lowStock ? " is-low" : ""
                                   }`}
                                 onClick={() => {
                                   triggerHaptic("light");
@@ -2719,7 +2875,7 @@ export default function MilanoMiniAppPage() {
                               >
                                 <span className="mf-chip-size">{label}</span>
                                 <span className="mf-chip-stock">
-                                  {variant.stock === 0 ? "0 left" : `${variant.availableStock} in stock`}
+                                  {variant.availableStock === 0 ? "0 left" : `${variant.availableStock} in stock`}
                                 </span>
                               </div>
                             );
@@ -2736,7 +2892,7 @@ export default function MilanoMiniAppPage() {
                               <div className="mf-sel-variant-stock">
                                 <span>SKU: {selectedVariant.sku}</span>
                                 <span> · </span>
-                                <b style={{ color: selectedVariant.stock === 0 ? "var(--mf-status-cancelled-text)" : "var(--mf-forest)" }}>
+                                <b style={{ color: isOutOfStock(selectedVariant) ? "var(--mf-status-cancelled-text)" : "var(--mf-forest)" }}>
                                   {selectedVariant.availableStock} Available
                                 </b>
                                 <span> ({selectedVariant.stock} total)</span>
@@ -2902,11 +3058,11 @@ export default function MilanoMiniAppPage() {
                           <td>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               <span
-                                className={`mf-stock-pill-tag ${prod.stock === 0 ? "is-out" : prod.lowStock ? "is-low" : "is-in"
+                                className={`mf-stock-pill-tag ${isOutOfStock(prod) ? "is-out" : prod.lowStock ? "is-low" : "is-in"
                                   }`}
                                 style={{ position: "static" }}
                               >
-                                {prod.stock === 0 ? "Out" : prod.lowStock ? "Low" : "In Stock"}
+                                {isOutOfStock(prod) ? "Out" : prod.lowStock ? "Low" : "In Stock"}
                               </span>
                               <b>{prod.availableStock}</b> / {prod.stock}
                             </div>
@@ -4372,7 +4528,7 @@ export default function MilanoMiniAppPage() {
                 <span
                   className={`mf-stock-pill-tag${!productDetails.isActive
                     ? " is-archived"
-                    : productDetails.stock === 0
+                    : isOutOfStock(productDetails)
                       ? " is-out"
                       : productDetails.lowStock
                         ? " is-low"
@@ -4380,7 +4536,7 @@ export default function MilanoMiniAppPage() {
                     }`}
                   style={{ position: "static" }}
                 >
-                  {!productDetails.isActive ? "Archived" : productDetails.stock === 0 ? "Out" : productDetails.lowStock ? "Low" : "In Stock"}
+                  {!productDetails.isActive ? "Archived" : isOutOfStock(productDetails) ? "Out" : productDetails.lowStock ? "Low" : "In Stock"}
                 </span>
               </div>
 

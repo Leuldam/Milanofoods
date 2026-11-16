@@ -78,6 +78,15 @@ export async function POST(req: NextRequest) {
     }
 
     await clearAdminLoginFailures(req, cleanPhone);
+    if (user.mustChangePassword) {
+      return NextResponse.json(
+        {
+          mustChangePassword: true,
+          error: "For security, change your password before continuing.",
+        },
+        { status: 409 }
+      );
+    }
 
     // Create session token
     const token = await createAdminSession(user.id);

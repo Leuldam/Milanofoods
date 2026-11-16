@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { seedPermissionsAndOwner } from "../src/lib/admin-seed";
+import { seedPermissions } from "../src/lib/admin-seed";
 
 async function main() {
-  console.log("Seeding admin permissions and owner...");
-  await seedPermissionsAndOwner();
+  console.log("Seeding admin permissions...");
+  await seedPermissions();
   console.log("Seeding complete!");
 }
 

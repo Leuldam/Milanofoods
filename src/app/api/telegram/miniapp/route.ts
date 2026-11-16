@@ -7,6 +7,7 @@ import { getTelegramMiniAppUser, hasMiniAppPermission } from "@/lib/telegram-min
 import { sendTelegramNotification } from "@/lib/telegram-notifications";
 import { getCategoryImageUrl, getProductGalleryImageUrls, getProductImageUrl, validateImageDataUrl } from "@/lib/product-images";
 import { parsePackagingConfigurations, percentToBasisPoints } from "@/lib/product-pricing";
+import { getMojitoSyrupImage } from "@/lib/products";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -154,6 +155,10 @@ export async function GET(request: NextRequest) {
     const activeProducts = products.filter((product) => product.isActive);
     const totalUnits = activeProducts.reduce((sum, product) => sum + product.stock, 0);
     const reservedUnits = activeProducts.reduce((sum, product) => sum + product.reservedStock, 0);
+    const availableUnits = activeProducts.reduce(
+      (sum, product) => sum + Math.max(0, product.stock - product.reservedStock),
+      0,
+    );
     const orderStatusCounts = orders.reduce<Record<string, number>>((counts, order) => {
       counts[order.status] = (counts[order.status] ?? 0) + 1;
       return counts;
@@ -168,33 +173,27 @@ export async function GET(request: NextRequest) {
         productCount: activeProducts.length,
         totalUnits,
         reservedUnits,
-        availableUnits: totalUnits - reservedUnits,
-        lowStockCount: activeProducts.filter((p) => p.stock - p.reservedStock <= 10).length,
+        availableUnits,
+        lowStockCount: activeProducts.filter((p) => Math.max(0, p.stock - p.reservedStock) <= 10).length,
         pendingOrders: orders.filter((order) => order.status === "PENDING").length,
         orderStatusCounts,
         pendingReviews: pendingReviews.length,
         approvedReviews: approvedReviews.length,
       },
-      products: products.map((product) => ({
-        id: product.id,
-        sku: product.sku,
-        categoryId: product.categoryId,
-        categoryIsActive: product.category.isActive,
-        slug: product.slug,
-        name: product.name,
-        description: product.description || "",
-        category: product.category.name,
-        imageUrl:
-          getProductImageUrl(
-            product.imageUrl,
-            product.id,
-            product.updatedAt,
-            product.category.imageUrl,
-            product.category.id,
-            product.category.slug,
-            product.category.updatedAt,
-          ),
-        galleryImageUrls: getProductGalleryImageUrls(
+      products: products.map((product) => {
+        const mojitoImage = product.category.slug === "mojito-syrups"
+          ? getMojitoSyrupImage(product.flavor, product.name, product.slug)
+          : undefined;
+        const storedImage = getProductImageUrl(
+          product.imageUrl,
+          product.id,
+          product.updatedAt,
+          product.category.imageUrl,
+          product.category.id,
+          product.category.slug,
+          product.category.updatedAt,
+        );
+        const galleryImageUrls = getProductGalleryImageUrls(
           product.imageUrl,
           product.galleryImageUrls,
           product.id,
@@ -203,33 +202,47 @@ export async function GET(request: NextRequest) {
           product.category.id,
           product.category.slug,
           product.category.updatedAt,
-        ),
-        size: product.size,
-        flavor: product.flavor,
-        variantType: product.variantType,
-        minimumOrderQuantity: product.minimumOrderQuantity,
-        packagingOptions: product.packagingOptions.map((option) => ({
-          id: option.id,
-          label: option.label,
-          unitsPerPackage: option.unitsPerPackage,
-          isEnabled: option.isEnabled,
-        })),
-        stock: product.stock,
-        reservedStock: product.reservedStock,
-        availableStock: product.stock - product.reservedStock,
-        isPublished: product.isPublished,
-        isActive: product.isActive,
-        lowStock: product.stock - product.reservedStock <= 10,
-        stockMovements: product.stockMovements.map((movement) => ({
-          id: movement.id,
-          change: movement.change,
-          previousStock: movement.previousStock,
-          newStock: movement.newStock,
-          reason: movement.reason,
-          orderNumber: movement.orderNumber,
-          createdAt: movement.createdAt.toISOString(),
-        })),
-      })),
+        );
+        return {
+          id: product.id,
+          sku: product.sku,
+          categoryId: product.categoryId,
+          categoryIsActive: product.category.isActive,
+          slug: product.slug,
+          name: product.name,
+          description: product.description || "",
+          category: product.category.name,
+          imageUrl: mojitoImage || storedImage,
+          galleryImageUrls: mojitoImage
+            ? [...new Set([mojitoImage, ...galleryImageUrls.filter((url) => url !== storedImage)])]
+            : galleryImageUrls,
+          size: product.size,
+          flavor: product.flavor,
+          variantType: product.variantType,
+          minimumOrderQuantity: product.minimumOrderQuantity,
+          packagingOptions: product.packagingOptions.map((option) => ({
+            id: option.id,
+            label: option.label,
+            unitsPerPackage: option.unitsPerPackage,
+            isEnabled: option.isEnabled,
+          })),
+          stock: product.stock,
+          reservedStock: product.reservedStock,
+          availableStock: Math.max(0, product.stock - product.reservedStock),
+          isPublished: product.isPublished,
+          isActive: product.isActive,
+          lowStock: Math.max(0, product.stock - product.reservedStock) <= 10,
+          stockMovements: product.stockMovements.map((movement) => ({
+            id: movement.id,
+            change: movement.change,
+            previousStock: movement.previousStock,
+            newStock: movement.newStock,
+            reason: movement.reason,
+            orderNumber: movement.orderNumber,
+            createdAt: movement.createdAt.toISOString(),
+          })),
+        };
+      }),
       categories: categories.map((category) => ({
         id: category.id,
         name: category.name,

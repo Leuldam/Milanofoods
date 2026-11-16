@@ -410,6 +410,7 @@ export const ModelName = {
   OrderPaymentProof: 'OrderPaymentProof',
   OrderItem: 'OrderItem',
   AdminUser: 'AdminUser',
+  AdminVerificationCode: 'AdminVerificationCode',
   PushSubscription: 'PushSubscription',
   AdminSession: 'AdminSession',
   AdminLoginThrottle: 'AdminLoginThrottle',
@@ -443,7 +444,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "category" | "product" | "productPackagingOption" | "productStockMovement" | "customerCreditTransaction" | "customerCreditItem" | "productPriceChange" | "paymentMethodConfig" | "productReview" | "order" | "orderPaymentProof" | "orderItem" | "adminUser" | "pushSubscription" | "adminSession" | "adminLoginThrottle" | "adminAuditLog" | "permission" | "staffPermission" | "inventoryItem" | "inventoryStockMovement" | "recipe" | "recipeItem" | "productionBatch" | "batchMaterialUsage" | "customer" | "customerCrmActivity" | "orderStatusHistory" | "payment" | "systemSetting" | "notificationLog"
+    modelProps: "category" | "product" | "productPackagingOption" | "productStockMovement" | "customerCreditTransaction" | "customerCreditItem" | "productPriceChange" | "paymentMethodConfig" | "productReview" | "order" | "orderPaymentProof" | "orderItem" | "adminUser" | "adminVerificationCode" | "pushSubscription" | "adminSession" | "adminLoginThrottle" | "adminAuditLog" | "permission" | "staffPermission" | "inventoryItem" | "inventoryStockMovement" | "recipe" | "recipeItem" | "productionBatch" | "batchMaterialUsage" | "customer" | "customerCrmActivity" | "orderStatusHistory" | "payment" | "systemSetting" | "notificationLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1406,6 +1407,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AdminUserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AdminUserCountAggregateOutputType> | number
+        }
+      }
+    }
+    AdminVerificationCode: {
+      payload: Prisma.$AdminVerificationCodePayload<ExtArgs>
+      fields: Prisma.AdminVerificationCodeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminVerificationCodeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminVerificationCodeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>
+        }
+        findFirst: {
+          args: Prisma.AdminVerificationCodeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminVerificationCodeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>
+        }
+        findMany: {
+          args: Prisma.AdminVerificationCodeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>[]
+        }
+        create: {
+          args: Prisma.AdminVerificationCodeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>
+        }
+        createMany: {
+          args: Prisma.AdminVerificationCodeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminVerificationCodeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>[]
+        }
+        delete: {
+          args: Prisma.AdminVerificationCodeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>
+        }
+        update: {
+          args: Prisma.AdminVerificationCodeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminVerificationCodeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminVerificationCodeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminVerificationCodeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminVerificationCodeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminVerificationCodePayload>
+        }
+        aggregate: {
+          args: Prisma.AdminVerificationCodeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminVerificationCode>
+        }
+        groupBy: {
+          args: Prisma.AdminVerificationCodeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminVerificationCodeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminVerificationCodeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminVerificationCodeCountAggregateOutputType> | number
         }
       }
     }
@@ -2985,11 +3060,30 @@ export const AdminUserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   name: 'name',
   isOwner: 'isOwner',
+  mustChangePassword: 'mustChangePassword',
+  telegramChatId: 'telegramChatId',
+  authVersion: 'authVersion',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type AdminUserScalarFieldEnum = (typeof AdminUserScalarFieldEnum)[keyof typeof AdminUserScalarFieldEnum]
+
+
+export const AdminVerificationCodeScalarFieldEnum = {
+  id: 'id',
+  phone: 'phone',
+  telegramChatId: 'telegramChatId',
+  purpose: 'purpose',
+  codeHash: 'codeHash',
+  requesterIp: 'requesterIp',
+  attempts: 'attempts',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminVerificationCodeScalarFieldEnum = (typeof AdminVerificationCodeScalarFieldEnum)[keyof typeof AdminVerificationCodeScalarFieldEnum]
 
 
 export const PushSubscriptionScalarFieldEnum = {
@@ -3650,6 +3744,7 @@ export type GlobalOmitConfig = {
   orderPaymentProof?: Prisma.OrderPaymentProofOmit
   orderItem?: Prisma.OrderItemOmit
   adminUser?: Prisma.AdminUserOmit
+  adminVerificationCode?: Prisma.AdminVerificationCodeOmit
   pushSubscription?: Prisma.PushSubscriptionOmit
   adminSession?: Prisma.AdminSessionOmit
   adminLoginThrottle?: Prisma.AdminLoginThrottleOmit

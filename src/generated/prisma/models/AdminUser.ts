@@ -20,8 +20,18 @@ export type AdminUserModel = runtime.Types.Result.DefaultSelection<Prisma.$Admin
 
 export type AggregateAdminUser = {
   _count: AdminUserCountAggregateOutputType | null
+  _avg: AdminUserAvgAggregateOutputType | null
+  _sum: AdminUserSumAggregateOutputType | null
   _min: AdminUserMinAggregateOutputType | null
   _max: AdminUserMaxAggregateOutputType | null
+}
+
+export type AdminUserAvgAggregateOutputType = {
+  authVersion: number | null
+}
+
+export type AdminUserSumAggregateOutputType = {
+  authVersion: number | null
 }
 
 export type AdminUserMinAggregateOutputType = {
@@ -30,6 +40,9 @@ export type AdminUserMinAggregateOutputType = {
   passwordHash: string | null
   name: string | null
   isOwner: boolean | null
+  mustChangePassword: boolean | null
+  telegramChatId: string | null
+  authVersion: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +53,9 @@ export type AdminUserMaxAggregateOutputType = {
   passwordHash: string | null
   name: string | null
   isOwner: boolean | null
+  mustChangePassword: boolean | null
+  telegramChatId: string | null
+  authVersion: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,11 +66,22 @@ export type AdminUserCountAggregateOutputType = {
   passwordHash: number
   name: number
   isOwner: number
+  mustChangePassword: number
+  telegramChatId: number
+  authVersion: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type AdminUserAvgAggregateInputType = {
+  authVersion?: true
+}
+
+export type AdminUserSumAggregateInputType = {
+  authVersion?: true
+}
 
 export type AdminUserMinAggregateInputType = {
   id?: true
@@ -62,6 +89,9 @@ export type AdminUserMinAggregateInputType = {
   passwordHash?: true
   name?: true
   isOwner?: true
+  mustChangePassword?: true
+  telegramChatId?: true
+  authVersion?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +102,9 @@ export type AdminUserMaxAggregateInputType = {
   passwordHash?: true
   name?: true
   isOwner?: true
+  mustChangePassword?: true
+  telegramChatId?: true
+  authVersion?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +115,9 @@ export type AdminUserCountAggregateInputType = {
   passwordHash?: true
   name?: true
   isOwner?: true
+  mustChangePassword?: true
+  telegramChatId?: true
+  authVersion?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -125,6 +161,18 @@ export type AdminUserAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inte
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: AdminUserAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: AdminUserSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: AdminUserMinAggregateInputType
@@ -155,6 +203,8 @@ export type AdminUserGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   _count?: AdminUserCountAggregateInputType | true
+  _avg?: AdminUserAvgAggregateInputType
+  _sum?: AdminUserSumAggregateInputType
   _min?: AdminUserMinAggregateInputType
   _max?: AdminUserMaxAggregateInputType
 }
@@ -165,9 +215,14 @@ export type AdminUserGroupByOutputType = {
   passwordHash: string
   name: string | null
   isOwner: boolean
+  mustChangePassword: boolean
+  telegramChatId: string | null
+  authVersion: number
   createdAt: Date
   updatedAt: Date
   _count: AdminUserCountAggregateOutputType | null
+  _avg: AdminUserAvgAggregateOutputType | null
+  _sum: AdminUserSumAggregateOutputType | null
   _min: AdminUserMinAggregateOutputType | null
   _max: AdminUserMaxAggregateOutputType | null
 }
@@ -196,6 +251,9 @@ export type AdminUserWhereInput = {
   passwordHash?: Prisma.StringFilter<"AdminUser"> | string
   name?: Prisma.StringNullableFilter<"AdminUser"> | string | null
   isOwner?: Prisma.BoolFilter<"AdminUser"> | boolean
+  mustChangePassword?: Prisma.BoolFilter<"AdminUser"> | boolean
+  telegramChatId?: Prisma.StringNullableFilter<"AdminUser"> | string | null
+  authVersion?: Prisma.IntFilter<"AdminUser"> | number
   createdAt?: Prisma.DateTimeFilter<"AdminUser"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminUser"> | Date | string
   sessions?: Prisma.AdminSessionListRelationFilter
@@ -210,6 +268,9 @@ export type AdminUserOrderByWithRelationInput = {
   passwordHash?: Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   isOwner?: Prisma.SortOrder
+  mustChangePassword?: Prisma.SortOrder
+  telegramChatId?: Prisma.SortOrderInput | Prisma.SortOrder
+  authVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sessions?: Prisma.AdminSessionOrderByRelationAggregateInput
@@ -221,19 +282,22 @@ export type AdminUserOrderByWithRelationInput = {
 export type AdminUserWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   phone?: string
+  telegramChatId?: string
   AND?: Prisma.AdminUserWhereInput | Prisma.AdminUserWhereInput[]
   OR?: Prisma.AdminUserWhereInput[]
   NOT?: Prisma.AdminUserWhereInput | Prisma.AdminUserWhereInput[]
   passwordHash?: Prisma.StringFilter<"AdminUser"> | string
   name?: Prisma.StringNullableFilter<"AdminUser"> | string | null
   isOwner?: Prisma.BoolFilter<"AdminUser"> | boolean
+  mustChangePassword?: Prisma.BoolFilter<"AdminUser"> | boolean
+  authVersion?: Prisma.IntFilter<"AdminUser"> | number
   createdAt?: Prisma.DateTimeFilter<"AdminUser"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AdminUser"> | Date | string
   sessions?: Prisma.AdminSessionListRelationFilter
   permissions?: Prisma.StaffPermissionListRelationFilter
   auditLogs?: Prisma.AdminAuditLogListRelationFilter
   pushSubscriptions?: Prisma.PushSubscriptionListRelationFilter
-}, "id" | "phone">
+}, "id" | "phone" | "telegramChatId">
 
 export type AdminUserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -241,11 +305,16 @@ export type AdminUserOrderByWithAggregationInput = {
   passwordHash?: Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   isOwner?: Prisma.SortOrder
+  mustChangePassword?: Prisma.SortOrder
+  telegramChatId?: Prisma.SortOrderInput | Prisma.SortOrder
+  authVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AdminUserCountOrderByAggregateInput
+  _avg?: Prisma.AdminUserAvgOrderByAggregateInput
   _max?: Prisma.AdminUserMaxOrderByAggregateInput
   _min?: Prisma.AdminUserMinOrderByAggregateInput
+  _sum?: Prisma.AdminUserSumOrderByAggregateInput
 }
 
 export type AdminUserScalarWhereWithAggregatesInput = {
@@ -257,6 +326,9 @@ export type AdminUserScalarWhereWithAggregatesInput = {
   passwordHash?: Prisma.StringWithAggregatesFilter<"AdminUser"> | string
   name?: Prisma.StringNullableWithAggregatesFilter<"AdminUser"> | string | null
   isOwner?: Prisma.BoolWithAggregatesFilter<"AdminUser"> | boolean
+  mustChangePassword?: Prisma.BoolWithAggregatesFilter<"AdminUser"> | boolean
+  telegramChatId?: Prisma.StringNullableWithAggregatesFilter<"AdminUser"> | string | null
+  authVersion?: Prisma.IntWithAggregatesFilter<"AdminUser"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AdminUser"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AdminUser"> | Date | string
 }
@@ -267,6 +339,9 @@ export type AdminUserCreateInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
@@ -281,6 +356,9 @@ export type AdminUserUncheckedCreateInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
@@ -295,6 +373,9 @@ export type AdminUserUpdateInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
@@ -309,6 +390,9 @@ export type AdminUserUncheckedUpdateInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
@@ -323,6 +407,9 @@ export type AdminUserCreateManyInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -333,6 +420,9 @@ export type AdminUserUpdateManyMutationInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -343,6 +433,9 @@ export type AdminUserUncheckedUpdateManyInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -353,8 +446,15 @@ export type AdminUserCountOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isOwner?: Prisma.SortOrder
+  mustChangePassword?: Prisma.SortOrder
+  telegramChatId?: Prisma.SortOrder
+  authVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type AdminUserAvgOrderByAggregateInput = {
+  authVersion?: Prisma.SortOrder
 }
 
 export type AdminUserMaxOrderByAggregateInput = {
@@ -363,6 +463,9 @@ export type AdminUserMaxOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isOwner?: Prisma.SortOrder
+  mustChangePassword?: Prisma.SortOrder
+  telegramChatId?: Prisma.SortOrder
+  authVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -373,8 +476,15 @@ export type AdminUserMinOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isOwner?: Prisma.SortOrder
+  mustChangePassword?: Prisma.SortOrder
+  telegramChatId?: Prisma.SortOrder
+  authVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type AdminUserSumOrderByAggregateInput = {
+  authVersion?: Prisma.SortOrder
 }
 
 export type AdminUserNullableScalarRelationFilter = {
@@ -453,6 +563,9 @@ export type AdminUserCreateWithoutPushSubscriptionsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
@@ -466,6 +579,9 @@ export type AdminUserUncheckedCreateWithoutPushSubscriptionsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
@@ -495,6 +611,9 @@ export type AdminUserUpdateWithoutPushSubscriptionsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
@@ -508,6 +627,9 @@ export type AdminUserUncheckedUpdateWithoutPushSubscriptionsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
@@ -521,6 +643,9 @@ export type AdminUserCreateWithoutSessionsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   permissions?: Prisma.StaffPermissionCreateNestedManyWithoutUserInput
@@ -534,6 +659,9 @@ export type AdminUserUncheckedCreateWithoutSessionsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   permissions?: Prisma.StaffPermissionUncheckedCreateNestedManyWithoutUserInput
@@ -563,6 +691,9 @@ export type AdminUserUpdateWithoutSessionsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   permissions?: Prisma.StaffPermissionUpdateManyWithoutUserNestedInput
@@ -576,6 +707,9 @@ export type AdminUserUncheckedUpdateWithoutSessionsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   permissions?: Prisma.StaffPermissionUncheckedUpdateManyWithoutUserNestedInput
@@ -589,6 +723,9 @@ export type AdminUserCreateWithoutAuditLogsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
@@ -602,6 +739,9 @@ export type AdminUserUncheckedCreateWithoutAuditLogsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
@@ -631,6 +771,9 @@ export type AdminUserUpdateWithoutAuditLogsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
@@ -644,6 +787,9 @@ export type AdminUserUncheckedUpdateWithoutAuditLogsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
@@ -657,6 +803,9 @@ export type AdminUserCreateWithoutPermissionsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
@@ -670,6 +819,9 @@ export type AdminUserUncheckedCreateWithoutPermissionsInput = {
   passwordHash: string
   name?: string | null
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: string | null
+  authVersion?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
@@ -699,6 +851,9 @@ export type AdminUserUpdateWithoutPermissionsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
@@ -712,6 +867,9 @@ export type AdminUserUncheckedUpdateWithoutPermissionsInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  telegramChatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authVersion?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
@@ -783,6 +941,9 @@ export type AdminUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   passwordHash?: boolean
   name?: boolean
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: boolean
+  authVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sessions?: boolean | Prisma.AdminUser$sessionsArgs<ExtArgs>
@@ -798,6 +959,9 @@ export type AdminUserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   passwordHash?: boolean
   name?: boolean
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: boolean
+  authVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["adminUser"]>
@@ -808,6 +972,9 @@ export type AdminUserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   passwordHash?: boolean
   name?: boolean
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: boolean
+  authVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["adminUser"]>
@@ -818,11 +985,14 @@ export type AdminUserSelectScalar = {
   passwordHash?: boolean
   name?: boolean
   isOwner?: boolean
+  mustChangePassword?: boolean
+  telegramChatId?: boolean
+  authVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AdminUserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone" | "passwordHash" | "name" | "isOwner" | "createdAt" | "updatedAt", ExtArgs["result"]["adminUser"]>
+export type AdminUserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone" | "passwordHash" | "name" | "isOwner" | "mustChangePassword" | "telegramChatId" | "authVersion" | "createdAt" | "updatedAt", ExtArgs["result"]["adminUser"]>
 export type AdminUserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | Prisma.AdminUser$sessionsArgs<ExtArgs>
   permissions?: boolean | Prisma.AdminUser$permissionsArgs<ExtArgs>
@@ -847,6 +1017,9 @@ export type $AdminUserPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     passwordHash: string
     name: string | null
     isOwner: boolean
+    mustChangePassword: boolean
+    telegramChatId: string | null
+    authVersion: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["adminUser"]>
@@ -1281,6 +1454,9 @@ export interface AdminUserFieldRefs {
   readonly passwordHash: Prisma.FieldRef<"AdminUser", 'String'>
   readonly name: Prisma.FieldRef<"AdminUser", 'String'>
   readonly isOwner: Prisma.FieldRef<"AdminUser", 'Boolean'>
+  readonly mustChangePassword: Prisma.FieldRef<"AdminUser", 'Boolean'>
+  readonly telegramChatId: Prisma.FieldRef<"AdminUser", 'String'>
+  readonly authVersion: Prisma.FieldRef<"AdminUser", 'Int'>
   readonly createdAt: Prisma.FieldRef<"AdminUser", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AdminUser", 'DateTime'>
 }

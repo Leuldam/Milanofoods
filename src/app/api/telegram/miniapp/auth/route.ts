@@ -70,35 +70,62 @@ export async function POST(request: NextRequest) {
 
   let authenticatedName = "Administrator";
   let isAuthenticated = false;
+  let databaseAccountFound = false;
   let adminUserId: string | undefined;
+  let authVersion: number | undefined;
 
-  // 1. Check env credentials
-  if (expectedPhone && expectedPasscode && normalizedPhone === expectedPhone) {
+  // Database accounts take precedence so legacy deployment credentials cannot bypass a forced password change.
+  try {
+    const candidates = await prisma.adminUser.findMany();
+    const matchingAdmins = candidates.filter((admin) => {
+      const adminNorm = normalizeEthiopianPhone(admin.phone);
+      return adminNorm === normalizedPhone || admin.phone === rawPhone;
+    });
+    databaseAccountFound = matchingAdmins.length > 0;
+    if (matchingAdmins.length > 1) {
+      await recordAdminLoginFailure(request, normalizedPhone);
+      return NextResponse.json({ error: "Phone number or passcode is incorrect." }, { status: 401 });
+    }
+
+    const admin = matchingAdmins[0];
+    if (admin) {
+      const passwordMatches = await bcrypt.compare(passcode, admin.passwordHash);
+      if (!passwordMatches) {
+        await recordAdminLoginFailure(request, normalizedPhone);
+        return NextResponse.json({ error: "Phone number or passcode is incorrect." }, { status: 401 });
+      }
+      if (admin.mustChangePassword) {
+        await clearAdminLoginFailures(request, normalizedPhone);
+        return NextResponse.json(
+          {
+            mustChangePassword: true,
+            error: "For security, change your password before continuing.",
+          },
+          { status: 409 },
+        );
+      }
+
+      isAuthenticated = true;
+      authenticatedName = admin.name || (admin.isOwner ? "Owner" : "Admin");
+      adminUserId = admin.id;
+      authVersion = admin.authVersion;
+    }
+  } catch (dbErr) {
+    console.error("Error verifying admin credentials in database:", dbErr);
+    return NextResponse.json({ error: "Unable to verify admin credentials." }, { status: 500 });
+  }
+
+  // Legacy deployment credentials remain available only when there is no matching database account.
+  if (
+    !databaseAccountFound &&
+    !isAuthenticated &&
+    expectedPhone &&
+    expectedPasscode &&
+    normalizedPhone === expectedPhone
+  ) {
     if (matches(passcode, expectedPasscode)) {
       isAuthenticated = true;
       authenticatedName = "Milano Foods Admin";
-    }
-  }
-
-  // 2. Check AdminUser database credentials (supports owner and staff accounts)
-  if (!isAuthenticated && rawPhone && passcode) {
-    try {
-      const candidates = await prisma.adminUser.findMany();
-      for (const admin of candidates) {
-        const adminNorm = normalizeEthiopianPhone(admin.phone);
-        if (adminNorm === normalizedPhone || admin.phone === rawPhone) {
-          const match = await bcrypt.compare(passcode, admin.passwordHash);
-          if (match) {
-            isAuthenticated = true;
-            authenticatedName = admin.name || (admin.isOwner ? "Owner" : "Admin");
-            adminUserId = admin.id;
-            break;
-          }
-        }
-      }
-    } catch (dbErr) {
-      console.error("Error verifying admin credentials in database:", dbErr);
-      return NextResponse.json({ error: "Unable to verify admin credentials." }, { status: 500 });
     }
   }
 
@@ -109,7 +136,7 @@ export async function POST(request: NextRequest) {
 
   await clearAdminLoginFailures(request, normalizedPhone);
   try {
-    const session = createMiniAppSession({ name: authenticatedName, adminUserId });
+    const session = createMiniAppSession({ name: authenticatedName, adminUserId, authVersion });
     const response = NextResponse.json({ ok: true, name: authenticatedName });
     response.cookies.set(miniAppSessionCookie, session.token, {
       httpOnly: true,

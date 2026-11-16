@@ -107,6 +107,11 @@ export type OrderItem = Prisma.OrderItemModel
  */
 export type AdminUser = Prisma.AdminUserModel
 /**
+ * Model AdminVerificationCode
+ * 
+ */
+export type AdminVerificationCode = Prisma.AdminVerificationCodeModel
+/**
  * Model PushSubscription
  * 
  */
