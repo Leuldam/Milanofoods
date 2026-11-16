@@ -1,0 +1,186 @@
+name: Build and deploy Milano Foods
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: milano-foods-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build production release
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+      NEXT_PUBLIC_SITE_URL: https://milanofoodprocessing.com
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies and generate Prisma Client
+        run: npm ci
+
+      - name: Build Next.js standalone application
+        run: npm run build
+
+      - name: Assemble deployment archive
+        run: |
+          test -f .next/standalone/server.js
+          mkdir -p .next/standalone/.next/static
+          cp -a .next/static/. .next/standalone/.next/static/
+          mkdir -p .next/standalone/public
+          cp -a public/. .next/standalone/public/
+          printf 'require("./server.js");\n' > .next/standalone/app.js
+          test -f .next/standalone/src/generated/prisma/client.ts
+          test -f .next/standalone/node_modules/@prisma/adapter-pg/dist/index.js
+          test -d .next/standalone/node_modules/pg
+          if find .next/standalone -type f \( -name '.env' -o -name '.env.*' \) | grep -q .; then
+            echo "Environment files must not be included in the deployment package."
+            exit 1
+          fi
+          tar -czf milano-foods-release.tar.gz -C .next/standalone .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: milano-foods-release
+          path: milano-foods-release.tar.gz
+          retention-days: 3
+
+  migrate-and-deploy:
+    name: Apply migrations and deploy to cPanel
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required deployment secrets
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          for name in CPANEL_HOST CPANEL_USER CPANEL_SSH_KEY DATABASE_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Set up Node.js 22 for Prisma migrations
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check out migration files
+        uses: actions/checkout@v4
+
+      - name: Download production archive
+        uses: actions/download-artifact@v4
+        with:
+          name: milano-foods-release
+
+      - name: Install Prisma CLI
+        run: npm install --no-save --ignore-scripts prisma@7.10.1
+        env:
+          DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+
+      - name: Apply committed database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Configure SSH
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_PORT: ${{ secrets.CPANEL_PORT }}
+          CPANEL_SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$CPANEL_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          PORT="${CPANEL_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$CPANEL_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Transfer release to cPanel
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_PORT: ${{ secrets.CPANEL_PORT }}
+        run: |
+          PORT="${CPANEL_PORT:-22}"
+          scp -i ~/.ssh/id_ed25519 -P "$PORT"             milano-foods-release.tar.gz             "$CPANEL_USER@$CPANEL_HOST:milano-foods-release-${GITHUB_SHA}.tar.gz"
+
+      - name: Activate release, restart Passenger, and verify website
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_PORT: ${{ secrets.CPANEL_PORT }}
+        run: |
+          PORT="${CPANEL_PORT:-22}"
+          ssh -i ~/.ssh/id_ed25519 -p "$PORT" "$CPANEL_USER@$CPANEL_HOST" \
+            bash -s -- "$GITHUB_SHA" <<'REMOTE'
+          set -euo pipefail
+
+          RELEASE="$1"
+          BASE="$HOME/repositories"
+          APP="$BASE/milano-app"
+          STAGING="$BASE/milano-app-staging-$RELEASE"
+          BACKUP="$BASE/milano-app-backup-$RELEASE"
+          ARCHIVE="$HOME/milano-foods-release-$RELEASE.tar.gz"
+
+          test -f "$ARCHIVE"
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
+          tar -xzf "$ARCHIVE" -C "$STAGING"
+          test -f "$STAGING/server.js"
+          test -f "$STAGING/app.js"
+          test -f "$STAGING/src/generated/prisma/client.ts"
+          test -d "$STAGING/node_modules/pg"
+
+          if [ -d "$APP" ]; then
+            mv "$APP" "$BACKUP"
+          fi
+
+          if ! mv "$STAGING" "$APP"; then
+            if [ -d "$BACKUP" ] && [ ! -d "$APP" ]; then
+              mv "$BACKUP" "$APP"
+            fi
+            exit 1
+          fi
+
+          mkdir -p "$APP/tmp"
+          touch "$APP/tmp/restart.txt"
+
+          if ! curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-connrefused https://milanofoodprocessing.com/ -o /dev/null; then
+            echo "Health check failed; restoring previous release."
+            FAILED="$BASE/milano-app-failed-$RELEASE"
+            mv "$APP" "$FAILED"
+            if [ -d "$BACKUP" ]; then
+              mv "$BACKUP" "$APP"
+              mkdir -p "$APP/tmp"
+              touch "$APP/tmp/restart.txt"
+            fi
+            exit 1
+          fi
+
+          rm -f "$ARCHIVE"
+          echo "Deployment $RELEASE is live."
+          REMOTE
+
+      - name: Clean up SSH credentials
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
