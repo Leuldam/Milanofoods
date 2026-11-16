@@ -100,7 +100,7 @@ jobs:
               echo "Backup already exists; refusing to overwrite it."
               exit 1
             fi
-            cp -al "$APP_PATH" "$BACKUP_DIR"
+            cp -a "$APP_PATH" "$BACKUP_DIR"
             echo "Previous application preserved at $BACKUP_DIR"
           fi
 
