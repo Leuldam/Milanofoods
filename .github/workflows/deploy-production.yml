@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -80,11 +79,6 @@ jobs:
             fi
           done
 
-      - name: Download production archive
-        uses: actions/download-artifact@v4
-        with:
-          name: milano-foods-release
-
       - name: Set up Node.js 22 for Prisma migrations
         uses: actions/setup-node@v4
         with:
@@ -92,6 +86,11 @@ jobs:
 
       - name: Check out migration files
         uses: actions/checkout@v4
+
+      - name: Download production archive
+        uses: actions/download-artifact@v4
+        with:
+          name: milano-foods-release
 
       - name: Install Prisma CLI
         run: npm install --no-save --ignore-scripts prisma@7.10.1
