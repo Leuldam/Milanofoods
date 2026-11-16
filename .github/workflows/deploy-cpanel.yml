@@ -1,0 +1,111 @@
+name: Deploy Milano Foods to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: milano-foods-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+      NEXT_PUBLIC_SITE_URL: https://milanofoodprocessing.com
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies and generate Prisma Client
+        run: npm ci
+
+      - name: Build Next.js standalone application
+        run: npm run build
+
+      - name: Assemble standalone package
+        run: |
+          test -f .next/standalone/server.js
+          mkdir -p .next/standalone/.next/static
+          cp -a .next/static/. .next/standalone/.next/static/
+          mkdir -p .next/standalone/public
+          cp -a public/. .next/standalone/public/
+          printf 'require("./server.js");\n' > .next/standalone/app.js
+          tar -czf milano-foods-production.tar.gz -C .next/standalone .
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          SSH_HOST: ${{ secrets.CPANEL_HOST }}
+          SSH_PORT: ${{ secrets.CPANEL_PORT }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/milano_deploy
+          chmod 600 ~/.ssh/milano_deploy
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload package to cPanel
+        env:
+          SSH_HOST: ${{ secrets.CPANEL_HOST }}
+          SSH_PORT: ${{ secrets.CPANEL_PORT }}
+          SSH_USER: ${{ secrets.CPANEL_USER }}
+        run: |
+          scp -i ~/.ssh/milano_deploy -P "$SSH_PORT" \
+            -o IdentitiesOnly=yes \
+            milano-foods-production.tar.gz \
+            "$SSH_USER@$SSH_HOST:milano-foods-production-${GITHUB_SHA}.tar.gz"
+
+      - name: Deploy and restart Passenger
+        env:
+          SSH_HOST: ${{ secrets.CPANEL_HOST }}
+          SSH_PORT: ${{ secrets.CPANEL_PORT }}
+          SSH_USER: ${{ secrets.CPANEL_USER }}
+          APP_PATH: ${{ secrets.CPANEL_APP_PATH }}
+        run: |
+          ssh -i ~/.ssh/milano_deploy -p "$SSH_PORT" \
+            -o IdentitiesOnly=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "bash -s -- '$APP_PATH' 'milano-foods-production-${GITHUB_SHA}.tar.gz'" <<'REMOTE'
+          set -euo pipefail
+          APP_PATH="$1"
+          ARCHIVE="$2"
+          RELEASE_DIR="$HOME/deployments/milano-$${ARCHIVE#milano-foods-production-}"
+          RELEASE_DIR="${RELEASE_DIR%.tar.gz}"
+
+          case "$APP_PATH" in
+            "$HOME"/*) ;;
+            *) echo "Refusing unexpected application path"; exit 1 ;;
+          esac
+
+          mkdir -p "$RELEASE_DIR"
+          tar -xzf "$HOME/$ARCHIVE" -C "$RELEASE_DIR"
+          test -f "$RELEASE_DIR/app.js"
+          test -f "$RELEASE_DIR/server.js"
+
+          mkdir -p "$APP_PATH"
+          rsync -a --delete \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='tmp/' \
+            "$RELEASE_DIR/" "$APP_PATH/"
+
+          mkdir -p "$APP_PATH/tmp"
+          touch "$APP_PATH/tmp/restart.txt"
+          rm -f "$HOME/$ARCHIVE"
+          echo "Deployment files synchronized and Passenger restart requested."
+          REMOTE
+
+      - name: Remove local SSH key
+        if: always()
+        run: rm -f ~/.ssh/milano_deploy
