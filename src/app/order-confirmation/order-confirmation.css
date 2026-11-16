@@ -311,22 +311,13 @@
 .receipt-items th.receipt-col-desc,
 .receipt-items td.receipt-col-desc {
   text-align: left;
-  width: 48%;
+  width: 72%;
 }
 
 .receipt-items th.receipt-col-qty,
 .receipt-items td.receipt-col-qty {
-  width: 16%;
-}
-
-.receipt-items th.receipt-col-price,
-.receipt-items td.receipt-col-price {
-  width: 18%;
-}
-
-.receipt-items th.receipt-col-amount,
-.receipt-items td.receipt-col-amount {
-  width: 18%;
+  width: 28%;
+  text-align: center;
 }
 
 .receipt-items td strong {
@@ -627,26 +618,6 @@
   .receipt-items th {
     font-size: 6.5px;
     letter-spacing: 0.02em;
-  }
-
-  .receipt-items th.receipt-col-desc,
-  .receipt-items td.receipt-col-desc {
-    width: 46%;
-  }
-
-  .receipt-items th.receipt-col-qty,
-  .receipt-items td.receipt-col-qty {
-    width: 16%;
-  }
-
-  .receipt-items th.receipt-col-price,
-  .receipt-items td.receipt-col-price {
-    width: 18%;
-  }
-
-  .receipt-items th.receipt-col-amount,
-  .receipt-items td.receipt-col-amount {
-    width: 20%;
   }
 
   .receipt-items td strong {

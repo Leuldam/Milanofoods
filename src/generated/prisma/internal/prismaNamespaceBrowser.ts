@@ -64,6 +64,7 @@ export const ModelName = {
   OrderPaymentProof: 'OrderPaymentProof',
   OrderItem: 'OrderItem',
   AdminUser: 'AdminUser',
+  AdminVerificationCode: 'AdminVerificationCode',
   PushSubscription: 'PushSubscription',
   AdminSession: 'AdminSession',
   AdminLoginThrottle: 'AdminLoginThrottle',
@@ -305,11 +306,30 @@ export const AdminUserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   name: 'name',
   isOwner: 'isOwner',
+  mustChangePassword: 'mustChangePassword',
+  telegramChatId: 'telegramChatId',
+  authVersion: 'authVersion',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type AdminUserScalarFieldEnum = (typeof AdminUserScalarFieldEnum)[keyof typeof AdminUserScalarFieldEnum]
+
+
+export const AdminVerificationCodeScalarFieldEnum = {
+  id: 'id',
+  phone: 'phone',
+  telegramChatId: 'telegramChatId',
+  purpose: 'purpose',
+  codeHash: 'codeHash',
+  requesterIp: 'requesterIp',
+  attempts: 'attempts',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminVerificationCodeScalarFieldEnum = (typeof AdminVerificationCodeScalarFieldEnum)[keyof typeof AdminVerificationCodeScalarFieldEnum]
 
 
 export const PushSubscriptionScalarFieldEnum = {

@@ -5,6 +5,7 @@ import { Plus, Edit, X, Shield, Lock, ShieldCheck, UserCheck } from "lucide-reac
 import { getAdminErrorMessage } from "@/lib/admin-error";
 import type { AdminStaffMember } from "@/lib/admin-types";
 import { AdminTableLoading } from "@/components/admin/admin-loading";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function AdminStaffPage() {
   const [staff, setStaff] = useState<AdminStaffMember[]>([]);
@@ -15,6 +16,7 @@ export default function AdminStaffPage() {
 
   // Form
   const [phone, setPhone] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
@@ -49,6 +51,7 @@ export default function AdminStaffPage() {
   const openAddModal = () => {
     setEditingStaff(null);
     setPhone("");
+    setTelegramChatId("");
     setName("");
     setPassword("");
     setSelectedPermissions([
@@ -66,6 +69,7 @@ export default function AdminStaffPage() {
   const openEditModal = (s: AdminStaffMember) => {
     setEditingStaff(s);
     setPhone(s.phone);
+    setTelegramChatId(s.telegramChatId || "");
     setName(s.name || "");
     setPassword("");
     setSelectedPermissions(s.permissions || []);
@@ -93,12 +97,14 @@ export default function AdminStaffPage() {
         id?: string;
         name: string;
         phone: string;
+        telegramChatId: string;
         password?: string;
         permissions: string[];
         revokeSessions?: boolean;
       } = {
         name,
         phone,
+        telegramChatId,
         permissions: selectedPermissions,
       };
 
@@ -297,15 +303,37 @@ export default function AdminStaffPage() {
 
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>
-                  {editingStaff ? "Reset Password (leave blank to keep current)" : "Password *"}
+                  Private Telegram user ID (password recovery)
                 </label>
                 <input
-                  type="password"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{1,16}"
+                  value={telegramChatId}
+                  onChange={(e) => setTelegramChatId(e.target.value)}
+                  placeholder="Open the bot and press Start first"
+                  style={{ width: "100%", height: "38px", padding: "0 10px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px" }}
+                />
+                <small style={{ display: "block", marginTop: "5px", color: "#777C75", fontSize: "11px" }}>
+                  The bot must have been started from this person&apos;s private Telegram account.
+                </small>
+              </div>
+
+              <div>
+                <label htmlFor="staff-password" style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>
+                  {editingStaff
+                    ? "Reset Password (leave blank to keep current)"
+                    : "Temporary password (must be changed at first sign-in) *"}
+                </label>
+                <PasswordInput
+                  id="staff-password"
                   required={!editingStaff}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Strong secret password"
-                  style={{ width: "100%", height: "38px", padding: "0 10px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px" }}
+                  placeholder="At least 12 characters"
+                  minLength={12}
+                  maxLength={200}
+                  style={{ width: "100%", height: "38px", padding: "0 10px", border: "1px solid #DED8CC", borderRadius: "4px", fontSize: "13px", paddingRight: "44px" }}
                 />
               </div>
 

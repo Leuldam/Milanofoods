@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 const questions = [
   {
     question: "How do I find the right product?",
-    answer: <>Browse the <Link href="/products">product catalog</Link> or use the <Link href="/product-guide">Product Guide</Link> to compare families and current options. Product pages show available details, price, packaging, and stock.</>,
+    answer: <>Browse the <Link href="/products">product catalog</Link> or use the <Link href="/product-guide">Product Guide</Link> to compare families and current options. Product pages show available details, packaging, and stock. Milano will confirm pricing when you order.</>,
   },
   {
     question: "How do I place an order?",
@@ -28,11 +28,11 @@ const questions = [
   },
   {
     question: "Do I need to pay online before ordering?",
-    answer: <>No. Selecting a payment method and uploading a payment screenshot are optional at checkout. You can choose a configured digital payment method or choose to arrange payment later with Milano.</>,
+    answer: <>No payment is collected online. Submit your product request and the Milano team will contact you to confirm pricing, availability, and payment arrangements.</>,
   },
   {
     question: "Why is a product or quantity unavailable?",
-    answer: <>Product availability and stock can change. The cart and checkout recheck current stock, price, packaging, and minimum quantities before an order is submitted. If something changed, review the product and update your cart.</>,
+    answer: <>Product availability and stock can change. The cart and checkout recheck current stock, packaging, and minimum quantities before a request is submitted. Milano will confirm pricing and availability with you.</>,
   },
   {
     question: "Where can I find ingredients and preparation directions?",
@@ -55,7 +55,7 @@ const faqSchema = {
     {
       "@type": "Question",
       name: "How do I find the right product?",
-      acceptedAnswer: { "@type": "Answer", text: "Browse the product catalog or use the Product Guide to compare product families and current options. Product pages show available details, price, packaging, and stock." },
+      acceptedAnswer: { "@type": "Answer", text: "Browse the product catalog or use the Product Guide to compare product families and current options. Product pages show available details, packaging, and stock. Milano will confirm pricing when you order." },
     },
     {
       "@type": "Question",
@@ -70,12 +70,12 @@ const faqSchema = {
     {
       "@type": "Question",
       name: "Do I need to pay online before ordering?",
-      acceptedAnswer: { "@type": "Answer", text: "No. Selecting a payment method and uploading a payment screenshot are optional at checkout. You can choose a configured digital payment method or arrange payment later with Milano." },
+      acceptedAnswer: { "@type": "Answer", text: "No payment is collected online. Submit your product request and the Milano team will contact you to confirm pricing, availability, and payment arrangements." },
     },
     {
       "@type": "Question",
       name: "Why is a product or quantity unavailable?",
-      acceptedAnswer: { "@type": "Answer", text: "Product availability and stock can change. The cart and checkout recheck current stock, price, packaging, and minimum quantities before an order is submitted." },
+      acceptedAnswer: { "@type": "Answer", text: "Product availability and stock can change. The cart and checkout recheck current stock, packaging, and minimum quantities before a request is submitted. Milano will confirm pricing and availability with you." },
     },
     {
       "@type": "Question",

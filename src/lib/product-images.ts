@@ -1,6 +1,6 @@
 export type ProductImageOwner = "products" | "categories";
 
-const imageDataPattern = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/]+={0,2})$/;
+const imageDataPattern = /^data:(image\/(?:png|jpe?g));base64,([A-Za-z0-9+/]+={0,2})$/i;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -11,6 +11,7 @@ export function validateImageDataUrl(value: unknown): string {
   if (!match) throw new Error("INVALID_IMAGE");
 
   const [, mimeType, encoded] = match;
+  const normalizedMimeType = mimeType.toLowerCase();
   const buffer = Buffer.from(encoded, "base64");
   if (
     buffer.length === 0 ||
@@ -20,8 +21,8 @@ export function validateImageDataUrl(value: unknown): string {
     throw new Error("INVALID_IMAGE");
   }
 
-  const isPng = mimeType === "image/png" && buffer.subarray(0, 8).equals(PNG_SIGNATURE);
-  const isJpeg = mimeType === "image/jpeg" &&
+  const isPng = normalizedMimeType === "image/png" && buffer.subarray(0, 8).equals(PNG_SIGNATURE);
+  const isJpeg = (normalizedMimeType === "image/jpeg" || normalizedMimeType === "image/jpg") &&
     buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
   if (!isPng && !isJpeg) throw new Error("INVALID_IMAGE");
 
@@ -47,6 +48,7 @@ export function getCategoryImageUrl(
 ): string | null {
   const uploadedImage = getPublicImageUrl(imageUrl, "categories", categoryId, updatedAt);
   if (imageUrl?.startsWith("data:image/")) return uploadedImage;
+  if (categorySlug === "mojito-syrups") return "/images/mojitol.png";
   if (categorySlug === "ice-cream-powders") return "/images/milanoice.png";
   if (categorySlug === "milkshake-powders") return "/images/milanomilk.png";
   return uploadedImage;
@@ -111,7 +113,7 @@ export function decodeImageDataUrl(value: string) {
   if (!match) throw new Error("Stored image data is invalid.");
 
   return {
-    mimeType: match[1],
+    mimeType: match[1].toLowerCase(),
     buffer: Buffer.from(match[2], "base64"),
   };
 }

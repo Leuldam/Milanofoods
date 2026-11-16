@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CupSoda, IceCreamBowl, MessageCircle, PackageCheck } from "lucide-react";
+import { ArrowRight, CupSoda, IceCreamBowl, PackageCheck } from "lucide-react";
+import BusinessOrderBuilder from "@/components/business-order-builder";
 
 export const metadata: Metadata = {
   title: "Milano for Businesses",
@@ -39,9 +40,10 @@ export default function ForBusinessesPage() {
           <div className="breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><span>For Businesses</span></div>
           <span className="eyebrow">For cafés, restaurants &amp; food businesses</span>
           <h1>Find Milano products for your menu.</h1>
-          <p>Explore drink and dessert product families, check current options, and contact our team about availability and order arrangements.</p>
-          <div className="info-page-actions">
-            <Link href="/products" className="btn">Browse products <ArrowRight size={16} /></Link>
+          <p>Explore drink and dessert products, then build an order by flavor and carton quantity. Each business carton contains 12 units.</p>
+          <div className="info-page-actions business-hero-actions">
+            <Link href="#business-order" className="btn">Start a carton order <ArrowRight size={16} /></Link>
+            <Link href="/products" className="info-text-link">Browse products <ArrowRight size={15} /></Link>
             <Link href="/contact" className="info-text-link">Talk to Milano <ArrowRight size={15} /></Link>
           </div>
         </div>
@@ -69,16 +71,7 @@ export default function ForBusinessesPage() {
         </div>
       </section>
 
-      <section className="business-next-step">
-        <div className="wrap business-next-step-inner">
-          <div>
-            <span className="eyebrow">Planning an order?</span>
-            <h2>Let&apos;s discuss what works for your business.</h2>
-            <p>Contact us about product options, current availability, delivery, or pickup. Order arrangements are confirmed with the Milano team.</p>
-          </div>
-          <Link href="/contact" className="btn btn-gold"><MessageCircle size={16} /> Contact our team</Link>
-        </div>
-      </section>
+      <BusinessOrderBuilder />
     </main>
   );
 }

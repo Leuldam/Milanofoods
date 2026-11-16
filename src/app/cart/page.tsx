@@ -11,9 +11,8 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/components/store-provider";
-import { getCartLinePrice, getCartLineTotal, getCartLineUnits } from "@/components/store-provider";
-import { formatTotalMeasure, minimumPackageQuantity } from "@/lib/product-pricing";
-import { money } from "@/lib/products";
+import { getCartLineUnits } from "@/components/store-provider";
+import { minimumPackageQuantity } from "@/lib/product-pricing";
 
 export default function CartPage() {
   const {
@@ -21,7 +20,6 @@ export default function CartPage() {
     setQty,
     setPackaging,
     remove,
-    subtotal,
     productsLoaded,
   } = useStore();
 
@@ -86,7 +84,6 @@ export default function CartPage() {
                   const requestedProductUnits = requestedUnitsByProduct.get(item.slug) || totalUnits;
                   const availableForThisLine = (item.availableStock || 0) - (requestedProductUnits - totalUnits);
                   const maximumPackages = Math.floor(Math.max(0, availableForThisLine) / unitsPerPackage);
-                  const totalMeasure = formatTotalMeasure(item.size, totalUnits);
                   const unavailable =
                     productsLoaded &&
                     (item.inStock !== true ||
@@ -108,14 +105,16 @@ export default function CartPage() {
                         height={100}
                       />
 
-                      <div>
+                      <div className="cart-item-content">
                         <h3>{item.name}</h3>
-                        {item.sku && <p className="cart-item-sku">SKU · {item.sku}</p>}
-                        <p>{[item.flavor, item.variantType, item.size].filter(Boolean).join(" · ")}</p>
 
-                        <label className="cart-packaging-field">
-                          <span>Packaging</span>
+                        <div className="cart-item-controls">
+                          <label className="cart-packaging-label" htmlFor={`packaging-${item.id}`}>
+                            Pack size
+                          </label>
                           <select
+                            id={`packaging-${item.id}`}
+                            className="cart-packaging-select"
                             aria-label={`Packaging for ${item.name}`}
                             value={item.packagingOptionId || ""}
                             onChange={(event) => setPackaging(item.id, event.target.value || null)}
@@ -125,25 +124,34 @@ export default function CartPage() {
                               <option key={option.id} value={option.id}>{option.label} · {option.unitsPerPackage} units</option>
                             ))}
                           </select>
-                        </label>
-                        <p className="cart-packaging-summary">
-                          {item.qty} × {item.packagingLabel || "Single unit"} · {totalUnits} individual units
-                          {totalMeasure ? ` · ${totalMeasure} total` : ""}
-                        </p>
-                        <strong className="price">ETB {getCartLinePrice(item).toLocaleString("en-ET", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / individual unit</strong>
-                        {item.promotionEnabled && item.promotionDiscountPercent && <small className="cart-promotion-note">Configured promotion: {item.promotionDiscountPercent}% off per unit</small>}
+                          <div className="qty-control">
+                            <button
+                              onClick={() => setQty(item.id, item.qty - 1)}
+                              aria-label="Decrease quantity"
+                              disabled={item.qty <= minimumQty}
+                            >
+                              <Minus size={12} />
+                            </button>
 
-                        {productsLoaded && (
-                          <p
-                            style={{
-                              fontSize: 11,
-                              color: unavailable ? "#b42318" : "#4e795d",
-                              margin: "6px 0",
-                            }}
-                          >
-                            {unavailable
-                              ? "Unavailable or insufficient stock"
-                              : `${Math.max(0, availableForThisLine)} individual units available for this line`}
+                            <span>{item.qty}</span>
+
+                            <button
+                              onClick={() => setQty(item.id, item.qty + 1)}
+                              aria-label="Increase quantity"
+                              disabled={
+                                !productsLoaded ||
+                                unavailable ||
+                                item.availableStock === undefined ||
+                                item.qty >= maximumPackages
+                              }
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        {unavailable && (
+                          <p className="cart-item-stock-warning" role="alert">
+                            This item is unavailable in the requested quantity.
                           </p>
                         )}
 
@@ -163,42 +171,6 @@ export default function CartPage() {
                         </button>
                       </div>
 
-                      <div style={{ textAlign: "right" }}>
-                        <div className="qty-control">
-                          <button
-                            onClick={() => setQty(item.id, item.qty - 1)}
-                            aria-label="Decrease quantity"
-                            disabled={item.qty <= minimumQty}
-                          >
-                            <Minus size={12} />
-                          </button>
-
-                          <span>{item.qty}</span>
-
-                          <button
-                            onClick={() => setQty(item.id, item.qty + 1)}
-                            aria-label="Increase quantity"
-                            disabled={
-                              !productsLoaded ||
-                              unavailable ||
-                              item.availableStock === undefined ||
-                              item.qty >= maximumPackages
-                            }
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: 12,
-                            marginTop: 13,
-                          }}
-                        >
-                          {money(getCartLineTotal(item))}
-                        </div>
-                      </div>
                     </div>
                   );
                 })}
@@ -213,22 +185,7 @@ export default function CartPage() {
               </div>
 
               <aside className="summary-card">
-                <h3>Order summary</h3>
-
-                <div className="summary-line">
-                  <span>Subtotal</span>
-                  <span>{money(subtotal)}</span>
-                </div>
-
-                <div className="summary-line">
-                  <span>Delivery</span>
-                  <span>Calculated after address</span>
-                </div>
-
-                <div className="summary-line summary-total">
-                  <span>Estimated total</span>
-                  <span>{money(subtotal)}</span>
-                </div>
+                <h3>Order request</h3>
 
                 <p
                   style={{
@@ -237,8 +194,8 @@ export default function CartPage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Final delivery fees and order details will be confirmed
-                  by Milano Foods.
+                  Milano Foods will contact you to confirm availability,
+                  pricing, and delivery arrangements after you submit your request.
                 </p>
 
                 {hasUnavailableItems && (
@@ -268,7 +225,7 @@ export default function CartPage() {
                   }}
                 >
                   {productsLoaded
-                    ? "Proceed to checkout"
+                    ? "Continue to order request"
                     : "Checking availability..."}
                   <ArrowRight size={15} />
                 </Link>

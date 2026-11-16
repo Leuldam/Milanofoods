@@ -23,6 +23,30 @@ export function comparePackageSizes(first: string, second: string) {
   return first.localeCompare(second, undefined, { numeric: true });
 }
 
+export function getPreferredProductVariant<T extends GroupableProduct>(
+  variants: T[],
+  variantType?: string | null,
+): T | undefined {
+  const matchingVariants = variantType
+    ? variants.filter((variant) => variant.variantType === variantType)
+    : variants;
+  if (!matchingVariants.length) return undefined;
+
+  const category = matchingVariants[0].category;
+  const type = (variantType || matchingVariants[0].variantType || "").toLowerCase();
+  const preferredSize = category === "Ice Cream Powders"
+    ? "1kg"
+    : category === "Milkshake Powders"
+      ? type === "liquid" ? "5kg" : type === "powder" ? "1kg" : ""
+      : "";
+  if (!preferredSize) return matchingVariants[0];
+
+  const normalizeSize = (size: string | null | undefined) =>
+    (size || "").toLowerCase().replace(/\s/g, "");
+  return matchingVariants.find((variant) => normalizeSize(variant.size) === preferredSize) ||
+    matchingVariants[0];
+}
+
 export function groupProductVariants<T extends GroupableProduct>(products: T[]) {
   const grouped = new Map<string, T[]>();
 
@@ -63,7 +87,7 @@ const slugPart = (value: string) =>
 export const dessertProductVariants: CatalogProductVariant[] = [
   ...["Strawberry", "Chocolate", "Mango", "Vanilla"].flatMap((flavor) =>
     ["Hard", "Soft"].flatMap((variantType) =>
-      ["1 kg", "2 kg", "3 kg", "5 kg"].map((size) => ({
+      ["1 kg"].map((size) => ({
         name: `${flavor} ${variantType} Ice Cream Powder`,
         slug: `ice-cream-${slugPart(flavor)}-${slugPart(variantType)}-${slugPart(size)}`,
         price: 0,
@@ -78,8 +102,8 @@ export const dessertProductVariants: CatalogProductVariant[] = [
   ),
   ...["Strawberry", "Chocolate", "Vanilla", "Mango"].flatMap((flavor) =>
     [
-      { variantType: "Powder", size: "5 kg" },
-      { variantType: "Liquid", size: "5 L" },
+      { variantType: "Powder", size: "1 kg" },
+      { variantType: "Liquid", size: "5 kg" },
     ].map(({ variantType, size }) => ({
       name: `${flavor} Milkshake ${variantType}`,
       slug: `milkshake-${slugPart(flavor)}-${slugPart(variantType)}-${slugPart(size)}`,

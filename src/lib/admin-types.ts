@@ -111,6 +111,7 @@ export interface AdminPayment {
 export interface AdminStaffMember {
   id: string;
   phone: string;
+  telegramChatId: string | null;
   name: string | null;
   isOwner: boolean;
   createdAt: string;
@@ -240,7 +241,6 @@ export interface AdminProductForm {
   sku: string;
   slug: string;
   categoryId: string;
-  price: string | number;
   size: string;
   flavor: string;
   variantType: string;

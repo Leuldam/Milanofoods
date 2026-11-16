@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import { Product } from "@/lib/products";
 import { groupProductVariants } from "@/lib/product-variants";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 
 type StoreProduct = Product & {
   flavor: string | null;
@@ -94,8 +94,19 @@ export default function ProductsPage() {
     [familyProducts],
   );
   const variantTypes = useMemo(
-    () => Array.from(new Set(familyProducts.map((product) => product.variantType).filter((value): value is string => Boolean(value)))).sort(),
-    [familyProducts],
+    () => {
+      const types = Array.from(new Set(familyProducts.map((product) => product.variantType).filter((value): value is string => Boolean(value))));
+      const preferredOrder = category === "Ice Cream Powders" ? ["Hard", "Soft"] : ["Powder", "Liquid"];
+      return types.sort((first, second) => {
+        const firstIndex = preferredOrder.indexOf(first);
+        const secondIndex = preferredOrder.indexOf(second);
+        if (firstIndex < 0 && secondIndex < 0) return first.localeCompare(second);
+        if (firstIndex < 0) return 1;
+        if (secondIndex < 0) return -1;
+        return firstIndex - secondIndex;
+      });
+    },
+    [category, familyProducts],
   );
   const sizes = useMemo(
     () => Array.from(new Set(familyProducts.map((product) => product.size).filter(Boolean))).sort(),
@@ -112,16 +123,12 @@ export default function ProductsPage() {
         `${p.name} ${p.category}`.toLowerCase().includes(q.toLowerCase())
     );
 
-    if (sort === "low") arr.sort((a, b) => a.price - b.price);
-    if (sort === "high") arr.sort((a, b) => b.price - a.price);
     if (sort === "name") arr.sort((a, b) => a.name.localeCompare(b.name));
 
     return arr;
   }, [products, q, category, flavor, variantType, size, sort]);
   const productGroups = useMemo(() => {
     const groups = groupProductVariants(list);
-    if (sort === "low") groups.sort((a, b) => a.product.price - b.product.price);
-    if (sort === "high") groups.sort((a, b) => b.product.price - a.product.price);
     if (sort === "name") groups.sort((a, b) => a.product.name.localeCompare(b.product.name));
     return groups;
   }, [list, sort]);
@@ -133,11 +140,14 @@ export default function ProductsPage() {
       <section className="page-hero">
         <div className="wrap">
           <div className="breadcrumb">Home / Products</div>
-          <span className="eyebrow">Explore the collection</span>
           <h1>{category === "All Products" ? "All products" : selectedFamily?.label ?? "All products"}</h1>
           <p>
             {category === "All Products"
               ? "Choose from Milano mojito syrup, ice cream powder, milkshake, and more."
+              : category === "Ice Cream Powders"
+                ? "Choose your favorite flavor in hard or soft style."
+                : category === "Milkshake Powders"
+                  ? "Choose your favorite flavor in powder or liquid format."
               : selectedFamily?.description || "Explore products in this category."}
           </p>
         </div>
@@ -146,86 +156,59 @@ export default function ProductsPage() {
       <section className="section">
         <div className="wrap">
           <div className="catalog-tools">
-            <div style={{ position: "relative", flex: 1 }}>
-              <Search
-                size={17}
-                style={{
-                  position: "absolute",
-                  left: 13,
-                  top: 14,
-                  color: "#777",
-                }}
-              />
+            <div className="catalog-search">
+              <Search size={17} aria-hidden="true" />
               <input
                 className="search-input"
-                style={{ paddingLeft: 40 }}
+                aria-label="Search products"
                 placeholder="Search products..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
 
-            <select
-              aria-label="Category"
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setFlavor("");
-                setVariantType("");
-                setSize("");
-              }}
-            >
-              {categoryOptions.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
+            <label className="catalog-tool-select">
+              <span>Category</span>
+              <select
+                aria-label="Category"
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setFlavor("");
+                  setVariantType("");
+                  setSize("");
+                }}
+              >
+                {categoryOptions.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
 
-            <select
-              aria-label="Sort products"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              <option value="featured">Featured</option>
-              <option value="low">Price: low to high</option>
-              <option value="high">Price: high to low</option>
-              <option value="name">Name</option>
-            </select>
+            <label className="catalog-tool-select">
+              <span>Sort by</span>
+              <select
+                aria-label="Sort products"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="featured">Featured</option>
+                <option value="name">Name</option>
+              </select>
+            </label>
           </div>
 
           <div className="catalog-layout">
-            <aside className="filters">
-              <h3>
-                <SlidersHorizontal
-                  size={14}
-                  style={{ display: "inline", marginRight: 8 }}
-                />
-                Categories
-              </h3>
-
-              {categoryOptions.map((item) => (
-                <label key={item.value}>
-                  <input
-                    type="radio"
-                    name="category"
-                    checked={category === item.value}
-                    onChange={() => {
-                      setCategory(item.value);
-                      setFlavor("");
-                      setVariantType("");
-                      setSize("");
-                    }}
-                  />
-                  {item.label}
-                </label>
-              ))}
-            </aside>
-
             <div>
-              {category !== "All Products" && (flavors.length > 1 || variantTypes.length > 1 || sizes.length > 1) && (
+              {category !== "All Products" && (
+                flavors.length > 1 ||
+                variantTypes.length > 1 ||
+                (category !== "Ice Cream Powders" && category !== "Milkshake Powders" && sizes.length > 1)
+              ) && (
                 <div className="catalog-variant-filters" aria-label="Filter product variants">
                   {flavors.length > 1 && <label>Flavor<select aria-label="Flavor" value={flavor} onChange={(event) => setFlavor(event.target.value)}><option value="">All flavors</option>{flavors.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
                   {variantTypes.length > 1 && <label>{category === "Ice Cream Powders" ? "Style" : "Format"}<select aria-label={category === "Ice Cream Powders" ? "Style" : "Format"} value={variantType} onChange={(event) => setVariantType(event.target.value)}><option value="">All {category === "Ice Cream Powders" ? "styles" : "formats"}</option>{variantTypes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
-                  {sizes.length > 1 && <label>Pack size<select aria-label="Pack size" value={size} onChange={(event) => setSize(event.target.value)}><option value="">All sizes</option>{sizes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
+                  {category !== "Ice Cream Powders" && category !== "Milkshake Powders" && sizes.length > 1 && <label>Pack size<select aria-label="Pack size" value={size} onChange={(event) => setSize(event.target.value)}><option value="">All sizes</option>{sizes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
                 </div>
               )}
               {loading ? (
@@ -243,14 +226,8 @@ export default function ProductsPage() {
                 </div>
               ) : (
                 <>
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: "var(--muted)",
-                      margin: "0 0 18px",
-                    }}
-                  >
-                    {productGroups.length} products
+                  <p className="catalog-result-count">
+                    <strong>{productGroups.length}</strong> products
                   </p>
 
                   {list.length ? (

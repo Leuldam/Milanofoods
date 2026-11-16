@@ -2,47 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AboutPreview, BusinessBanner, CategorySection, FeaturedProducts, RecipeFeature } from "@/components/sections";
 
-/* ------------------------------------------------------------------ */
-/* 1. HERO SLIDES                                                      */
-/* Edit a slide here: copy, link, colors, image.                       */
-/* Images go in /public/hero/. Use a transparent WebP or PNG, product  */
-/* centered, about 1000 x 1250 px (4:5), similar framing on each one.  */
-/* The hrefs are placeholders: point them at your real routes.         */
-/* ------------------------------------------------------------------ */
-
 type HeroSlide = {
   id: string;
-  name: string; // short label on the slide bar (desktop)
-  mark: string; // the big outlined word behind the product; keep it to 5 letters or fewer
-  lines: [string, string]; // headline: first line upright, second line italic in the accent color
+  name: string;
+  lines: [string, string];
   text: string;
-  meta: string; // small line under the buttons
-  seal: [string, string]; // round badge by the product: big word, small word
   cta: string;
   href: string;
   image: string;
   alt: string;
-  washFrom: string; // the "pour" color that sweeps across the hero when this slide arrives
+  washFrom: string;
   washTo: string;
-  accent: string; // italic headline line and progress bar; keep it readable on the wash
+  accent: string;
 };
 
 const heroSlides: HeroSlide[] = [
   {
     id: "mojito-syrup",
     name: "Mojito Syrup",
-    mark: "Mojito",
     lines: ["Bright flavors,", "ready to pour."],
-    text: "Explore Milano Mojito Syrup, a refreshing range for mocktails, lemonades, and creative drinks.",
-    meta: "Milano Mojito Syrup",
-    seal: ["Fresh", "flavors"],
+    text: "Fruit-forward syrup for mocktails, lemonades, and creative drinks.",
     cta: "Shop mojito syrup",
-    href: "/products?category=Mojito%20Syrups",
-    image: "/images/milano-mint-bottle-cutout.png",
+    href: "/products?category=mojito-syrups",
+    image: "/images/mojitol.png",
     alt: "Milano Mojito Syrup bottle",
     washFrom: "#DDF0DF",
     washTo: "#ADD7B4",
@@ -51,13 +37,10 @@ const heroSlides: HeroSlide[] = [
   {
     id: "ice-cream-powder",
     name: "Ice Cream Powder",
-    mark: "Cream",
     lines: ["Make every scoop", "a Milano moment."],
-    text: "Discover Milano Ice Cream Powder in delicious flavors, hard or soft styles, and a range of pack sizes.",
-    meta: "Ice cream powder, hard and soft",
-    seal: ["Hard", "& soft"],
+    text: "Choose your favorite flavor in hard or soft style.",
     cta: "Shop ice cream powder",
-    href: "/products?category=Ice%20Cream%20Powders",
+    href: "/products?category=ice-cream-powders",
     image: "/images/milanoice.png",
     alt: "Milano Ice Cream Powder",
     washFrom: "#FFF0D7",
@@ -67,13 +50,10 @@ const heroSlides: HeroSlide[] = [
   {
     id: "milkshake-powder",
     name: "Milkshake Powder",
-    mark: "Shake",
     lines: ["Make it creamy,", "make it Milano."],
-    text: "Find your favorite milkshake flavor in powder or liquid options, ready for cafés and home creations.",
-    meta: "Milkshake, powder and liquid",
-    seal: ["Mix", "& enjoy"],
+    text: "Powder and liquid options for cafés and home.",
     cta: "Shop milkshake",
-    href: "/products?category=Milkshake%20Powders",
+    href: "/products?category=milkshake-powders",
     image: "/images/milanomilk.png",
     alt: "Milano Milkshake Powder",
     washFrom: "#F8E2DF",
@@ -82,38 +62,30 @@ const heroSlides: HeroSlide[] = [
   },
 ];
 
-// Soft bubbles drifting behind the product. x/y: position in the art area,
-// s: size in px, d: how far they travel while sliding (bigger = nearer to you)
-const BUBBLES = [
-  { x: "6%", y: "20%", s: 28, d: 0.7 },
-  { x: "90%", y: "64%", s: 44, d: 0.5 },
-  { x: "14%", y: "72%", s: 16, d: 0.9 },
-  { x: "70%", y: "10%", s: 14, d: 0.8 },
-  { x: "2%", y: "46%", s: 36, d: 0.45 },
-] as const;
-
-/* ------------------------------------------------------------------ */
-/* 2. HERO STYLES                                                      */
-/* The hero is pinned while the page scrolls. Scrolling down moves     */
-/* through the slides. Tune with --hc-step (scroll distance per slide) */
-/* and --hc-art-h (product height).                                    */
-/* ------------------------------------------------------------------ */
-
 const heroCss = `
 .hc-scroll {
-  --hc-step: 56svh;
+  --hc-height: max(540px, 100svh);
+  --hc-step: clamp(280px, 38svh, 400px);
   --hc-top: 0px;
-  --hc-h: 100svh;
   position: relative;
-  height: calc(var(--hc-h) + (var(--hc-count, 3) - 1) * var(--hc-step));
+  height: calc(var(--hc-height) + var(--hc-step) + var(--hc-step));
 }
 .hc {
-  --hc-art-h: clamp(180px, 32svh, 340px);
+  --hc-art-h: clamp(190px, 34svh, 360px);
   --ink: #03291f;
   --cream: #faf7f0;
-  --cx: 50%; --cy: 26%;
   --pad: 20px;
-  position: sticky; top: var(--hc-top); height: var(--hc-h);
+  --scroll-copy-x: 0px;
+  --scroll-copy-y: 0px;
+  --scroll-copy-opacity: 1;
+  --scroll-art-y: 0px;
+  --scroll-art-opacity: 1;
+  --scroll-art-scale: 1;
+  --scroll-bg-y: 0px;
+  --scroll-bg-scale: 1.02;
+  position: sticky;
+  top: var(--hc-top);
+  height: var(--hc-height);
   overflow: hidden; isolation: isolate;
   background: #ddf0df;
   color: var(--ink);
@@ -126,343 +98,243 @@ const heroCss = `
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-/* Background. The first slide's color fills the hero. Every later slide is a wide
-   curtain with a rounded leading edge that sweeps in from the right as its slide
-   arrives, so the new color pours across the old one. Only transforms change while
-   scrolling, so the GPU does all the work. */
-.hc-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-.hc-wash {
-  position: absolute; top: 0; bottom: 0; left: 0; width: 100%;
-  background: linear-gradient(160deg, var(--wa), var(--wb));
-}
-.hc-wash + .hc-wash {
-  width: 210%;
-  background: linear-gradient(160deg, var(--wa) 12%, var(--wb) 88%);
-  border-radius: 22% 0 0 22% / 50% 0 0 50%;
-  box-shadow: -28px 0 56px rgba(255, 255, 255, 0.32);
-  transform: translate3d(50%, 0, 0); /* parked off-screen until its slide arrives */
-  visibility: hidden;
+.hc-bg {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  transform: translate3d(0, var(--scroll-bg-y), 0) scale(var(--scroll-bg-scale));
+  transform-origin: center;
   will-change: transform;
 }
-.hc-bg::after {
-  content: ""; position: absolute; inset: 0;
-  background: radial-gradient(circle at var(--cx) var(--cy), rgba(255, 255, 255, 0.5), transparent 55%);
+.hc-wash {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, var(--wa), var(--wb));
+  opacity: 0;
+  transition: opacity 820ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+.hc-wash[data-active="true"] { opacity: 1; }
 
-/* The track slides sideways as the page scrolls down (moved from JS) */
-.hc-track { position: relative; z-index: 1; display: flex; height: 100%; will-change: transform; }
 .hc-slide {
-  position: relative; flex: 0 0 100%; min-width: 0; height: 100%;
+  position: absolute; inset: 0; z-index: 1;
   display: flex; flex-direction: column; justify-content: center; gap: 14px;
-  padding: 12px var(--pad) 88px;
+  padding: 16px var(--pad) 92px;
 }
-.hc-slide:not([data-on]) * { animation-play-state: paused; }
-
-/* Copy */
-.hc-copy { position: relative; display: grid; gap: 14px; justify-items: start; }
+.hc-copy {
+  position: relative; display: grid; gap: 14px; justify-items: start;
+  transform: translate3d(var(--scroll-copy-x), var(--scroll-copy-y), 0);
+  opacity: var(--scroll-copy-opacity);
+  will-change: transform, opacity;
+}
 .hc-title {
   margin: 0;
   font-family: var(--font-sans, "Manrope", "Helvetica Neue", Arial, sans-serif);
   font-size: clamp(2.3rem, 10.4vw, 3.6rem);
   font-weight: 750; line-height: 1.04; letter-spacing: -0.045em;
   text-wrap: balance;
+  animation: hc-copy-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .hc-line {
-  display: block; overflow: hidden; will-change: transform;
-  padding: 0.06em 0.12em 0.16em 0; margin: -0.06em -0.12em -0.16em 0; /* room for descenders and italics */
+  display: block;
 }
 .hc-title em.hc-line { font-weight: 500; font-style: italic; color: var(--accent); }
-
-/* Each word rises out of the line one after another as its slide arrives, and drops
-   away in reverse as it leaves. --a (0 = settled, 1 = off screen) and --sg (-1 or 1,
-   which side it is on) come from JS; --w is the word's position in the headline. */
-.hc-w {
-  --rw: clamp(0, calc((var(--a, 0) - 0.46 + var(--w, 0) * 0.05) * 1.9), 1);
-  display: inline-block; transform-origin: 0 100%;
-  transform: translate3d(0, calc(var(--rw) * var(--rw) * var(--sg, 1) * 115%), 0)
-    rotate(calc(var(--rw) * var(--sg, 1) * 5deg));
-}
-
 .hc-text {
   margin: 0; max-width: 32rem; font-size: 1.0625rem; line-height: 1.6;
   color: rgba(3, 41, 31, 0.84);
-  transform: translate3d(calc(var(--o, 0) * -8%), calc(var(--r3, 0) * 36px), 0);
-  opacity: var(--q3, 1);
-  will-change: transform, opacity;
+  animation: hc-copy-in 760ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
 }
-.hc-actions { display: flex; flex-wrap: wrap; gap: 10px 14px; width: 100%; margin-top: 4px; }
-.hc-actions, .hc-meta {
-  transform: translate3d(calc(var(--o, 0) * -10%), calc(var(--r4, 0) * 36px), 0);
-  opacity: var(--q4, 1);
-  will-change: transform, opacity;
+.hc-actions {
+  display: flex; flex-wrap: wrap; gap: 10px 14px; width: 100%; margin-top: 4px;
+  animation: hc-copy-in 820ms cubic-bezier(0.22, 1, 0.36, 1) 110ms both;
 }
 .hc-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 52px; padding: 0 28px; border-radius: 999px;
+  min-height: 48px; padding: 0 24px; border-radius: 2px;
   font-size: 1rem; font-weight: 600; text-decoration: none;
   transition: background-color 0.25s, border-color 0.25s;
 }
 .hc-btn-solid { background: var(--ink); color: var(--cream); }
 .hc-btn-solid:hover { background: #073d2e; }
-.hc-btn-quiet { color: var(--ink); border: 1.5px solid rgba(3, 41, 31, 0.3); }
-.hc-btn-quiet:hover { background: rgba(255, 255, 255, 0.45); border-color: var(--ink); }
-.hc-meta { margin: 0; font-size: 0.9rem; color: rgba(3, 41, 31, 0.74); }
+.hc-btn-secondary {
+  border: 1px solid rgba(3, 41, 31, 0.34);
+  background: rgba(255, 255, 255, 0.26);
+  color: var(--ink);
+}
+.hc-btn-secondary:hover { background: rgba(255, 255, 255, 0.55); }
 
-/* Product area. Layers move at different speeds while a slide arrives, which gives depth:
-   the big word lags behind, the bottle leads, the bubbles and the seal travel farthest. */
 .hc-art {
-  order: -1; position: relative; height: var(--hc-art-h);
-  perspective: 1000px; container-type: inline-size;
-}
-.hc-mark {
-  position: absolute; inset: 0; display: grid; place-items: center; margin: 0;
-  font-family: var(--font-sans, "Manrope", "Helvetica Neue", Arial, sans-serif);
-  font-size: clamp(4rem, 18vw, 12rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em;
-  white-space: nowrap; user-select: none; pointer-events: none;
-  color: rgba(255, 255, 255, 0.42);
-  -webkit-text-stroke: 1.5px rgba(3, 41, 31, 0.22);
-  transform: translate3d(calc(var(--o, 0) * -24%), 0, 0);
-  opacity: var(--q2, 1);
-  will-change: transform, opacity;
-}
-@supports (font-size: 1cqw) {
-  .hc-mark { font-size: clamp(4rem, 27cqw, 15rem); }
-}
-.hc-disc {
-  position: absolute; left: 50%; top: 50%;
-  width: min(92%, 560px, calc(var(--hc-art-h) * 1.05)); aspect-ratio: 1; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
-  transform: translate(-50%, -50%) translateX(calc(var(--o, 0) * 18%))
-    scale(calc(0.55 + var(--q1, 1) * 0.45));
-  opacity: var(--q1, 1);
-  will-change: transform, opacity;
-}
-.hc-bubbles { position: absolute; inset: 0; pointer-events: none; }
-.hc-bubble {
-  position: absolute; left: var(--x); top: var(--y);
-  width: calc(var(--s) * 1px); aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.14) 62%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  transform: translate3d(calc(var(--o, 0) * var(--d) * 50vw), 0, 0);
-  transform: translate3d(calc(var(--o, 0) * var(--d) * 60cqw), 0, 0);
-  opacity: var(--q1, 1);
+  order: -1; position: relative; height: var(--hc-art-h); flex: 0 0 auto;
+  transform: translate3d(0, var(--scroll-art-y), 0) scale(var(--scroll-art-scale));
+  opacity: var(--scroll-art-opacity);
   will-change: transform, opacity;
 }
 .hc-bottle {
-  position: absolute; inset: 0; width: min(86%, 520px);
-  margin-inline: auto; transform-origin: 50% 100%;
-  transform: translateX(calc(var(--o, 0) * 34%)) translateY(calc(var(--a, 0) * 36px))
-    rotateY(calc(var(--o, 0) * -32deg)) rotateZ(calc(var(--o, 0) * 11deg))
-    scale(calc(1 - var(--a, 0) * 0.14));
-  will-change: transform;
-  backface-visibility: hidden;
+  position: absolute; inset: 0; width: min(86%, 520px); margin-inline: auto;
 }
-.hc-bottle::before {
-  content: ""; position: absolute; inset: -10% -14%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.55), transparent);
+.hc-float {
+  position: absolute; inset: 0;
+  animation: hc-art-in 800ms cubic-bezier(0.22, 1, 0.36, 1) 50ms both;
 }
-.hc-float { position: absolute; inset: 0; animation: hc-float 8s ease-in-out infinite; }
-.hc-float img { object-fit: contain; -webkit-user-drag: none; }
-.hc-shadow {
-  position: absolute; bottom: 1%; left: 50%; width: 50%; max-width: 260px; height: 6%;
-  transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(3, 41, 31, 0.3), transparent);
-  animation: hc-shadow 8s ease-in-out infinite;
+.hc-float img {
+  object-fit: contain; -webkit-user-drag: none;
+  filter: drop-shadow(0 18px 22px rgba(3, 41, 31, 0.24));
 }
-.hc-seal {
-  position: absolute; right: 2%; top: 2%; width: 92px; aspect-ratio: 1;
-  display: grid; place-content: center; text-align: center; border-radius: 50%;
-  font-family: var(--font-sans, "Manrope", "Helvetica Neue", Arial, sans-serif); line-height: 1;
-  background: var(--ink); color: var(--cream);
-  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.45);
-  transform: translate3d(calc(var(--o, 0) * 46vw), calc(var(--a, 0) * -30px), 0) rotate(calc(var(--o, 0) * -50deg));
-  opacity: var(--q2, 1);
-  will-change: transform, opacity;
-}
-@supports (width: 1cqw) {
-  .hc-seal {
-    width: clamp(68px, 19cqw, 124px);
-    transform: translate3d(calc(var(--o, 0) * 46cqw), calc(var(--a, 0) * -30px), 0) rotate(calc(var(--o, 0) * -50deg));
-  }
-}
-.hc-seal b { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; }
-.hc-seal span { margin-top: 0.3em; font-size: 0.72rem; opacity: 0.85; }
-@supports (font-size: 1cqw) {
-  .hc-seal b { font-size: clamp(1.2rem, 6.6cqw, 2.3rem); }
-  .hc-seal span { font-size: clamp(0.62rem, 2.6cqw, 0.9rem); }
-}
-
-@keyframes hc-float {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50% { transform: translate3d(0, -1.8%, 0) rotate(0.8deg); }
-}
-@keyframes hc-shadow {
-  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
-  50% { transform: translateX(-50%) scale(0.9); opacity: 0.8; }
-}
-@keyframes hc-cue {
-  0% { transform: scaleY(0); transform-origin: top; }
-  50% { transform: scaleY(1); transform-origin: top; }
-  51% { transform: scaleY(1); transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
-}
-
-/* Controls: the bars fill as you scroll, and double as slide buttons */
 .hc-controls {
-  position: absolute; z-index: 2; inset: auto 0 0;
+  position: absolute; z-index: 2; inset: auto 0 max(12px, env(safe-area-inset-bottom, 0px));
   display: flex; align-items: center; gap: 14px;
-  padding: 0 var(--pad) calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 0 var(--pad);
 }
-.hc-tabs { display: flex; flex: 1; gap: 10px; max-width: 820px; }
+.hc-tabs { display: flex; flex: 1; gap: clamp(8px, 2vw, 24px); max-width: 820px; }
 .hc-tab {
-  flex: 1; min-width: 0; padding: 16px 0 12px;
+  position: relative; flex: 1; min-width: 0; padding: 12px 0;
   background: none; border: 0; color: inherit; font: inherit;
-  text-align: left; cursor: pointer;
+  text-align: center; cursor: pointer; opacity: 0.65; transition: opacity 0.2s;
 }
 .hc-tab-label {
-  display: none; align-items: center; gap: 8px; margin-bottom: 8px;
-  font-size: 0.875rem; font-weight: 600; white-space: nowrap;
-  opacity: 0.6; transition: opacity 0.3s;
+  display: block; font-size: clamp(0.7rem, 1vw, 0.875rem); font-weight: 600; line-height: 1.3;
 }
-.hc-tab-label span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.hc-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(3, 41, 31, 0.28); }
-.hc-tab[aria-current="true"] .hc-tab-label, .hc-tab:hover .hc-tab-label { opacity: 1; }
-.hc-tab-bar { display: block; height: 3px; border-radius: 2px; background: rgba(3, 41, 31, 0.18); overflow: hidden; }
-.hc-tab-fill {
-  display: block; height: 100%; background: var(--accent);
-  transform: scaleX(0); transform-origin: left;
-  transition: background-color 0.4s; will-change: transform;
+.hc-tab[aria-current="true"], .hc-tab:hover { opacity: 1; }
+.hc-tab[aria-current="true"] .hc-tab-label { color: var(--accent); }
+.hc-tab::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 2px;
+  background: var(--accent); transform: scaleX(0); transform-origin: left;
+  transition: transform 280ms ease;
 }
-.hc-buttons { display: none; gap: 8px; }
+.hc-tab[aria-current="true"]::after { transform: scaleX(1); }
+.hc-buttons { display: flex; gap: 8px; }
 .hc-iconbtn {
-  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
-  border: 1.5px solid rgba(3, 41, 31, 0.25); background: rgba(255, 255, 255, 0.55);
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 2px;
+  border: 0; background: rgba(255, 255, 255, 0.45);
   color: var(--ink); cursor: pointer; transition: background-color 0.25s, opacity 0.25s;
 }
 .hc-iconbtn:hover:not(:disabled) { background: #fff; }
 .hc-iconbtn:disabled { opacity: 0.35; cursor: default; }
 
-/* Scroll hint on the first slide, desktop only; it fades out once you start scrolling */
-.hc-cue {
-  position: absolute; z-index: 2; left: 50%; bottom: 92px; display: none;
-  flex-direction: column; align-items: center; gap: 8px;
-  font-size: 0.8rem; font-weight: 600; color: rgba(3, 41, 31, 0.7);
-  transform: translateX(-50%); pointer-events: none;
+@keyframes hc-copy-in {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-.hc-cue-line { position: relative; width: 2px; height: 36px; border-radius: 2px; overflow: hidden; background: rgba(3, 41, 31, 0.18); }
-.hc-cue-line::after { content: ""; position: absolute; inset: 0; background: var(--ink); animation: hc-cue 1.9s cubic-bezier(0.6, 0, 0.2, 1) infinite; }
+@keyframes hc-art-in {
+  from { opacity: 0; transform: translate3d(22px, 8px, 0) scale(0.96); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
 
-/* ---------- Small phones (under 600px wide) ---------- */
 @media (max-width: 599px) {
+  .hc-scroll {
+    --hc-height: max(500px, 100svh);
+    --hc-step: clamp(200px, 28svh, 280px);
+  }
+  .hc { --hc-art-h: clamp(170px, 29svh, 250px); --pad: 16px; }
+  .hc-slide {
+    justify-content: center;
+    gap: 10px;
+    padding: clamp(72px, 10svh, 88px) var(--pad) 74px;
+  }
+  .hc-copy { gap: 10px; }
+  .hc-title { font-size: clamp(2.15rem, 9.5vw, 3.2rem); }
   .hc-text {
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
     overflow: hidden; font-size: 1rem;
   }
-  .hc-btn-solid { flex: 1 1 100%; }
-  .hc-btn-quiet {
-    flex: 1 1 100%; min-height: 44px; border-color: transparent;
-    text-decoration: underline; text-underline-offset: 4px;
+  .hc-float img { filter: drop-shadow(0 12px 16px rgba(3, 41, 31, 0.2)); }
+  .hc-art {
+    order: -1;
+    height: var(--hc-art-h);
+    min-height: 0;
+    flex: 0 0 var(--hc-art-h);
   }
-  .hc-bubble:nth-child(n + 4) { display: none; }
+  .hc-btn-solid, .hc-btn-secondary {
+    flex: 1 1 0; min-width: 0; padding-inline: 8px;
+    font-size: 0.8125rem; white-space: nowrap;
+  }
+  .hc-tabs { gap: 4px; }
+  .hc-tab { padding: 10px 0; }
+  .hc-buttons { display: none; }
 }
 
-/* ---------- Tablets, portrait (600 to 899px wide) ---------- */
 @media (min-width: 600px) {
-  .hc { --pad: 32px; --hc-art-h: clamp(240px, 38svh, 440px); --cy: 28%; }
+  .hc { --pad: 32px; --hc-art-h: clamp(240px, 38svh, 440px); }
   .hc-slide { gap: 18px; }
   .hc-copy { gap: 18px; }
   .hc-title { font-size: clamp(3rem, 8vw, 4.6rem); }
   .hc-text { font-size: 1.125rem; }
 }
-@media (min-width: 640px) { .hc-buttons { display: flex; } }
 
-/* ---------- Phones and tablets that are not very tall ---------- */
 @media (max-width: 899px) and (max-height: 800px) {
-  .hc { --hc-art-h: clamp(150px, 27svh, 260px); }
-  .hc-btn-quiet { display: none; }
+  .hc-scroll { --hc-height: max(500px, 100svh); }
+  .hc { --hc-art-h: clamp(150px, 24svh, 240px); }
+}
+@media (max-width: 899px) and (max-height: 700px) {
+  .hc-scroll { --hc-height: max(480px, 100svh); }
 }
 @media (max-width: 899px) and (max-height: 700px) {
   .hc-title { font-size: clamp(2rem, 8.6vw, 2.7rem); }
-  .hc-meta { display: none; }
 }
 @media (max-width: 899px) and (max-height: 600px) {
   .hc-text { display: none; }
 }
+@media (max-width: 599px) and (max-height: 600px) {
+  .hc-scroll { --hc-height: max(420px, 100svh); }
+}
 
-/* ---------- Desktop (900px and up) ---------- */
 @media (min-width: 900px) {
-  .hc-scroll { --hc-step: 66svh; }
+  .hc-scroll {
+    --hc-height: max(560px, 100svh);
+    --hc-step: clamp(280px, 38svh, 400px);
+  }
   .hc {
-    --hc-art-h: min(70svh, 660px); --cx: 74%; --cy: 50%;
+    --hc-art-h: min(70svh, 660px);
     --pad: max(32px, calc((100vw - 1280px) / 2));
   }
   .hc-slide {
     display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
     align-items: center; gap: clamp(24px, 4vw, 64px);
-    padding: 40px var(--pad) 112px;
+    padding: 40px var(--pad) 96px;
   }
   .hc-copy { gap: 22px; }
   .hc-art { order: 0; }
   .hc-title { font-size: clamp(3.2rem, 5.6vw, 6rem); }
   .hc-text { font-size: 1.1875rem; }
-  .hc-controls { gap: 24px; padding: 0 var(--pad) 28px; }
-  .hc-tab-label { display: flex; }
-  .hc-seal { top: 4%; right: 0; }
+  .hc-controls { gap: 24px; }
+  .hc-tab { text-align: left; }
 }
-@media (min-width: 900px) and (min-height: 760px) { .hc-cue { display: flex; } }
-
-/* ---------- Wide screens ---------- */
 @media (min-width: 1500px) {
   .hc { --pad: max(48px, calc((100vw - 1400px) / 2)); }
   .hc-title { font-size: clamp(4.5rem, 5vw, 6.8rem); }
   .hc-text { max-width: 34rem; }
 }
 
-/* ---------- Short desktop windows ---------- */
 @media (min-width: 900px) and (max-height: 700px) {
+  .hc-scroll { --hc-height: max(500px, 100svh); }
+  .hc { --hc-art-h: 56svh; }
   .hc-title { font-size: clamp(2.4rem, 5vw, 3.8rem); }
   .hc-text { font-size: 1rem; }
-  .hc-slide { padding-bottom: 96px; }
+  .hc-slide { padding-bottom: 84px; }
   .hc-copy { gap: 16px; }
 }
 
-/* ---------- Phones held sideways ---------- */
 @media (max-width: 899px) and (orientation: landscape) and (max-height: 540px) {
-  .hc { --hc-art-h: 62svh; --cx: 74%; --cy: 50%; --pad: 28px; }
+  .hc-scroll {
+    --hc-height: max(220px, 100svh);
+    --hc-step: clamp(120px, 35svh, 220px);
+  }
+  .hc { --hc-art-h: min(42svh, 190px); --pad: 28px; }
   .hc-slide {
     display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    align-items: center; gap: 20px; padding: 8px var(--pad) 60px;
+    align-items: center; gap: 20px; padding: 8px var(--pad) 56px;
   }
+  .hc-actions { flex-wrap: nowrap; gap: 6px; }
+  .hc-btn { min-height: 40px; padding: 0 8px; font-size: 0.8125rem; white-space: nowrap; }
+  .hc-btn-solid { flex: 1 1 auto; }
+  .hc-btn-secondary { flex: 0 0 auto; }
   .hc-art { order: 0; }
-  .hc-title { font-size: clamp(1.7rem, 5.2vw, 2.5rem); }
-  .hc-text, .hc-meta, .hc-btn-quiet, .hc-seal { display: none; }
+  .hc-title { font-size: clamp(1.6rem, 4.2vw, 2.5rem); }
+  .hc-text { display: none; }
   .hc-btn { min-height: 44px; }
   .hc-tab { padding: 8px 0 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hc *, .hc *::after { animation: none !important; transition: none !important; }
+  .hc, .hc *, .hc *::before, .hc *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 `;
-
-/* ------------------------------------------------------------------ */
-/* 3. HERO CAROUSEL (scroll-driven)                                    */
-/* Page scroll is the single source of truth: the slide position is    */
-/* computed from how far you have scrolled through the pinned hero.    */
-/* What is drawn follows it with a critically damped spring, so wheel  */
-/* notches and flicks glide without overshooting.                      */
-/* ------------------------------------------------------------------ */
-
-const REVEAL = [0.34, 0.22, 0.12, 0.04]; // each group settles at a different point of the slide's arrival
-const DWELL = 0.18; // share of each step where a slide simply rests while you keep scrolling
-const SETTLE_DELAY = 140; // ms of stillness before the page eases to the nearest resting point
-
-// How tightly the drawing follows the scroll, as a spring smoothing time in seconds.
-// Higher = floatier, lower = snappier. Touch screens already have native momentum, so
-// they get a light touch; our own scripted scrolls are already eased, so they get one too.
-const FOLLOW = { wheel: 0.14, touch: 0.06, scripted: 0.05 };
-
-const stageVars = { "--accent": heroSlides[0].accent } as CSSProperties;
 
 function slideVars(slide: HeroSlide) {
   return { "--accent": slide.accent } as CSSProperties;
@@ -472,325 +344,97 @@ function washVars(slide: HeroSlide) {
   return { "--wa": slide.washFrom, "--wb": slide.washTo } as CSSProperties;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-// Raw scroll progress to slide position: each slide rests, then eases into the next
-function shape(raw: number, count: number) {
-  if (raw >= count - 1) return count - 1;
-  const i = Math.floor(raw);
-  const t = clamp((raw - i - DWELL) / (1 - 2 * DWELL), 0, 1);
-  return i + t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-// Splits a headline line into words so each can rise on its own (see .hc-w)
-function Words({ text, from }: { text: string; from: number }) {
-  return (
-    <>
-      {text.split(" ").map((word, k) => (
-        <Fragment key={k}>
-          <span className="hc-w" style={{ "--w": from + k } as CSSProperties}>
-            {word}
-          </span>{" "}
-        </Fragment>
-      ))}
-    </>
-  );
-}
-
 function HeroCarousel() {
   const count = heroSlides.length;
   const [index, setIndex] = useState(0);
   const wrapRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const cueRef = useRef<HTMLDivElement>(null);
-  const slidesRef = useRef<HTMLElement[]>([]);
-  const washRef = useRef<HTMLElement[]>([]);
-  const fillsRef = useRef<HTMLElement[]>([]);
-  const shown = useRef<boolean[]>([]); // which slides are currently visible, so we only touch the DOM on change
-  const washLive = useRef<boolean[]>([]); // same for the background layers
-  const indexRef = useRef(0);
-  const topRef = useRef(0); // height of a sticky/fixed site header, so the hero pins below it
-  const metrics = useRef({ absTop: 0, range: 0 }); // measured once, so scrolling never forces a layout
-  const reduced = useRef(false);
-  const coarse = useRef(false);
-  const touching = useRef(false);
-  const target = useRef(0); // where the scroll says we should be
-  const current = useRef(0); // what is drawn; it follows the target
-  const velocity = useRef(0);
-  const lastTime = useRef(0);
-  const loop = useRef(0);
-  const animToken = useRef(0);
-  const animating = useRef(false);
-  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const activeIndexRef = useRef(0);
+  const metricsRef = useRef({ absTop: 0, range: 0, stickyTop: 0 });
   const swipe = useRef<{ x: number; y: number } | null>(null);
-
-  // Read the hero's position and length once (on load and resize), not on every scroll event
-  const measure = useCallback(() => {
+  const activeSlide = heroSlides[index];
+  const goTo = (next: number) => {
     const wrap = wrapRef.current;
     const stage = stageRef.current;
     if (!wrap || !stage) return;
-    metrics.current = {
-      absTop: wrap.getBoundingClientRect().top + window.scrollY,
-      range: wrap.offsetHeight - stage.offsetHeight,
-    };
-  }, []);
 
-  // How far through the pinned hero we are, 0 to count - 1 (before the rest/ease shaping)
-  const getPos = useCallback(() => {
-    const { absTop, range } = metrics.current;
-    if (range <= 0) return null;
-    const p = clamp((window.scrollY - (absTop - topRef.current)) / range, 0, 1);
-    return { pos: p * (count - 1), range, absTop };
-  }, [count]);
-
-  // Draws one frame for a (fractional) slide position
-  const render = useCallback(
-    (pos: number) => {
-      const track = trackRef.current;
-      const stage = stageRef.current;
-      if (!track || !stage) return;
-      track.style.transform = `translate3d(${-pos * 100}%, 0, 0)`;
-
-      // Only slides on screen get work done; the rest are hidden (and can't take focus)
-      const slides = slidesRef.current;
-      for (let i = 0; i < slides.length; i++) {
-        const o = i - pos;
-        const a = Math.abs(o);
-        const el = slides[i];
-        const visible = a < 1;
-        if (visible !== shown.current[i]) {
-          shown.current[i] = visible;
-          el.style.visibility = visible ? "visible" : "hidden";
-          if (visible) el.setAttribute("data-on", "");
-          else el.removeAttribute("data-on"); // pauses its idle animations
-        }
-        if (!visible) continue;
-        const s = el.style;
-        s.setProperty("--o", o.toFixed(3));
-        s.setProperty("--a", a.toFixed(3));
-        s.setProperty("--sg", o < 0 ? "-1" : "1");
-        for (let k = 0; k < REVEAL.length; k++) {
-          const r = clamp((a - REVEAL[k]) / (1 - REVEAL[k]), 0, 1);
-          s.setProperty(`--r${k + 1}`, ((o < 0 ? -1 : 1) * r * r).toFixed(3)); // r squared: eases into place
-          s.setProperty(`--q${k + 1}`, (1 - r).toFixed(3));
-        }
-      }
-
-      // Background: layer 0 is the base. Layer i sweeps in while pos goes from i - 1 to i,
-      // then stays put until the next layer has fully covered it.
-      const washes = washRef.current;
-      for (let i = 0; i < washes.length; i++) {
-        const el = washes[i];
-        const live = pos > i - 1 && pos < i + 1;
-        if (live !== washLive.current[i]) {
-          washLive.current[i] = live;
-          el.style.visibility = live ? "visible" : "hidden";
-        }
-        if (i > 0 && live) {
-          const t = clamp(pos - (i - 1), 0, 1);
-          el.style.transform = `translate3d(${(50 - 73.81 * t).toFixed(2)}%, 0, 0)`;
-        }
-      }
-
-      fillsRef.current.forEach((el, i) => {
-        el.style.transform = `scaleX(${clamp(pos - i + 1, 0, 1).toFixed(3)})`;
-      });
-      if (cueRef.current) cueRef.current.style.opacity = clamp(1 - pos * 4, 0, 1).toFixed(2);
-
-      const next = clamp(Math.round(pos), 0, count - 1);
-      if (next !== indexRef.current) {
-        indexRef.current = next;
-        stage.style.setProperty("--accent", heroSlides[next].accent); // the bar color fades via CSS
-        setIndex(next);
-      }
-    },
-    [count],
-  );
-
-  // Frame loop: a critically damped spring pulls what is drawn toward the target.
-  // Unlike a plain exponential ease it starts gently, never overshoots, and its speed is
-  // continuous when the target changes, so wheel notches and direction changes stay smooth.
-  const tick: (now: number) => void = useCallback(
-    (now: number) => {
-      const dt = clamp((now - lastTime.current) / 1000 || 0.016, 0.001, 0.05);
-      lastTime.current = now;
-      const smoothTime = animating.current ? FOLLOW.scripted : coarse.current ? FOLLOW.touch : FOLLOW.wheel;
-      const omega = 2 / smoothTime;
-      const x = omega * dt;
-      const decay = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
-      const change = current.current - target.current;
-      const temp = (velocity.current + omega * change) * dt;
-      velocity.current = (velocity.current - omega * temp) * decay;
-      let next = target.current + (change + temp) * decay;
-      if (target.current - current.current > 0 === next > target.current) {
-        next = target.current; // never overshoot
-        velocity.current = 0;
-      }
-      current.current = next;
-      const done = Math.abs(target.current - next) < 0.0005 && Math.abs(velocity.current) < 0.002;
-      if (done) {
-        current.current = target.current;
-        velocity.current = 0;
-      }
-      render(current.current);
-      loop.current = done ? 0 : requestAnimationFrame(tick);
-    },
-    [render],
-  );
-
-  const update = useCallback(
-    (immediate = false) => {
-      const m = getPos();
-      if (!m) return;
-      const next = reduced.current ? Math.round(m.pos) : shape(m.pos, count);
-      target.current = next;
-      if (immediate || reduced.current) {
-        cancelAnimationFrame(loop.current);
-        loop.current = 0;
-        velocity.current = 0;
-        current.current = next;
-        render(next);
-      } else if (!loop.current) {
-        lastTime.current = performance.now();
-        loop.current = requestAnimationFrame(tick);
-      }
-    },
-    [count, getPos, render, tick],
-  );
-
-  // Our own eased page scroll, so slide jumps and settling feel the same everywhere
-  const animateScroll = useCallback((to: number, ms: number) => {
-    const from = window.scrollY;
-    const delta = to - from;
-    const token = ++animToken.current;
-    if (reduced.current || Math.abs(delta) < 1) {
-      animating.current = false;
-      window.scrollTo({ top: to, behavior: "instant" as ScrollBehavior });
-      return;
-    }
-    animating.current = true;
-    const t0 = performance.now();
-    const frameFn = (now: number) => {
-      if (token !== animToken.current) return;
-      const t = Math.min(1, (now - t0) / ms);
-      const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      window.scrollTo({ top: from + delta * e, behavior: "instant" as ScrollBehavior });
-      if (t < 1) requestAnimationFrame(frameFn);
-      else animating.current = false;
-    };
-    requestAnimationFrame(frameFn);
-  }, []);
-
-  const goTo = useCallback(
-    (i: number) => {
-      const m = getPos();
-      if (!m) return;
-      const slide = clamp(i, 0, count - 1);
-      const to = m.absTop - topRef.current + (slide / (count - 1)) * m.range;
-      animateScroll(to, Math.min(1300, 500 + Math.abs(to - window.scrollY) * 0.4));
-    },
-    [count, getPos, animateScroll],
-  );
-
-  // If scrolling stops between two slides, ease the page the short way to the nearest resting point
-  const settle = useCallback(() => {
-    if (touching.current || animating.current) return;
-    measure(); // the page is idle, so this is a safe moment to catch anything that shifted the layout
-    const m = getPos();
-    if (!m) return;
-    const i = Math.floor(m.pos);
-    const f = m.pos - i;
-    if (i >= count - 1 || f <= DWELL || f >= 1 - DWELL) return;
-    const edge = f < 0.5 ? DWELL : 1 - DWELL;
-    const to = m.absTop - topRef.current + ((i + edge) / (count - 1)) * m.range;
-    animateScroll(to, Math.min(620, 240 + Math.abs(to - window.scrollY) * 0.6));
-  }, [count, measure, getPos, animateScroll]);
+    const slide = Math.max(0, Math.min(count - 1, next));
+    const absTop = wrap.getBoundingClientRect().top + window.scrollY;
+    const range = wrap.offsetHeight - stage.offsetHeight;
+    const top = absTop + (slide / (count - 1)) * range;
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "instant" as ScrollBehavior
+      : "smooth";
+    window.scrollTo({ top, behavior });
+  };
 
   useEffect(() => {
     const wrap = wrapRef.current;
-    const track = trackRef.current;
-    const bg = bgRef.current;
-    const tabs = tabsRef.current;
-    if (!wrap || !track || !bg || !tabs) return;
+    const stage = stageRef.current;
+    if (!wrap || !stage) return;
 
-    reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    coarse.current = window.matchMedia("(pointer: coarse)").matches;
-    slidesRef.current = Array.from(track.children) as HTMLElement[];
-    washRef.current = Array.from(bg.children) as HTMLElement[];
-    fillsRef.current = Array.from(tabs.querySelectorAll<HTMLElement>(".hc-tab-fill"));
-    shown.current = [];
-    washLive.current = [];
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let frame = 0;
+    const updateScrollState = () => {
+      const { absTop, range, stickyTop } = metricsRef.current;
+      const scrollProgress = range > 0
+        ? Math.min(1, Math.max(0, (window.scrollY - (absTop - stickyTop)) / range))
+        : 0;
+      const next = scrollProgress >= 1 ? count - 1 : Math.round(scrollProgress * (count - 1));
+      if (next !== activeIndexRef.current) {
+        activeIndexRef.current = next;
+        setIndex(next);
+      }
 
-    const layout = (immediate = false) => {
-      // Pin below the site header if it is sticky or fixed. If your header has a
-      // known height, you can replace this lookup with a fixed number.
-      const header = document.querySelector("header");
-      const h = header ? header.getBoundingClientRect().height : 0;
-      const stuck = header ? ["sticky", "fixed"].includes(getComputedStyle(header).position) : false;
-      topRef.current = stuck ? h : 0;
-      wrap.style.setProperty("--hc-top", `${topRef.current}px`);
-      wrap.style.setProperty("--hc-h", `calc(100svh - ${h}px)`);
-      measure();
-      update(immediate);
+      const progress = reduceMotion.matches
+        ? 0
+        : Math.min(1, Math.max(0, -stage.getBoundingClientRect().top / stage.offsetHeight));
+      stage.style.setProperty("--scroll-copy-x", `${-18 * progress}px`);
+      stage.style.setProperty("--scroll-copy-y", `${-24 * progress}px`);
+      stage.style.setProperty("--scroll-copy-opacity", `${1 - 0.45 * progress}`);
+      stage.style.setProperty("--scroll-art-y", `${-42 * progress}px`);
+      stage.style.setProperty("--scroll-art-opacity", `${1 - 0.35 * progress}`);
+      stage.style.setProperty("--scroll-art-scale", `${1 - 0.035 * progress}`);
+      stage.style.setProperty("--scroll-bg-y", `${-14 * progress}px`);
+      stage.style.setProperty("--scroll-bg-scale", `${1.02 + 0.04 * progress}`);
     };
-    const onResize = () => layout();
-    const onScroll = () => {
-      update();
-      clearTimeout(settleTimer.current);
-      settleTimer.current = setTimeout(settle, SETTLE_DELAY);
+    const measure = () => {
+      stage.style.setProperty("--hc-top", "0px");
+      metricsRef.current = {
+        absTop: wrap.getBoundingClientRect().top + window.scrollY,
+        range: wrap.offsetHeight - stage.offsetHeight,
+        stickyTop: 0,
+      };
+      updateScrollState();
     };
-    // Any real input takes over from our own scroll animation
-    const onUserInput = () => {
-      animToken.current++;
-      animating.current = false;
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        updateScrollState();
+      });
     };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!e.defaultPrevented) onUserInput(); // the carousel's own arrow keys call preventDefault
-    };
-    const onTouchStart = () => {
-      touching.current = true;
-      onUserInput();
-    };
-    const onTouchEnd = () => {
-      touching.current = false;
-      clearTimeout(settleTimer.current);
-      settleTimer.current = setTimeout(settle, SETTLE_DELAY);
+    const scheduleMeasure = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        measure();
+      });
     };
 
-    layout(true);
-    const header = document.querySelector("header");
-    const resizeObserver = header && typeof ResizeObserver !== "undefined" ? new ResizeObserver(onResize) : null;
-    if (resizeObserver && header) resizeObserver.observe(header);
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    window.addEventListener("load", onResize);
-    window.addEventListener("wheel", onUserInput, { passive: true });
-    window.addEventListener("pointerdown", onUserInput, { passive: true });
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    measure();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("load", scheduleMeasure);
+    reduceMotion.addEventListener("change", scheduleUpdate);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("load", onResize);
-      window.removeEventListener("wheel", onUserInput);
-      window.removeEventListener("pointerdown", onUserInput);
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("touchcancel", onTouchEnd);
-      resizeObserver?.disconnect();
-      clearTimeout(settleTimer.current);
-      cancelAnimationFrame(loop.current);
-      loop.current = 0;
-      animToken.current++;
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("load", scheduleMeasure);
+      reduceMotion.removeEventListener("change", scheduleUpdate);
+      if (frame) cancelAnimationFrame(frame);
     };
-  }, [update, settle, measure]);
+  }, [count]);
 
   return (
     <section
@@ -798,18 +442,19 @@ function HeroCarousel() {
       className="hc-scroll"
       aria-roledescription="carousel"
       aria-label="Featured Milano products"
-      style={{ "--hc-count": count } as CSSProperties}
     >
       <style dangerouslySetInnerHTML={{ __html: heroCss }} />
       <div
         ref={stageRef}
         className="hc"
-        style={stageVars}
+        style={slideVars(activeSlide)}
         onKeyDown={(e) => {
-          const by = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-          if (by && indexRef.current + by >= 0 && indexRef.current + by < count) {
+          if (e.key === "ArrowRight" && index < count - 1) {
             e.preventDefault();
-            goTo(indexRef.current + by);
+            goTo(index + 1);
+          } else if (e.key === "ArrowLeft" && index > 0) {
+            e.preventDefault();
+            goTo(index - 1);
           }
         }}
         onTouchStart={(e) => {
@@ -822,110 +467,64 @@ function HeroCarousel() {
           const dx = e.changedTouches[0].clientX - start.x;
           const dy = e.changedTouches[0].clientY - start.y;
           if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-            goTo(indexRef.current + (dx < 0 ? 1 : -1));
+            goTo(index + (dx < 0 ? 1 : -1));
           }
         }}
       >
-        <div ref={bgRef} className="hc-bg" aria-hidden="true">
-          {heroSlides.map((s) => (
-            <div key={s.id} className="hc-wash" style={washVars(s)} />
+        <div className="hc-bg" aria-hidden="true">
+          {heroSlides.map((s, i) => (
+            <div key={s.id} className="hc-wash" data-active={i === index} style={washVars(s)} />
           ))}
         </div>
 
         <h1 className="hc-sr">Milano Foods: Mojito Syrup, Ice Cream Powder, and Milkshake Powder</h1>
 
-        <div ref={trackRef} className="hc-track">
-          {heroSlides.map((s, i) => (
-            <div
-              key={s.id}
-              className="hc-slide"
-              style={slideVars(s)}
-              data-on={i === 0 ? "" : undefined}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${i + 1} of ${count}: ${s.name}`}
-            >
-              <div className="hc-copy">
-                <h2 className="hc-title">
-                  <span className="hc-line">
-                    <Words text={s.lines[0]} from={0} />
-                  </span>
-                  <em className="hc-line">
-                    <Words text={s.lines[1]} from={s.lines[0].split(" ").length} />
-                  </em>
-                </h2>
-                <p className="hc-text">{s.text}</p>
-                <div className="hc-actions">
-                  <Link href={s.href} className="hc-btn hc-btn-solid">
-                    {s.cta}
-                  </Link>
-                  <Link href="/product-guide" className="hc-btn hc-btn-quiet">
-                    Flavor &amp; use guide
-                  </Link>
-                </div>
-                <p className="hc-meta">{s.meta}</p>
-              </div>
+        <div key={activeSlide.id} className="hc-slide" aria-live="polite">
+          <div className="hc-copy">
+            <h2 className="hc-title">
+              <span className="hc-line">{activeSlide.lines[0]}</span>
+              <em className="hc-line">{activeSlide.lines[1]}</em>
+            </h2>
+            <p className="hc-text">{activeSlide.text}</p>
+            <div className="hc-actions">
+              <Link href={activeSlide.href} className="hc-btn hc-btn-solid">
+                {activeSlide.cta}
+              </Link>
+              <Link href="/recipes" className="hc-btn hc-btn-secondary">
+                Explore recipes
+              </Link>
+            </div>
+          </div>
 
-              <div className="hc-art">
-                <div className="hc-mark" aria-hidden="true">
-                  {s.mark}
-                </div>
-                <div className="hc-disc" />
-                <div className="hc-bubbles" aria-hidden="true">
-                  {BUBBLES.map((b, k) => (
-                    <span
-                      key={k}
-                      className="hc-bubble"
-                      style={{ "--x": b.x, "--y": b.y, "--s": b.s, "--d": b.d } as CSSProperties}
-                    />
-                  ))}
-                </div>
-                <div className="hc-bottle">
-                  <div className="hc-shadow" />
-                  <div className="hc-float">
-                    <Image
-                      src={s.image}
-                      alt={s.alt}
-                      fill
-                      sizes="(min-width: 900px) 46vw, 80vw"
-                      priority={i === 0}
-                      loading={i === 0 ? undefined : "eager"} // neighbours are ready before they slide in
-                      draggable={false}
-                    />
-                  </div>
-                </div>
-                <div className="hc-seal" aria-hidden="true">
-                  <b>{s.seal[0]}</b>
-                  <span>{s.seal[1]}</span>
-                </div>
+          <div className="hc-art">
+            <div className="hc-bottle">
+              <div className="hc-float">
+                <Image
+                  src={activeSlide.image}
+                  alt={activeSlide.alt}
+                  fill
+                  sizes="(min-width: 900px) 46vw, 80vw"
+                  priority
+                  draggable={false}
+                />
               </div>
             </div>
-          ))}
-        </div>
-
-        <div ref={cueRef} className="hc-cue" aria-hidden="true">
-          <span>Keep scrolling</span>
-          <span className="hc-cue-line" />
+          </div>
         </div>
 
         <div className="hc-controls">
-          <div ref={tabsRef} className="hc-tabs" role="group" aria-label="Choose a slide">
+          <div className="hc-tabs" role="group" aria-label="Choose a featured product">
             {heroSlides.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
                 className="hc-tab"
+                style={slideVars(s)}
                 aria-label={`Show ${s.name}`}
                 aria-current={i === index}
                 onClick={() => goTo(i)}
               >
-                <span className="hc-tab-label">
-                  <i className="hc-dot" style={{ background: s.washTo }} />
-                  <span>{s.name}</span>
-                </span>
-                <span className="hc-tab-bar">
-                  <span className="hc-tab-fill" style={i === 0 ? { transform: "scaleX(1)" } : undefined} />
-                </span>
+                <span className="hc-tab-label">{s.name}</span>
               </button>
             ))}
           </div>
@@ -955,10 +554,6 @@ function HeroCarousel() {
     </section>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* 4. PAGE                                                             */
-/* ------------------------------------------------------------------ */
 
 export default function HomePage() {
   return (

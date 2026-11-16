@@ -653,7 +653,7 @@
 }
 
 /* ==========================================================================
-   Analytical Revenue Trend Chart Widget (Direct on Overview)
+   Analytical Units Trend Chart Widget (Direct on Overview)
    ========================================================================== */
 .mf-chart-card {
   background: var(--mf-card);
@@ -800,7 +800,7 @@
 
 @media (min-width: 640px) {
   .mf-quick-actions {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -1799,17 +1799,6 @@
   color: var(--mf-text-muted);
 }
 
-.mf-product-price-tag {
-  margin-left: auto;
-  font-family: var(--mf-font-display);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--mf-text);
-  letter-spacing: -0.015em;
-}
-
 .mf-product-card-actions {
   display: flex;
   align-items: center;
@@ -2033,16 +2022,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.mf-sel-variant-price {
-  font-family: var(--mf-font-display);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-  font-size: 14.5px;
-  font-weight: 800;
-  color: var(--mf-text);
-  letter-spacing: -0.02em;
-}
-
 .mf-sel-actions-row {
   display: flex;
   align-items: center;
@@ -2183,7 +2162,6 @@
 .mf-skeleton-product-title { width: 76%; height: 12px; }
 .mf-skeleton-product-meta { width: 54%; height: 9px; }
 .mf-skeleton-product-meta.short { width: 39%; }
-.mf-skeleton-product-price { width: 43%; height: 14px; margin-top: 4px; }
 .mf-skeleton-table-cell { width: 80%; height: 11px; }
 .mf-chart-skeleton { display: flex; align-items: flex-end; justify-content: space-around; gap: 9px; min-height: 180px; padding: 18px 10px 24px; }
 .mf-skeleton-chart-bar { width: 8%; height: 40%; min-height: 42px; border-radius: 5px 5px 2px 2px; }
@@ -2303,6 +2281,43 @@
   color: var(--mf-text-muted) !important;
   font-size: 10px !important;
   letter-spacing: 0.07em;
+}
+
+.mf-order-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.mf-order-contact-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.mf-order-contact-info strong {
+  color: var(--mf-text);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.mf-order-contact-info span {
+  color: var(--mf-text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mf-order-contact-row .mf-btn-primary {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .mf-order-detail-card .mf-btn-primary {

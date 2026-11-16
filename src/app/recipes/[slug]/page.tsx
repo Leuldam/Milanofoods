@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Clock3, UsersRound } from "lucide-react";
-import { products, recipes } from "@/lib/products";
-import { ProductCard } from "@/components/product-card";
+import { recipes } from "@/lib/products";
+import { FeaturedProductsCarousel } from "@/components/featured-products-carousel";
 
 export function generateStaticParams() {
   return recipes.map((recipe) => ({ slug: recipe.slug }));
@@ -138,20 +138,16 @@ export default async function RecipePage({
 
       <section className="section recipe-products-section">
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head recipe-products-head">
             <div>
               <span className="eyebrow">Make it Milano</span>
               <h2>Explore the range.</h2>
             </div>
-            <Link href="/products" className="text-link">
-              Shop all products <ArrowRight size={15} />
+            <Link href="/products" className="text-link" aria-label="Shop all products" title="Shop all products">
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
-          <div className="product-grid">
-            {products.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <FeaturedProductsCarousel />
         </div>
       </section>
     </main>

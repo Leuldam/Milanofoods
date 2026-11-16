@@ -103,7 +103,6 @@ export default function AboutPage() {
             <span className="about-story-mark-caption">Good things are better when shared.</span>
           </div>
           <div>
-            <span className="eyebrow">A little about Milano</span>
             <h2 className="about-story-title">
               Flavor brings us together.
             </h2>

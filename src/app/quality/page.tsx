@@ -22,12 +22,12 @@ const qualityNotes = [
   {
     icon: PackageCheck,
     title: "Review current availability",
-    description: "Product pages and checkout check current price, packaging, minimum order quantity, and stock.",
+    description: "Product pages and checkout check current packaging, minimum order quantity, and stock. The Milano team confirms pricing after you submit a request.",
   },
   {
     icon: BadgeInfo,
     title: "Ask when you need clarity",
-    description: "If you need to confirm a product detail before ordering, contact the Milano team.",
+    description: "Contact the Milano team for product details, pricing, and availability before or after submitting an order request.",
   },
 ];
 

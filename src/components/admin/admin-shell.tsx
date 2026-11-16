@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { PushNotificationButton } from "@/components/admin/push-notification-button";
 import {
@@ -99,20 +100,7 @@ export function AdminShell({ admin, children }: AdminShellProps) {
         {/* Brand */}
         <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "8px",
-              background: "#C99A4A",
-              color: "#073D2E",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: "18px",
-            }}>
-              M
-            </div>
+            <Image src="/images/milanologo.png" alt="" width={42} height={42} style={{ objectFit: "contain" }} />
             <div>
               <div style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "-0.02em", color: "#FFFFFF" }}>
                 Milano Foods
@@ -344,7 +332,10 @@ export function AdminShell({ admin, children }: AdminShellProps) {
               justifyContent: "space-between",
               borderBottom: "1px solid rgba(255,255,255,0.1)",
             }}>
-              <div style={{ fontWeight: 800, fontSize: "16px" }}>Milano Foods</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontWeight: 800, fontSize: "16px" }}>
+                <Image src="/images/milanologo.png" alt="" width={36} height={36} style={{ objectFit: "contain" }} />
+                Milano Foods
+              </div>
               <button
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close admin navigation"

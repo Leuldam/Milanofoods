@@ -3,6 +3,12 @@ import Link from "next/link";
 import { ArrowRight, Clock3, UsersRound } from "lucide-react";
 import { recipes } from "@/lib/products";
 
+const recipeCardProducts: Record<string, { title: string; image: string }> = {
+  "strawberry-mojito": { title: "Mojito Syrup", image: "/images/mojitol.png" },
+  "tropical-refresh": { title: "Ice Cream Powder", image: "/images/milanoice.png" },
+  "creamy-milkshake": { title: "Milkshake", image: "/images/milanomilk.png" },
+};
+
 export default function RecipesPage() {
   return (
     <main className="recipes-page">
@@ -29,34 +35,38 @@ export default function RecipesPage() {
             <p>Simple steps, flexible servings, and plenty of room to add your own touch.</p>
           </div>
           <div className="recipe-grid">
-            {recipes.map((recipe) => (
-              <article className="recipe-card" key={recipe.slug}>
-                <Link
-                  href={`/recipes/${recipe.slug}`}
-                  className="recipe-card-image"
-                  aria-label={`View ${recipe.title} recipe`}
-                >
-                  <Image
-                    src={recipe.image}
-                    alt={recipe.title}
-                    fill
-                    sizes="(max-width: 720px) 100vw, (max-width: 1000px) 50vw, 33vw"
-                  />
-                  <span className="recipe-card-category">{recipe.category}</span>
-                </Link>
-                <div className="recipe-card-copy">
-                  <h3>{recipe.title}</h3>
-                  <p>{recipe.description}</p>
-                  <div className="recipe-card-meta">
-                    <span><Clock3 size={15} />{recipe.time}</span>
-                    <span><UsersRound size={15} />{recipe.serves}</span>
-                  </div>
-                  <Link href={`/recipes/${recipe.slug}`} className="recipe-card-link">
-                    View recipe <ArrowRight size={15} />
+            {recipes.map((recipe) => {
+              const product = recipeCardProducts[recipe.slug];
+
+              return (
+                <article className="recipe-card" key={recipe.slug}>
+                  <Link
+                    href={`/recipes/${recipe.slug}`}
+                    className="recipe-card-image"
+                    aria-label={`View ${recipe.title} recipe`}
+                  >
+                    <Image
+                      src={product?.image ?? recipe.image}
+                      alt={product?.title ?? recipe.title}
+                      fill
+                      sizes="(max-width: 720px) 100vw, (max-width: 1000px) 50vw, 33vw"
+                      loading="eager"
+                    />
                   </Link>
-                </div>
-              </article>
-            ))}
+                  <div className="recipe-card-copy">
+                    <h3>{product?.title ?? recipe.title}</h3>
+                    <p>{recipe.description}</p>
+                    <div className="recipe-card-meta">
+                      <span><Clock3 size={15} />{recipe.time}</span>
+                      <span><UsersRound size={15} />{recipe.serves}</span>
+                    </div>
+                    <Link href={`/recipes/${recipe.slug}`} className="recipe-card-link">
+                      View recipe <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -30,6 +30,7 @@ export async function GET() {
       staff: staff.map((s) => ({
         id: s.id,
         phone: s.phone,
+        telegramChatId: s.telegramChatId,
         name: s.name,
         isOwner: s.isOwner,
         createdAt: s.createdAt,
@@ -51,10 +52,21 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { phone, name, password, permissions } = body;
+    const { phone, name, password, permissions, telegramChatId } = body;
 
-    if (typeof phone !== "string" || !phone.trim() || typeof password !== "string" || !password) {
-      return NextResponse.json({ error: "Phone number and password are required." }, { status: 400 });
+    if (
+      typeof phone !== "string" || !phone.trim() ||
+      typeof password !== "string" || password.length < 12 || password.length > 200
+    ) {
+      return NextResponse.json({ error: "Enter a phone number and a password of at least 12 characters." }, { status: 400 });
+    }
+    if (
+      telegramChatId !== undefined &&
+      telegramChatId !== null &&
+      (typeof telegramChatId !== "string" || !/^\d{1,16}$/.test(telegramChatId.trim()) ||
+        !Number.isSafeInteger(Number(telegramChatId)) || Number(telegramChatId) <= 0)
+    ) {
+      return NextResponse.json({ error: "Enter a valid private Telegram user ID." }, { status: 400 });
     }
 
     const cleanPhone = normalizeAdminPhone(phone);
@@ -69,6 +81,10 @@ export async function POST(req: NextRequest) {
           phone: cleanPhone,
           name: name ? name.trim() : null,
           passwordHash,
+          mustChangePassword: true,
+          telegramChatId: typeof telegramChatId === "string" && telegramChatId.trim()
+            ? telegramChatId.trim()
+            : null,
           isOwner: false,
         },
       });
@@ -109,13 +125,28 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, name, phone, password, permissions, revokeSessions } = body;
+    const { id, name, phone, password, permissions, revokeSessions, telegramChatId } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Staff ID is required." }, { status: 400 });
     }
     if (phone !== undefined && (typeof phone !== "string" || !phone.trim())) {
       return NextResponse.json({ error: "Phone number cannot be empty." }, { status: 400 });
+    }
+    if (
+      telegramChatId !== undefined &&
+      telegramChatId !== null &&
+      telegramChatId !== "" &&
+      (typeof telegramChatId !== "string" || !/^\d{1,16}$/.test(telegramChatId.trim()) ||
+        !Number.isSafeInteger(Number(telegramChatId)) || Number(telegramChatId) <= 0)
+    ) {
+      return NextResponse.json({ error: "Enter a valid private Telegram user ID." }, { status: 400 });
+    }
+    if (
+      password &&
+      (typeof password !== "string" || password.length < 12 || password.length > 200)
+    ) {
+      return NextResponse.json({ error: "Password must be between 12 and 200 characters." }, { status: 400 });
     }
 
     const targetStaff = await prisma.adminUser.findUnique({ where: { id } });
@@ -132,7 +163,18 @@ export async function PUT(req: NextRequest) {
       const dataToUpdate: Prisma.AdminUserUpdateInput = {};
       if (name !== undefined) dataToUpdate.name = name ? name.trim() : null;
       if (phone) dataToUpdate.phone = normalizeAdminPhone(phone);
-      if (password) dataToUpdate.passwordHash = await hashPassword(password);
+      if (password) {
+        dataToUpdate.passwordHash = await hashPassword(password);
+        dataToUpdate.mustChangePassword = true;
+      }
+      if (password || revokeSessions) {
+        dataToUpdate.authVersion = { increment: 1 };
+      }
+      if (telegramChatId !== undefined) {
+        dataToUpdate.telegramChatId = typeof telegramChatId === "string" && telegramChatId.trim()
+          ? telegramChatId.trim()
+          : null;
+      }
 
       if (Object.keys(dataToUpdate).length > 0) {
         await tx.adminUser.update({ where: { id }, data: dataToUpdate });
@@ -153,8 +195,7 @@ export async function PUT(req: NextRequest) {
         }
       }
 
-      // Revoke sessions
-      if (revokeSessions) {
+      if (password || revokeSessions) {
         await tx.adminSession.deleteMany({ where: { userId: id } });
       }
     });
@@ -164,6 +205,9 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Admin staff PUT error:", error);
+    if (isUniqueConstraintError(error)) {
+      return NextResponse.json({ error: "That phone number or Telegram account is already assigned." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Failed to update staff member." }, { status: 500 });
   }
 }

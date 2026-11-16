@@ -43,6 +43,7 @@ function getCookie(request: Request, name: string) {
 export function createMiniAppSession(userInfo?: {
   name?: string;
   adminUserId?: string;
+  authVersion?: number;
 }) {
   const secret = getMiniAppSessionSecret();
   if (!secret) throw new Error("MINIAPP_SESSION_SECRET must be at least 32 characters.");
@@ -53,6 +54,7 @@ export function createMiniAppSession(userInfo?: {
       role: "admin",
       expiresAt,
       root: !userInfo?.adminUserId,
+      authVersion: userInfo?.authVersion,
       ...(userInfo || {}),
     }),
   ).toString("base64url");
@@ -69,6 +71,7 @@ function verifyMiniAppSession(request: Request): {
   name?: string;
   adminUserId?: string;
   root: boolean;
+  authVersion?: number;
 } | null {
   const secret = getMiniAppSessionSecret();
   const token = getCookie(request, MINIAPP_SESSION_COOKIE);
@@ -90,18 +93,24 @@ function verifyMiniAppSession(request: Request): {
       name?: unknown;
       adminUserId?: unknown;
       root?: unknown;
+      authVersion?: unknown;
     };
     if (
       session.role === "admin" &&
       typeof session.expiresAt === "number" &&
       session.expiresAt > Math.floor(Date.now() / 1000) &&
-      (typeof session.adminUserId === "string" || session.root === true)
+      (session.root === true ||
+        (typeof session.adminUserId === "string" &&
+          typeof session.authVersion === "number" &&
+          Number.isSafeInteger(session.authVersion) &&
+          session.authVersion >= 0))
     ) {
       return {
         role: "admin",
         name: typeof session.name === "string" ? session.name : undefined,
         adminUserId: typeof session.adminUserId === "string" ? session.adminUserId : undefined,
         root: session.root === true,
+        authVersion: typeof session.authVersion === "number" ? session.authVersion : undefined,
       };
     }
     return null;
@@ -184,10 +193,11 @@ export async function getTelegramMiniAppUser(request: Request): Promise<Telegram
       id: true,
       name: true,
       isOwner: true,
+      authVersion: true,
       permissions: { select: { permissionKey: true } },
     },
   });
-  if (!admin) return null;
+  if (!admin || admin.authVersion !== session.authVersion) return null;
 
   return {
     id: 0,
